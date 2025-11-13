@@ -162,8 +162,11 @@ def get_daily_price_a_stock(
                 return None
 
         code_list = df["con_code"].tolist()
-        code_str = ",".join(code_list)
-        num_stocks = len(code_list)
+        code_list_spif = ['510050.SH']
+        code_str = ",".join(code_list + code_list_spif)
+        print(code_str)
+        input("按 Enter 键退出...")
+        num_stocks = len(code_list + code_list_spif)
 
         # Calculate batch size based on 6000 records limit
         batch_days = calculate_batch_days(num_stocks)

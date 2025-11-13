@@ -35,11 +35,11 @@ class MCPServiceManager:
         mcp_server_dir = os.path.dirname(os.path.abspath(__file__))
         self.service_configs = {
             "math": {"script": os.path.join(mcp_server_dir, "tool_math.py"), "name": "Math", "port": self.ports["math"]},
-            # "search": {"script": "tool_jina_search.py", "name": "Search", "port": self.ports["search"]},
-            "search": {"script": os.path.join(mcp_server_dir, "tool_alphavantage_news.py"), "name": "Search", "port": self.ports["search"]},  
+            "search": {"script": os.path.join(mcp_server_dir, "tool_jina_search.py"), "name": "Search", "port": self.ports["search"]},
+            # "search": {"script": os.path.join(mcp_server_dir, "tool_alphavantage_news.py"), "name": "Search", "port": self.ports["search"]},  
             "trade": {"script": os.path.join(mcp_server_dir, "tool_trade.py"), "name": "TradeTools", "port": self.ports["trade"]},
             "price": {"script": os.path.join(mcp_server_dir, "tool_get_price_local.py"), "name": "LocalPrices", "port": self.ports["price"]},
-            "crypto": {"script": os.path.join(mcp_server_dir, "tool_crypto_trade.py"), "name": "CryptoTradeTools", "port": self.ports["crypto"]},
+            # "crypto": {"script": os.path.join(mcp_server_dir, "tool_crypto_trade.py"), "name": "CryptoTradeTools", "port": self.ports["crypto"]},
         }
 
         # Create logs directory

@@ -19,7 +19,7 @@ from typing import Dict, List, Optional
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 from tools.general_tools import get_config_value
-from tools.price_tools import (all_sse_50_symbols,
+from tools.price_tools import (all_sse_50_symbols,all_spif_symbols,
                                format_price_dict_with_names, get_open_prices,
                                get_today_init_position, get_yesterday_date,
                                get_yesterday_open_and_close_price,
@@ -100,7 +100,7 @@ def get_agent_system_prompt_astock(today_date: str, signature: str, stock_symbol
 
     # 默认使用上证50成分股
     if stock_symbols is None:
-        stock_symbols = all_sse_50_symbols
+        stock_symbols = all_spif_symbols
 
     # 获取昨日买入和卖出价格，硬编码market="cn"
     yesterday_buy_prices, yesterday_sell_prices = get_yesterday_open_and_close_price(

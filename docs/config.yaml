@@ -3,44 +3,6 @@
 
 # Market configurations - Easy to extend for new markets (e.g., crypto)
 markets:
-  us:
-    name: "US Market (Nasdaq-100)"
-    subtitle: "Track how different AI models perform in Nasdaq-100 stock trading"
-    data_dir: "agent_data"
-    benchmark_file: "Adaily_prices_QQQ.json"
-    benchmark_name: "QQQ"
-    benchmark_display_name: "QQQ Invesco"
-    currency: "USD"
-    icon: "🇺🇸"
-    price_data_type: "individual"  # individual JSON files per stock
-    time_granularity: "hourly"  # hourly timestamps with hour component
-    enabled: true
-    agents:  # US market specific agents
-      - folder: "gemini-2.5-flash"
-        display_name: "Gemini 2.5 Flash"
-        icon: "./figs/google.svg"
-        color: "#00d4ff"
-      - folder: "qwen3-max"
-        display_name: "Qwen3 Max"
-        icon: "./figs/qwen.svg"
-        color: "#00ffcc"
-      - folder: "deepseek-chat-v3.1"
-        display_name: "DeepSeek Chat v3.1"
-        icon: "./figs/deepseek.svg"
-        color: "#ff006e"
-      - folder: "gpt-5"
-        display_name: "GPT-5"
-        icon: "./figs/openai.svg"
-        color: "#ffbe0b"
-      - folder: "claude-3.7-sonnet"
-        display_name: "Claude 3.7 Sonnet"
-        icon: "./figs/claude-color.svg"
-        color: "#8338ec"
-      - folder: "MiniMax-M2"
-        display_name: "MiniMax M2"
-        icon: "./figs/minimax.svg"
-        color: "#3a86ff"
-
   cn:
     name: "A-Shares (SSE 50)"
     subtitle: "Track how different AI models perform in SSE 50 A-share stock trading"
@@ -55,30 +17,82 @@ markets:
     time_granularity: "daily"  # daily dates without hour component
     enabled: true
     agents:  # CN market specific agents
-      - folder: "gemini-2.5-flash"
-        display_name: "Gemini 2.5 Flash"
-        icon: "./figs/google.svg"
-        color: "#00d4ff"
-      - folder: "qwen3-max"
-        display_name: "Qwen3 Max"
-        icon: "./figs/qwen.svg"
-        color: "#00ffcc"
       - folder: "deepseek-chat-v3.1"
         display_name: "DeepSeek Chat v3.1"
         icon: "./figs/deepseek.svg"
         color: "#ff006e"
+        enabled: true
+      - folder: "gemini-2.5-flash"
+        display_name: "Gemini 2.5 Flash"
+        icon: "./figs/google.svg"
+        color: "#00d4ff"
+        enabled: false
+      - folder: "qwen3-max"
+        display_name: "Qwen3 Max"
+        icon: "./figs/qwen.svg"
+        color: "#00ffcc"
+        enabled: false
       - folder: "gpt-5"
         display_name: "GPT-5"
         icon: "./figs/openai.svg"
         color: "#ffbe0b"
+        enabled: false
       - folder: "claude-3.7-sonnet"
         display_name: "Claude 3.7 Sonnet"
         icon: "./figs/claude-color.svg"
         color: "#8338ec"
+        enabled: false
       - folder: "MiniMax-M2"
         display_name: "MiniMax M2"
         icon: "./figs/minimax.svg"
         color: "#3a86ff"
+        enabled: false
+
+  us:
+    name: "US Market (Nasdaq-100)"
+    subtitle: "Track how different AI models perform in Nasdaq-100 stock trading"
+    data_dir: "agent_data"
+    benchmark_file: "Adaily_prices_QQQ.json"
+    benchmark_name: "QQQ"
+    benchmark_display_name: "QQQ Invesco"
+    currency: "USD"
+    icon: "🇺🇸"
+    price_data_type: "individual"  # individual JSON files per stock
+    time_granularity: "daily"  # hourly timestamps with hour component
+    enabled: false
+    agents:  # US market specific agents
+      - folder: "gemini-2.5-flash"
+        display_name: "Gemini 2.5 Flash"
+        icon: "./figs/google.svg"
+        color: "#00d4ff"
+        enabled: false
+      - folder: "qwen3-max"
+        display_name: "Qwen3 Max"
+        icon: "./figs/qwen.svg"
+        color: "#00ffcc"
+        enabled: false
+      - folder: "deepseek-chat-v3.1"
+        display_name: "DeepSeek Chat v3.1"
+        icon: "./figs/deepseek.svg"
+        color: "#ff006e"
+        enabled: false
+      - folder: "gpt-5"
+        display_name: "GPT-5"
+        icon: "./figs/openai.svg"
+        color: "#ffbe0b"
+        enabled: false
+      - folder: "claude-3.7-sonnet"
+        display_name: "Claude 3.7 Sonnet"
+        icon: "./figs/claude-color.svg"
+        color: "#8338ec"
+        enabled: false
+      - folder: "MiniMax-M2"
+        display_name: "MiniMax M2"
+        icon: "./figs/minimax.svg"
+        color: "#3a86ff"
+        enabled: false
+
+  
 
   # crypto:  # Future crypto market support
   #   name: "Crypto Market"

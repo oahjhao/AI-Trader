@@ -59,6 +59,13 @@ sse_50_codes = [
     "601658.SHH",
     "600048.SHH"
 ]
+spif_codes = [
+    "510050.SHH",
+    "510500.SHH",
+    "512100.SHH",
+    "588000.SHH",
+    "159781.SHH",
+]
 
 def filter_data(data: dict,after_date: str):
     data_filtered = {}
@@ -113,6 +120,7 @@ def get_daily_price(SYMBOL: str):
     APIKEY = os.getenv("ALPHAADVANTAGE_API_KEY")
     url = (
         f"https://www.alphavantage.co/query?function={FUNCTION}&symbol={SYMBOL}&outputsize={OUTPUTSIZE}&apikey={APIKEY}"
+        # f"https://www.alphavantage.co/query?function={FUNCTION}&symbol={SYMBOL}&entitlement=delayed&outputsize={OUTPUTSIZE}&apikey={APIKEY}"
     )
     r = requests.get(url)
     data = r.json()
@@ -122,7 +130,7 @@ def get_daily_price(SYMBOL: str):
         exit()
         return
     if OUTPUTSIZE == "full":
-        data = filter_data(data, "2025-10-01")
+        data = filter_data(data, "2024-11-10")
     
     # 合并数据：保留已存在的日期，只添加新日期
     output_file = f"./A_stock_data/daily_prices_{SYMBOL}.json"
@@ -153,6 +161,6 @@ def get_daily_price(SYMBOL: str):
 
 
 if __name__ == "__main__":
-    for symbol in sse_50_codes:
+    for symbol in spif_codes:
         get_daily_price(symbol)
     get_daily_price("000016.SHH")

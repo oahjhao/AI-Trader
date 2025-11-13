@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from prompts.agent_prompt import all_nasdaq_100_symbols
+from prompts.agent_prompt import all_sse_50_symbols,all_spif_symbols
 # Import tools and prompts
 from tools.general_tools import get_config_value, write_config_value
 
@@ -238,11 +239,9 @@ async def main(config_path=None):
         if agent_type == "BaseAgentCrypto":
             stock_symbols = None  # Crypto agent uses its own crypto_symbols
         elif agent_type == "BaseAgentAStock":
-            stock_symbols = None  # Let BaseAgentAStock use its default SSE 50
+            stock_symbols = all_spif_symbols
         elif market == "cn":
-            from prompts.agent_prompt import all_sse_50_symbols
-
-            stock_symbols = all_sse_50_symbols
+            stock_symbols = all_spif_symbols
         else:
             stock_symbols = all_nasdaq_100_symbols
 

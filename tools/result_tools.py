@@ -113,7 +113,7 @@ def get_daily_portfolio_values(
         Dictionary of daily portfolio values in format {date: portfolio_value}
     """
     from tools.general_tools import get_config_value
-    from tools.price_tools import (all_nasdaq_100_symbols, all_sse_50_symbols,
+    from tools.price_tools import (all_nasdaq_100_symbols, all_sse_50_symbols,all_spif_symbols,
                                    get_merged_file_path)
 
     base_dir = Path(__file__).resolve().parents[1]
@@ -174,7 +174,7 @@ def get_daily_portfolio_values(
                 continue
 
     # Select stock symbols based on market
-    stock_symbols = all_sse_50_symbols if market == "cn" else all_nasdaq_100_symbols
+    stock_symbols = all_spif_symbols if market == "cn" else all_nasdaq_100_symbols
 
     # Calculate daily portfolio values
     daily_values = {}

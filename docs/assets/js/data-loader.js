@@ -7,7 +7,7 @@ class DataLoader {
         this.priceCache = {};
         this.config = null;
         this.baseDataPath = './data';
-        this.currentMarket = 'us'; // 'us' or 'cn'
+        this.currentMarket = 'cn'; // 'us' or 'cn'
     }
 
     // Switch market between US stocks and A-shares

@@ -199,6 +199,14 @@ all_sse_50_symbols = [
     "600048.SH",
 ]
 
+all_spif_symbols = [
+    "510050.SH",
+    "510500.SH",
+    "512100.SH",
+    "588000.SH",
+    "159781.SH",
+]
+
 
 def get_merged_file_path(market: str = "us") -> Path:
     """Get merged.jsonl path based on market type.
