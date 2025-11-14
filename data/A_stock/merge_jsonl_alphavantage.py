@@ -57,7 +57,18 @@ sse_50_codes = [
     "510500.SHH",
     "512100.SHH",
     "588000.SHH",
-    "159781.SHH"
+    "159781.SHH",
+    "000906.SHH"
+]
+spif_codes = [
+    "510050.SHH",
+    "512100.SHH",
+    "588000.SHH",
+    "688256.SHH",
+    "600519.SHH",
+    "601288.SHH",
+    "300059.SZZ",
+    "300274.SZZ",
 ]
 
 # 合并所有以 daily_price 开头的 json，逐文件一行写入 merged.jsonl
@@ -71,7 +82,7 @@ with open(output_file, "w", encoding="utf-8") as fout:
     for fp in files:
         basename = os.path.basename(fp)
         # 仅当文件名包含任一纳指100成分符号时才写入
-        if not any(symbol in basename for symbol in sse_50_codes):
+        if not any(symbol in basename for symbol in spif_codes):
             continue
         with open(fp, "r", encoding="utf-8") as f:
             data = json.load(f)

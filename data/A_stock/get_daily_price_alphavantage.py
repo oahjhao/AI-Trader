@@ -60,11 +60,14 @@ sse_50_codes = [
     "600048.SHH"
 ]
 spif_codes = [
-    "510050.SHH",
-    "510500.SHH",
-    "512100.SHH",
-    "588000.SHH",
-    "159781.SHH",
+    # "510050.SHH",
+    # "512100.SHH",
+    # "588000.SHH",
+    # "688256.SHH",
+    # "600519.SHH",
+    # "601288.SHH",
+    "300059.SHZ",
+    "300274.SHZ",
 ]
 
 def filter_data(data: dict,after_date: str):
@@ -140,7 +143,7 @@ def get_daily_price(SYMBOL: str):
     with open(output_file, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
     
-    if SYMBOL == "000016.SHH":
+    if SYMBOL in ["000016.SHH","000906.SHH","881001.WII"]:
         # 对于 000016.SHH，也需要合并 Adaily_prices 文件
         adaily_file = f"./A_stock_data/Adaily_prices_{SYMBOL}.json"
         existing_adaily_data = load_existing_data(adaily_file)
@@ -150,10 +153,18 @@ def get_daily_price(SYMBOL: str):
             json.dump(adaily_data, f, ensure_ascii=False, indent=4)
         
         # 对于 index_daily_sse_50.json，也需要合并
-        index_file = "./index_daily_sse_50.json"
+        match SYMBOL:
+            case "000016.SHH":
+                index_file = "./index_daily_sse_50.json"
+            case "000906.SHH":
+                index_file = "./index_daily_000906.json"
+            case "881001.WII":
+                index_file = "./index_daily_881001.json"
+            case _:
+                index_file = ""
         existing_index_data = load_existing_data(index_file)
         index_data = data.copy()
-        index_data["Meta Data"]["2. Symbol"] = "000016.SH"
+        index_data["Meta Data"]["2. Symbol"] = SYMBOL
         index_data = merge_data(existing_index_data, index_data)
         
         with open(index_file, "w", encoding="utf-8") as f:
@@ -163,4 +174,5 @@ def get_daily_price(SYMBOL: str):
 if __name__ == "__main__":
     for symbol in spif_codes:
         get_daily_price(symbol)
-    get_daily_price("000016.SHH")
+    get_daily_price("000906.SHH")
+    # get_daily_price("000016.SHH")
