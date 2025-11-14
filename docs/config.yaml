@@ -7,9 +7,9 @@ markets:
     name: "A-Shares (SSE 50)"
     subtitle: "Track how different AI models perform in SSE 50 A-share stock trading"
     data_dir: "agent_data_astock"
-    benchmark_file: "A_stock/index_daily_sse_50.json"
-    benchmark_name: "SSE 50"
-    benchmark_display_name: "SSE 50 Index"
+    benchmark_file: "A_stock/index_daily_000906.json"
+    benchmark_name: "000906"
+    benchmark_display_name: "000906 Index"
     currency: "CNY"
     icon: "🇨🇳"
     price_data_type: "merged"  # merged.jsonl file
@@ -22,11 +22,11 @@ markets:
         icon: "./figs/deepseek.svg"
         color: "#ff006e"
         enabled: true
-      - folder: "gemini-2.5-flash"
-        display_name: "Gemini 2.5 Flash"
-        icon: "./figs/google.svg"
+      - folder: "DS_test_5_stocks_3_etf"
+        display_name: "DS_test_5_stocks_3_etf"
+        icon: "./figs/deepseek.svg"
         color: "#00d4ff"
-        enabled: false
+        enabled: true
       - folder: "qwen3-max"
         display_name: "Qwen3 Max"
         icon: "./figs/qwen.svg"

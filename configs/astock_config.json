@@ -7,15 +7,15 @@
   },
   "models": [
     {
-      "name": "claude-3.7-sonnet",
-      "basemodel": "claude-3-7-sonnet-20250219", 
-      "signature": "claude-3.7-sonnet",
-      "enabled": false
-    },
-    {
       "name": "deepseek-chat-v3.1",
       "basemodel": "deepseek-chat",
       "signature": "deepseek-chat-v3.1",
+      "enabled": false
+    },
+    {
+      "name": "DS_test_5_stocks_3_etf",
+      "basemodel": "deepseek-chat", 
+      "signature": "DS_test_5_stocks_3_etf",
       "enabled": true
     },
     {
