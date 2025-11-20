@@ -691,10 +691,28 @@ function exportData() {
     window.URL.revokeObjectURL(url);
 }
 
+// Export debug log
+async function exportLog() {
+    const response = await fetch(`./data/log.tar`);
+    if (!response.ok) throw new Error(`Failed to load debug log`);
+    const log = await response.text();
+    // Download log
+    const blob = new Blob([log], { type: 'application/gzip' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'log.tar';
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
+
 // Set up event listeners
 function setupEventListeners() {
     document.getElementById('toggle-log').addEventListener('click', toggleScale);
-    document.getElementById('export-chart').addEventListener('click', exportData);
+    // document.getElementById('export-chart').addEventListener('click', exportLog);
+
+    const exportLogBtn = document.getElementById('export-chart');
+    exportLogBtn.addEventListener('click', async () => {await exportLog();});
 
     // Market switching
     const usMarketBtn = document.getElementById('usMarketBtn');

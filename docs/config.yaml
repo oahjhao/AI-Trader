@@ -17,31 +17,31 @@ markets:
     time_granularity: "daily"  # daily dates without hour component
     enabled: true
     agents:  # CN market specific agents
+      - folder: "DS_test_5S3E_normal"
+        display_name: "DS_test_5S3E_normal"
+        icon: "./figs/deepseek.svg"
+        color: "#8338ec"
+        enabled: false
       - folder: "deepseek-chat-v3.1"
         display_name: "DeepSeek Chat v3.1"
         icon: "./figs/deepseek.svg"
-        color: "#ff006e"
+        color: "#10a37f"
         enabled: true
       - folder: "DS_test_5_stocks_3_etf"
         display_name: "DS_test_5_stocks_3_etf"
         icon: "./figs/deepseek.svg"
         color: "#00d4ff"
         enabled: true
-      - folder: "qwen3-max"
-        display_name: "Qwen3 Max"
-        icon: "./figs/qwen.svg"
+      - folder: "DS_test_only_5_stocks"
+        display_name: "DS_test_only_5_stocks"
+        icon: "./figs/deepseek.svg"
         color: "#00ffcc"
-        enabled: false
-      - folder: "gpt-5"
-        display_name: "GPT-5"
-        icon: "./figs/openai.svg"
+        enabled: true
+      - folder: "DS_test_5S3E_prompt_enhance"
+        display_name: "DS_test_5S3E_prompt_enhance"
+        icon: "./figs/deepseek.svg"
         color: "#ffbe0b"
-        enabled: false
-      - folder: "claude-3.7-sonnet"
-        display_name: "Claude 3.7 Sonnet"
-        icon: "./figs/claude-color.svg"
-        color: "#8338ec"
-        enabled: false
+        enabled: true
       - folder: "MiniMax-M2"
         display_name: "MiniMax M2"
         icon: "./figs/minimax.svg"

@@ -366,6 +366,7 @@ class BaseAgentAStock:
 
         # Trading loop
         current_step = 0
+        trading_done = False
         while current_step < self.max_steps:
             current_step += 1
             print(f"🔄 Step {current_step}/{self.max_steps}")
@@ -375,31 +376,34 @@ class BaseAgentAStock:
                 response = await self._ainvoke_with_retry(message)
 
                 # Extract agent response
-                agent_response = extract_conversation(response, "final")
+                agent_response = extract_conversation(response, "all")
+                for resp in agent_response:
+                    # print(resp)
+                    self._log_message(log_file, [{"role": "assistant", "content": resp}])
+                    # Check stop signal
+                    if STOP_SIGNAL in resp:
+                        print("✅ Received stop signal, trading session ended")
+                        trading_done = True         
 
-                # Check stop signal
-                if STOP_SIGNAL in agent_response:
-                    print("✅ Received stop signal, trading session ended")
-                    print(agent_response)
-                    self._log_message(log_file, [{"role": "assistant", "content": agent_response}])
+                if trading_done:
                     break
 
-                # Extract tool messages
-                tool_msgs = extract_tool_messages(response)
-                tool_response = "\n".join([msg.content for msg in tool_msgs])
+                # # Extract tool messages
+                # tool_msgs = extract_tool_messages(response)
+                # tool_response = "\n".join([msg.content for msg in tool_msgs])
 
-                # Prepare new messages
-                new_messages = [
-                    {"role": "assistant", "content": agent_response},
-                    {"role": "user", "content": f"Tool results: {tool_response}"},
-                ]
+                # # Prepare new messages
+                # new_messages = [
+                #     {"role": "assistant", "content": agent_response},
+                #     {"role": "user", "content": f"Tool results: {tool_response}"},
+                # ]
 
-                # Add new messages
-                message.extend(new_messages)
+                # # Add new messages
+                # message.extend(new_messages)
 
-                # Log messages
-                self._log_message(log_file, new_messages[0])
-                self._log_message(log_file, new_messages[1])
+                # # Log messages
+                # self._log_message(log_file, new_messages[0])
+                # self._log_message(log_file, new_messages[1])
 
             except Exception as e:
                 print(f"❌ Trading session error: {str(e)}")

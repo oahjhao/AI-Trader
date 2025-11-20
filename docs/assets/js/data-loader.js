@@ -598,16 +598,22 @@ class DataLoader {
     }
 
     // Get current holdings for an agent (latest position)
-    getCurrentHoldings(agentName) {
+    getCurrentHoldings(agentName, date) {
         const data = this.agentData[agentName];
+        
         if (!data || !data.positions || data.positions.length === 0) return null;
-
-        const latestPosition = data.positions[data.positions.length - 1];
+        let latestPosition = {};
+        for(let i = data.positions.length - 1; i > 0; i--){
+            if (data.positions[i].date == date){
+                latestPosition = data.positions[i];
+                break;
+            }
+        }
         return latestPosition && latestPosition.positions ? latestPosition.positions : null;
     }
 
     // Get trade history for an agent
-    getTradeHistory(agentName) {
+    getTradeHistory(agentName, date) {
         const data = this.agentData[agentName];
         if (!data) {
             console.log(`[getTradeHistory] No data for agent: ${agentName}`);
@@ -620,7 +626,7 @@ class DataLoader {
         console.log(`[getTradeHistory] Positions with this_action: ${allActions.length}`);
 
         const trades = data.positions
-            .filter(p => p.this_action && p.this_action.action !== 'no_trade')
+            .filter(p => p.this_action && p.this_action.action !== 'no_trade' && p.date == date)
             .map(p => ({
                 date: p.date,
                 action: p.this_action.action,

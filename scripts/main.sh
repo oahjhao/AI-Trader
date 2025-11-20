@@ -13,11 +13,11 @@ PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
 
 cd "$PROJECT_ROOT"
 
-echo "📊 Now getting and merging price data..."
-cd data
-python get_daily_price.py
-python merge_jsonl.py
-cd ..
+# echo "📊 Now getting and merging price data..."
+# cd data
+# # python get_daily_price.py
+# # python merge_jsonl.py
+# cd ..
 
 echo "🔧 Now starting MCP services..."
 cd agent_tools
@@ -28,12 +28,12 @@ cd ..
 sleep 2
 
 echo "🤖 Now starting the main trading agent..."
-python main.py configs/default_config.json
+python main.py configs/astock_config.json  # 运行A股配置
 
 echo "✅ AI-Trader stopped"
 
-echo "🔄 Starting web server..."
-cd docs
-python3 -m http.server 8888
+# echo "🔄 Starting web server..."
+# cd docs
+# python3 -m http.server 8888
 
-echo "✅ Web server started"
+# echo "✅ Web server started"

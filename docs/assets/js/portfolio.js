@@ -19,11 +19,18 @@ async function loadDataAndRefresh() {
         // Populate agent selector
         populateAgentSelector();
 
+        // Date selector
+        dateSelector();
+
         // Load first agent by default
         const firstAgent = Object.keys(allAgentsData)[0];
-        if (firstAgent) {
+        const assert = allAgentsData[Object.keys(allAgentsData)[0]].assetHistory;
+        const lastDate = assert[assert.length - 2].date;
+        if (firstAgent && lastDate) {
             currentAgent = firstAgent;
-            await loadAgentPortfolio(firstAgent);
+            currentDate = lastDate;
+            document.getElementById('dateSelect').value=lastDate
+            await loadAgentPortfolio(firstAgent, lastDate);
         }
 
     } catch (error) {
@@ -57,8 +64,25 @@ function populateAgentSelector() {
     });
 }
 
+// dateSelector dropdown
+function dateSelector() {
+    const select = document.getElementById('dateSelect');
+    select.innerHTML = '';
+
+    benchmarkName = dataLoader.getMarketConfig().benchmark_display_name;
+    
+    const benchAssetHistory = allAgentsData[benchmarkName].assetHistory;
+    Object.keys(benchAssetHistory).forEach(key => {
+        const option = document.createElement('option');
+        option.value = benchAssetHistory[key].date;
+        // Use text only for dropdown options (HTML select doesn't support images well)
+        option.textContent = benchAssetHistory[key].date;
+        select.appendChild(option);
+    });
+}
+
 // Load and display portfolio for selected agent
-async function loadAgentPortfolio(agentName) {
+async function loadAgentPortfolio(agentName, date) {
     showLoading();
 
     try {
@@ -66,16 +90,16 @@ async function loadAgentPortfolio(agentName) {
         const data = allAgentsData[agentName];
 
         // Update performance metrics
-        updateMetrics(data);
+        await updateMetrics(data, date);
 
         // Update holdings table
-        await updateHoldingsTable(agentName);
+        await updateHoldingsTable(agentName, date);
 
         // Update allocation chart
-        await updateAllocationChart(agentName);
+        await updateAllocationChart(agentName, date);
 
         // Update trade history
-        updateTradeHistory(agentName);
+        updateTradeHistory(agentName, date);
 
     } catch (error) {
         console.error('Error loading portfolio:', error);
@@ -85,12 +109,28 @@ async function loadAgentPortfolio(agentName) {
 }
 
 // Update performance metrics
-function updateMetrics(data) {
-    const totalAsset = data.currentValue;
-    const totalReturn = data.return;
-    const latestPosition = data.positions && data.positions.length > 0 ? data.positions[data.positions.length - 1] : null;
+async function updateMetrics(data, date) {
+    // const totalAsset = data.currentValue;
+    let id = data.assetHistory.length;
+    console.log('data.assetHistory.keys:', Object.keys(data.assetHistory[4]), id);
+    console.log('length:', data.assetHistory.length, id);
+    for(; id > 0; id--){
+        if(date == data.assetHistory[id]?.date){
+            break;
+        }
+    }
+    
+    const totalAsset = data.assetHistory[id]?.value;
+    const totalReturn = data.assetHistory.length > 0 ? (data.assetHistory[id]?.value - data.assetHistory[0]?.value)/data.assetHistory[0]?.value * 100 : 0;
+    const latestPosition = data.positions && data.positions.length > 0 ? data.positions[id] : null;
     const cashPosition = latestPosition && latestPosition.positions ? latestPosition.positions.CASH || 0 : 0;
-    const totalTrades = data.positions ? data.positions.filter(p => p.this_action).length : 0;
+    const totalTrades = data.positions ? data.positions.filter(p => p.this_action && p.date <= date).length : 0;
+
+    // const totalAsset = data.assetHistory[data.assetHistory.length - 1]?.value;
+    // const totalReturn = data.assetHistory.length > 0 ? (data.assetHistory[data.assetHistory.length - 1]?.value - data.assetHistory[0]?.value)/data.assetHistory[0]?.value * 100 : 0;
+    // const latestPosition = data.positions && data.positions.length > 0 ? data.positions[data.positions.length - 1] : null;
+    // const cashPosition = latestPosition && latestPosition.positions ? latestPosition.positions.CASH || 0 : 0;
+    // const totalTrades = data.positions ? data.positions.filter(p => p.this_action).length : 0;
 
     document.getElementById('totalAsset').textContent = dataLoader.formatCurrency(totalAsset);
     document.getElementById('totalReturn').textContent = dataLoader.formatPercent(totalReturn);
@@ -100,8 +140,8 @@ function updateMetrics(data) {
 }
 
 // Update holdings table
-async function updateHoldingsTable(agentName) {
-    const holdings = dataLoader.getCurrentHoldings(agentName);
+async function updateHoldingsTable(agentName, date) {
+    const holdings = dataLoader.getCurrentHoldings(agentName, date);
     const tableBody = document.getElementById('holdingsTableBody');
     tableBody.innerHTML = '';
 
@@ -109,13 +149,15 @@ async function updateHoldingsTable(agentName) {
         return;
     }
 
-    const data = allAgentsData[agentName];
-    if (!data || !data.assetHistory || data.assetHistory.length === 0) {
-        return;
-    }
+    // const data = allAgentsData[agentName];
+    // if (!data || !data.assetHistory || data.assetHistory.length === 0) {
+    //     return;
+    // }
 
-    const latestDate = data.assetHistory[data.assetHistory.length - 1].date;
-    const totalValue = data.currentValue;
+    // const latestDate = data.assetHistory[data.assetHistory.length - 1].date;
+    // const totalValue = data.currentValue;
+
+    let totalValue = holdings.CASH;
 
     // Get all stocks with non-zero holdings
     const stocks = Object.entries(holdings)
@@ -124,8 +166,9 @@ async function updateHoldingsTable(agentName) {
     // Sort by market value (descending)
     const holdingsData = await Promise.all(
         stocks.map(async ([symbol, shares]) => {
-            const price = await dataLoader.getClosingPrice(symbol, latestDate);
+            const price = await dataLoader.getClosingPrice(symbol, date);
             const marketValue = price ? shares * price : 0;
+            totalValue += marketValue;
             return { symbol, shares, price, marketValue };
         })
     );
@@ -173,12 +216,12 @@ async function updateHoldingsTable(agentName) {
 }
 
 // Update allocation chart (pie chart)
-async function updateAllocationChart(agentName) {
-    const holdings = dataLoader.getCurrentHoldings(agentName);
+async function updateAllocationChart(agentName, date) {
+    const holdings = dataLoader.getCurrentHoldings(agentName, date);
     if (!holdings) return;
 
-    const data = allAgentsData[agentName];
-    const latestDate = data.assetHistory[data.assetHistory.length - 1].date;
+    // const data = allAgentsData[agentName];
+    // const latestDate = data.assetHistory[data.assetHistory.length - 1].date;
 
     // Calculate market values
     const allocations = [];
@@ -189,7 +232,7 @@ async function updateAllocationChart(agentName) {
                 allocations.push({ label: 'CASH', value: shares });
             }
         } else if (shares > 0) {
-            const price = await dataLoader.getClosingPrice(symbol, latestDate);
+            const price = await dataLoader.getClosingPrice(symbol, date);
             if (price) {
                 allocations.push({ label: symbol, value: shares * price });
             }
@@ -266,8 +309,8 @@ async function updateAllocationChart(agentName) {
 }
 
 // Update trade history timeline
-function updateTradeHistory(agentName) {
-    const trades = dataLoader.getTradeHistory(agentName);
+function updateTradeHistory(agentName, date) {
+    const trades = dataLoader.getTradeHistory(agentName, date);
     const timeline = document.getElementById('tradeTimeline');
     timeline.innerHTML = '';
 
@@ -315,7 +358,12 @@ function updateTradeHistory(agentName) {
 // Set up event listeners
 function setupEventListeners() {
     document.getElementById('agentSelect').addEventListener('change', (e) => {
-        loadAgentPortfolio(e.target.value);
+        const date = document.getElementById('dateSelect').value
+        loadAgentPortfolio(e.target.value, date);
+    });
+    document.getElementById('dateSelect').addEventListener('change', (e) => {
+        const agentName = document.getElementById('agentSelect').value
+        loadAgentPortfolio(agentName, e.target.value);
     });
 
     // Market switching

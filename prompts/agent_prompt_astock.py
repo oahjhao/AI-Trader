@@ -27,6 +27,9 @@ from tools.price_tools import (all_sse_50_symbols,all_spif_symbols,
 
 STOP_SIGNAL = "<FINISH_SIGNAL>"
 
+# - 在做出决策之前，可以针对投资组合中各个股票所属板块其他股票的行情信息综合考虑，尽可能全面一些
+# - 在做出决策之前，加大连网搜索力度充分挖掘相关信息
+# - 针对每个目标及其所属板块进行充分的信息收集
 agent_system_prompt_astock = """
 你是一位A股基本面分析交易助手。
 

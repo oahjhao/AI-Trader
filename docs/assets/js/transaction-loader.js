@@ -191,10 +191,14 @@ class TransactionLoader {
 
     // Format currency
     formatCurrency(value) {
+        const currentMarket = window.dataLoader ? window.dataLoader.getMarket() : 'us';
+        const marketConfig = window.configLoader.getMarketConfig(currentMarket);
+        const currency = marketConfig ? marketConfig.currency : 'USD';
+        const locale = currentMarket === 'us' ? 'en-US' : 'zh-CN';
         if (value === null || value === undefined) return 'N/A';
-        return new Intl.NumberFormat('en-US', {
+        return new Intl.NumberFormat(locale, {
             style: 'currency',
-            currency: 'USD',
+            currency: currency,
             minimumFractionDigits: 0,
             maximumFractionDigits: 0
         }).format(value);

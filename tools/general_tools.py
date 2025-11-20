@@ -95,10 +95,25 @@ def extract_conversation(conversation: dict, output_type: str):
         return current
 
     messages = get_field(conversation, "messages", []) or []
+    # print(messages)
 
     if output_type == "all":
-        return messages
+        # return messages
+        response = []
+        for msg in messages:
+            content = get_field(msg, "content")
+            has_tool_call_id = get_field(msg, "tool_call_id")
+            tool_name = get_field(msg, "name")
+            model_name = get_nested(msg, ["response_metadata", "model_name"])
 
+            if isinstance(model_name, str) and content is not None and isinstance(content, str) and content.strip():
+                response += [f"[AI: {model_name}]\n{content}\n\n"]
+            
+            if has_tool_call_id and isinstance(tool_name, str) and content is not None and isinstance(content, str) and content.strip():
+                if tool_name not in ["add", "multiply"]:
+                    response += [f"[Tool: {tool_name}]\n{content}\n\n"]
+        return response
+                
     if output_type == "final":
         # Prefer the last message with finish_reason == 'stop' and non-empty content.
         for msg in reversed(messages):
