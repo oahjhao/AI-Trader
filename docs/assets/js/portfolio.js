@@ -25,7 +25,7 @@ async function loadDataAndRefresh() {
         // Load first agent by default
         const firstAgent = Object.keys(allAgentsData)[0];
         const assert = allAgentsData[Object.keys(allAgentsData)[0]].assetHistory;
-        const lastDate = assert[assert.length - 2].date;
+        const lastDate = assert[assert.length - 1].date;
         if (firstAgent && lastDate) {
             currentAgent = firstAgent;
             currentDate = lastDate;
@@ -99,7 +99,7 @@ async function loadAgentPortfolio(agentName, date) {
         await updateAllocationChart(agentName, date);
 
         // Update trade history
-        updateTradeHistory(agentName, date);
+        await updateTransactions(agentName, date);
 
     } catch (error) {
         console.error('Error loading portfolio:', error);
@@ -112,8 +112,7 @@ async function loadAgentPortfolio(agentName, date) {
 async function updateMetrics(data, date) {
     // const totalAsset = data.currentValue;
     let id = data.assetHistory.length;
-    console.log('data.assetHistory.keys:', Object.keys(data.assetHistory[4]), id);
-    console.log('length:', data.assetHistory.length, id);
+
     for(; id > 0; id--){
         if(date == data.assetHistory[id]?.date){
             break;
@@ -353,6 +352,92 @@ function updateTradeHistory(agentName, date) {
 
         timeline.appendChild(tradeItem);
     });
+}
+
+function extractWithFollowingText(text) {
+    const lines = text.split('\n');
+    const results = [];
+    let currentTag = null;
+    let buffer = '';
+
+    for (const line of lines) {
+        const match = line.match(/^\[([^:\]]+):\s*([^\]]+)\]\s*$/);
+        
+        if (match) {
+            // 遇到新标记，保存上一个
+            if (currentTag) {
+                results.push({
+                    str1: currentTag.str1,
+                    str2: currentTag.str2,
+                    str3: buffer.trim()
+                });
+                buffer = '';
+            }
+            currentTag = {
+                str1: match[1].trim(),
+                str2: match[2].trim()
+            };
+        } else if (currentTag) {
+            // 累积后续文本
+            buffer += line + '\n';
+        }
+    }
+
+    // 保存最后一个
+    if (currentTag) {
+        results.push({
+            str1: currentTag.str1,
+            str2: currentTag.str2,
+            str3: buffer.trim()
+        });
+    }
+
+    return results;
+}
+
+// Update Transactions
+async function updateTransactions(agentName, date) {
+    const timeline = document.getElementById('tradeTimeline');
+    timeline.innerHTML = '';
+
+    // Load agent's thinking
+    const thinking = await window.transactionLoader.loadAgentThinking(agentName, date, dataLoader.getMarket());
+    const displayName = window.configLoader.getDisplayName(agentName, dataLoader.getMarket());
+    const icon = window.configLoader.getIcon(agentName, dataLoader.getMarket());
+
+    const lines = extractWithFollowingText(thinking);
+
+    for (const line of lines) {
+        const cardEl = document.createElement('div');
+        cardEl.className = 'trans-card';
+        console.log('line:', line);
+
+        // Build card HTML - only include reasoning section if thinking is available
+        let cardHTML = `
+            <div class="action-header">
+                <div class="action-agent-icon">
+                    <img src="${icon}" alt="${displayName}">
+                </div>
+                <div class="action-meta">
+                    <div class="action-agent-name">${displayName}</div>
+                    <div class="action-details">
+                        <span class="action-type sell">${line.str1}</span>
+                        <span class="action-symbol">${line.str2}</span>
+                    </div>
+                </div>
+                <div class="action-timestamp">${date}</div>
+            </div>
+            <div class="action-body">
+                <div class="action-thinking-label">
+                    <span class="thinking-icon">🧠</span>
+                    Agent Reasoning
+                </div>
+                <div class="action-thinking">${line.str3}</div>
+            </div>
+        `;
+        cardEl.innerHTML = cardHTML;
+        timeline.appendChild(cardEl);   
+    }
 }
 
 // Set up event listeners

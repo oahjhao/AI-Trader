@@ -624,7 +624,7 @@ class DataLoader {
 
         const allActions = data.positions.filter(p => p.this_action);
         console.log(`[getTradeHistory] Positions with this_action: ${allActions.length}`);
-
+        console.log(`[getTradeHistory] Positions keys: ${allActions.length}`);
         const trades = data.positions
             .filter(p => p.this_action && p.this_action.action !== 'no_trade' && p.date == date)
             .map(p => ({

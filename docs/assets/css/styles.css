@@ -1014,7 +1014,7 @@ body {
 /* Leaderboard and Action Flow Section */
 .insights-section {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    /* grid-template-columns: 1fr 1fr; */
     gap: 2rem;
     padding: 2rem;
     margin-top: 2rem; /* Add space above to separate from chart */

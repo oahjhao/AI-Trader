@@ -108,7 +108,7 @@ async function loadDataAndRefresh() {
 
         // Create leaderboard and action flow
         await createLeaderboard();
-        await createActionFlow();
+        // await createActionFlow();
 
     } catch (error) {
         console.error('Error loading data:', error);
