@@ -8,8 +8,8 @@ markets:
     subtitle: "Track how different AI models perform in SSE 50 A-share stock trading"
     data_dir: "agent_data_astock"
     benchmark_file: "A_stock/index_daily_000906.json"
-    benchmark_name: "000906"
-    benchmark_display_name: "000906 Index"
+    benchmark_name: "000906 SSE"
+    benchmark_display_name: "000906 SSE"
     currency: "CNY"
     icon: "🇨🇳"
     price_data_type: "merged"  # merged.jsonl file
@@ -17,36 +17,31 @@ markets:
     time_granularity: "daily"  # daily dates without hour component
     enabled: true
     agents:  # CN market specific agents
-      - folder: "DS_test_5S3E_normal"
-        display_name: "DS_test_5S3E_normal"
+      - folder: "DS_5S3E_normal"
+        display_name: "DS_5S3E_normal"
         icon: "./figs/deepseek.svg"
         color: "#8338ec"
-        enabled: false
-      - folder: "deepseek-chat-v3.1"
-        display_name: "DeepSeek Chat v3.1"
+        enabled: true
+      - folder: "DS_5S3E_20d"
+        display_name: "DS_5S3E_20d"
         icon: "./figs/deepseek.svg"
         color: "#10a37f"
         enabled: true
-      - folder: "DS_test_5_stocks_3_etf"
-        display_name: "DS_test_5_stocks_3_etf"
+      - folder: "DS_5S3E_5d"
+        display_name: "DS_5S3E_5d"
         icon: "./figs/deepseek.svg"
         color: "#00d4ff"
         enabled: true
-      - folder: "DS_test_only_5_stocks"
-        display_name: "DS_test_only_5_stocks"
+      - folder: "DS_5S3E_5d20d"
+        display_name: "DS_5S3E_5d20d"
         icon: "./figs/deepseek.svg"
         color: "#00ffcc"
         enabled: true
-      - folder: "DS_test_5S3E_prompt_enhance"
-        display_name: "DS_test_5S3E_prompt_enhance"
+      - folder: "DS_5S3E_enhance"
+        display_name: "DS_5S3E_enhance"
         icon: "./figs/deepseek.svg"
         color: "#ffbe0b"
         enabled: true
-      - folder: "MiniMax-M2"
-        display_name: "MiniMax M2"
-        icon: "./figs/minimax.svg"
-        color: "#3a86ff"
-        enabled: false
 
   us:
     name: "US Market (Nasdaq-100)"

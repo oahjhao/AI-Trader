@@ -349,19 +349,22 @@ class BaseAgentAStock:
 
         # Set up logging
         log_file = self._setup_logging(today_date)
+        prompt=get_agent_system_prompt_astock(today_date, self.signature, self.stock_symbols)
 
         # Update system prompt - 使用A股专用提示词
         self.agent = create_agent(
             self.model,
             tools=self.tools,
-            system_prompt=get_agent_system_prompt_astock(today_date, self.signature, self.stock_symbols),
+            system_prompt=prompt,
         )
 
         # Initial user query
+        init_prompt = [{"role": "assistant", "content": f"[AI: deepseek-chat]初始提示词:{prompt}"}]
         user_query = [{"role": "user", "content": f"请分析并更新今日（{today_date}）的持仓。"}]
         message = user_query.copy()
 
         # Log initial message
+        self._log_message(log_file, init_prompt)
         self._log_message(log_file, user_query)
 
         # Trading loop

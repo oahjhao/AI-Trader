@@ -7,46 +7,34 @@
   },
   "models": [
     {
-      "name": "DS_test_5S3E_normal",
+      "name": "DS_5S3E_normal",
       "basemodel": "deepseek-chat",
-      "signature": "DS_test_5S3E_normal",
+      "signature": "DS_5S3E_normal",
       "enabled": true
     },
     {
-      "name": "deepseek-chat-v3.1",
+      "name": "DS_5S3E_20d",
       "basemodel": "deepseek-chat",
-      "signature": "deepseek-chat-v3.1",
+      "signature": "DS_5S3E_20d",
       "enabled": true
     },
     {
-      "name": "DS_test_5_stocks_3_etf",
+      "name": "DS_5S3E_5d",
       "basemodel": "deepseek-chat", 
-      "signature": "DS_test_5_stocks_3_etf",
+      "signature": "DS_5S3E_5d",
       "enabled": true
     },
     {
-      "name": "DS_test_only_5_stocks",
+      "name": "DS_5S3E_5d20d",
       "basemodel": "deepseek-chat",
-      "signature": "DS_test_only_5_stocks",
+      "signature": "DS_5S3E_5d20d",
       "enabled": true
     },
     {
-      "name": "DS_test_5S3E_prompt_enhance",
+      "name": "DS_5S3E_enhance",
       "basemodel": "deepseek-chat",
-      "signature": "DS_test_5S3E_prompt_enhance",
+      "signature": "DS_5S3E_enhance",
       "enabled": true
-    },
-    {
-      "name": "gpt-4.1",
-      "basemodel": "openai/gpt-4.1",
-      "signature": "gpt-4.1",
-      "enabled": false
-    },
-    {
-      "name": "MiniMax-M2",
-      "basemodel": "minimax/minimax-m2",
-      "signature": "MiniMax-M2",
-      "enabled": false
     }
   ],
   "agent_config": {

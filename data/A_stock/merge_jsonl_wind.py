@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any, Dict
 
 import pandas as pd
-
+from datetime import datetime
 
 def convert_a_stock_to_jsonl(
     csv_path: str = "daily_prices_group_wind.csv",
@@ -65,15 +65,16 @@ def convert_a_stock_to_jsonl(
             group_df = group_df.sort_values("trade_date", ascending=True)
 
             # Get latest date for Meta Data
-            latest_date = str(group_df["trade_date"].max())
-            latest_date_formatted = f"{latest_date[:4]}-{latest_date[4:6]}-{latest_date[6:]}"
-
+            latest_date = max(group_df["trade_date"], key=lambda x: datetime.strptime(x, "%Y/%m/%d"))
+            # print("latest_date:", latest_date)
+            # latest_date_formatted = f"{latest_date[:4]}-{latest_date[4:6]}-{latest_date[6:]}"
+            latest_date_formatted = datetime.strptime(latest_date, "%Y/%m/%d").strftime("%Y-%m-%d")
             # Build Time Series (Daily) data
             time_series = {}
 
             for idx, row in group_df.iterrows():
                 date_str = str(row["trade_date"])
-                date_formatted = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:]}"
+                date_formatted = datetime.strptime(date_str, "%Y/%m/%d").strftime("%Y-%m-%d")
 
                 # For the latest date, only include buy price (to prevent future information leakage)
                 if date_str == latest_date:
@@ -87,6 +88,12 @@ def convert_a_stock_to_jsonl(
                         "5. volume": (
                             str(int(row["vol"] * 100)) if pd.notna(row["vol"]) else "0"
                         ),  # Convert to shares (vol is in 手, 1手=100股)
+                        "6. sum": str(row["sum"]),
+                        "7. diff": str(row["diff"]),
+                        "8. chg": str(row["chg"]),
+                        "9. pft": str(row["pft"]),
+                        "10. diff_5d": str(row["diff_5d"]),
+                        "11. diff_20d": str(row["diff_20d"]),
                     }
 
             # Get stock name from mapping

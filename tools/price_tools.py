@@ -637,6 +637,75 @@ def get_yesterday_open_and_close_price(
 
     return buy_results, sell_results
 
+def get_yesterday_diff(
+    today_date: str, symbols: List[str], merged_path: Optional[str] = None, market: str = "us"
+) -> Tuple[Dict[str, Optional[float]], Dict[str, Optional[float]]]:
+    """从 data/merged.jsonl 中读取指定日期与股票的昨日买入价和卖出价。
+
+    Args:
+        today_date: 日期字符串，格式 YYYY-MM-DD，代表今天日期。
+        symbols: 需要查询的股票代码列表。
+        merged_path: 可选，自定义 merged.jsonl 路径；默认读取项目根目录下 data/merged.jsonl。
+        market: 市场类型，"us" 为美股，"cn" 为A股
+
+    Returns:
+        (买入价字典, 卖出价字典) 的元组；若未找到对应日期或标的，则值为 None。
+    """
+    wanted = set(symbols)
+    diff_5d_result: Dict[str, Optional[float]] = {}
+    diff_20d_result: Dict[str, Optional[float]] = {}
+
+    if merged_path is None:
+        merged_file = get_merged_file_path(market)
+    else:
+        merged_file = Path(merged_path)
+
+    if not merged_file.exists():
+        return diff_5d_result, diff_20d_result
+
+    yesterday_date = get_yesterday_date(today_date, merged_path=merged_path, market=market)
+
+    with merged_file.open("r", encoding="utf-8") as f:
+        for line in f:
+            if not line.strip():
+                continue
+            try:
+                doc = json.loads(line)
+            except Exception:
+                continue
+            meta = doc.get("Meta Data", {}) if isinstance(doc, dict) else {}
+            sym = meta.get("2. Symbol")
+            if sym not in wanted:
+                continue
+            # 查找所有以 "Time Series" 开头的键
+            series = None
+            for key, value in doc.items():
+                if key.startswith("Time Series"):
+                    series = value
+                    break
+            if not isinstance(series, dict):
+                continue
+
+            # 尝试获取昨日买入价和卖出价
+            bar = series.get(yesterday_date)
+            if isinstance(bar, dict):
+                diff_5d_val = bar.get("10. diff_5d")  # 买入价字段
+                diff_20d_val = bar.get("11. diff_20d")  # 卖出价字段
+
+                try:
+                    diff_5d_price = float(diff_5d_val) if diff_5d_val is not None else None
+                    diff_20d_price = float(diff_20d_val) if diff_20d_val is not None else None
+                    diff_5d_result[f"{sym}_price"] = diff_5d_price
+                    diff_20d_result[f"{sym}_price"] = diff_20d_price
+                except Exception:
+                    diff_5d_result[f"{sym}_price"] = None
+                    diff_20d_result[f"{sym}_price"] = None
+            else:
+                diff_5d_result[f'{sym}_price'] = None
+                diff_20d_result[f'{sym}_price'] = None
+
+    return diff_5d_result, diff_20d_result
+
 
 def get_yesterday_profit(
     today_date: str,

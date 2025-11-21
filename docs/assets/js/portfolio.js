@@ -111,9 +111,9 @@ async function loadAgentPortfolio(agentName, date) {
 // Update performance metrics
 async function updateMetrics(data, date) {
     // const totalAsset = data.currentValue;
-    let id = data.assetHistory.length;
+    let id = 0;
 
-    for(; id > 0; id--){
+    for(; id < data.assetHistory.length - 1; id++){
         if(date == data.assetHistory[id]?.date){
             break;
         }
