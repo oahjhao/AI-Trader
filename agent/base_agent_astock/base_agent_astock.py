@@ -359,7 +359,7 @@ class BaseAgentAStock:
         )
 
         # Initial user query
-        init_prompt = [{"role": "assistant", "content": f"[AI: deepseek-chat]初始提示词:{prompt}"}]
+        init_prompt = [{"role": "assistant", "content": f"[AI: deepseek-chat]\n初始提示词:{prompt}"}]
         user_query = [{"role": "user", "content": f"请分析并更新今日（{today_date}）的持仓。"}]
         message = user_query.copy()
 
