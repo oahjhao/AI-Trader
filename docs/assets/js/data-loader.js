@@ -51,8 +51,10 @@ class DataLoader {
                     console.log(`Checking agent: ${agentConfig.folder} in ${agentDataDir}`);
                     const response = await fetch(`${this.baseDataPath}/${agentDataDir}/${agentConfig.folder}/position/position.jsonl`);
                     if (response.ok) {
-                        agents.push(agentConfig.folder);
-                        console.log(`Added agent: ${agentConfig.folder}`);
+                        if(agentConfig.enabled){
+                            agents.push(agentConfig.folder);
+                            console.log(`Added agent: ${agentConfig.folder}`);
+                        }
                     } else {
                         console.log(`Agent ${agentConfig.folder} not found (status: ${response.status})`);
                     }
@@ -92,6 +94,30 @@ class DataLoader {
         } catch (error) {
             console.error(`Error loading positions for ${agentName}:`, error);
             return [];
+        }
+    }
+
+    // Load all A-share stock names from merged.jsonl
+    async getSymbolName(symbol) {
+        try {
+            const response = await fetch(`${this.baseDataPath}/A_stock/merged.jsonl`);
+            if (!response.ok) throw new Error('Failed to load A-share names');
+
+            const text = await response.text();
+            const lines = text.trim().split('\n');
+
+            for (const line of lines) {
+                if (!line.trim()) continue;
+                const data = JSON.parse(line);
+                if(symbol === data['Meta Data']['2. Symbol']){
+                    const name = data['Meta Data']['2.1. Name'];
+                    console.log(`getSymbolName for ${symbol}`);
+                    return name;
+                }
+            }
+        } catch (error) {
+            console.error('Error getSymbolName:', error);
+            return {};
         }
     }
 

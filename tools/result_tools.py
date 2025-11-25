@@ -174,7 +174,7 @@ def get_daily_portfolio_values(
                 continue
 
     # Select stock symbols based on market
-    stock_symbols = all_spif_symbols if market == "cn" else all_nasdaq_100_symbols
+    stock_symbols = all_sse_50_symbols if market == "cn" else all_nasdaq_100_symbols
 
     # Calculate daily portfolio values
     daily_values = {}

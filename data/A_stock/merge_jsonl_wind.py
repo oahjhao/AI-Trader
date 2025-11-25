@@ -7,7 +7,7 @@ import pandas as pd
 from datetime import datetime
 
 def convert_a_stock_to_jsonl(
-    csv_path: str = "daily_prices_group_wind.csv",
+    csv_path: str = "daily_prices_group_50S_wind.csv",
     output_path: str = "merged.jsonl",
     stock_name_csv: str = "sse_50_weight.csv",
 ) -> None:
@@ -62,22 +62,25 @@ def convert_a_stock_to_jsonl(
     with open(output_path, "w", encoding="utf-8") as fout:
         for ts_code, group_df in grouped:
             # Sort by date ascending
-            group_df = group_df.sort_values("trade_date", ascending=True)
+            # group_df = group_df.sort_values("trade_date", ascending=True)
 
             # Get latest date for Meta Data
             latest_date = max(group_df["trade_date"], key=lambda x: datetime.strptime(x, "%Y/%m/%d"))
             # print("latest_date:", latest_date)
             # latest_date_formatted = f"{latest_date[:4]}-{latest_date[4:6]}-{latest_date[6:]}"
             latest_date_formatted = datetime.strptime(latest_date, "%Y/%m/%d").strftime("%Y-%m-%d")
+            # print("latest_date/latest_date_formatted:", latest_date, latest_date_formatted)
+
             # Build Time Series (Daily) data
             time_series = {}
 
             for idx, row in group_df.iterrows():
                 date_str = str(row["trade_date"])
                 date_formatted = datetime.strptime(date_str, "%Y/%m/%d").strftime("%Y-%m-%d")
+                # print("date_str_formatted:", date_str, date_formatted)
 
                 # For the latest date, only include buy price (to prevent future information leakage)
-                if date_str == latest_date:
+                if date_formatted == latest_date_formatted:
                     time_series[date_formatted] = {"1. buy price": str(row["open"])}
                 else:
                     time_series[date_formatted] = {

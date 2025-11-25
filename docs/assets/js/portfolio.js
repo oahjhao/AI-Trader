@@ -166,9 +166,10 @@ async function updateHoldingsTable(agentName, date) {
     const holdingsData = await Promise.all(
         stocks.map(async ([symbol, shares]) => {
             const price = await dataLoader.getClosingPrice(symbol, date);
+            const name = await dataLoader.getSymbolName(symbol);
             const marketValue = price ? shares * price : 0;
             totalValue += marketValue;
-            return { symbol, shares, price, marketValue };
+            return { symbol, name, shares, price, marketValue };
         })
     );
 
@@ -180,6 +181,7 @@ async function updateHoldingsTable(agentName, date) {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td class="symbol">${holding.symbol}</td>
+            <td class="symbol">${holding.name}</td>
             <td>${holding.shares}</td>
             <td>${dataLoader.formatCurrency(holding.price || 0)}</td>
             <td>${dataLoader.formatCurrency(holding.marketValue)}</td>
@@ -232,8 +234,9 @@ async function updateAllocationChart(agentName, date) {
             }
         } else if (shares > 0) {
             const price = await dataLoader.getClosingPrice(symbol, date);
+            const name = await dataLoader.getSymbolName(symbol);
             if (price) {
-                allocations.push({ label: symbol, value: shares * price });
+                allocations.push({ label: name, value: shares * price });
             }
         }
     }

@@ -7,34 +7,46 @@
   },
   "models": [
     {
-      "name": "DS_5S3E_normal",
-      "basemodel": "deepseek-chat",
-      "signature": "DS_5S3E_normal",
-      "enabled": true
-    },
-    {
-      "name": "DS_5S3E_20d",
-      "basemodel": "deepseek-chat",
-      "signature": "DS_5S3E_20d",
-      "enabled": true
-    },
-    {
-      "name": "DS_5S3E_5d",
-      "basemodel": "deepseek-chat", 
-      "signature": "DS_5S3E_5d",
-      "enabled": true
-    },
-    {
       "name": "DS_5S3E_5d20d",
       "basemodel": "deepseek-chat",
       "signature": "DS_5S3E_5d20d",
       "enabled": true
     },
     {
+      "name": "DS_5S3E_5d",
+      "basemodel": "deepseek-chat", 
+      "signature": "DS_5S3E_5d",
+      "enabled": false
+    },
+    {
+      "name": "DS_5S3E_20d",
+      "basemodel": "deepseek-chat",
+      "signature": "DS_5S3E_20d",
+      "enabled": false
+    },
+    {
       "name": "DS_5S3E_enhance",
       "basemodel": "deepseek-chat",
       "signature": "DS_5S3E_enhance",
-      "enabled": true
+      "enabled": false
+    },
+    {
+      "name": "DS_5S3E_normal",
+      "basemodel": "deepseek-chat",
+      "signature": "DS_5S3E_normal",
+      "enabled": false
+    },
+    {
+      "name": "DS_5S_5d20d",
+      "basemodel": "deepseek-chat",
+      "signature": "DS_5S_5d20d",
+      "enabled": false
+    },
+    {
+      "name": "DS_50S10p_5d20d",
+      "basemodel": "deepseek-chat",
+      "signature": "DS_50S10p_5d20d",
+      "enabled": false
     }
   ],
   "agent_config": {
