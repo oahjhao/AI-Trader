@@ -1,0 +1,5 @@
+{"date": "2024-11-11", "id": 0, "positions": {"300274.SZ": 0, "CASH": 1000000.0}}
+{"date": "2024-11-12", "id": 1, "this_action": {"action": "buy", "symbol": "300274.SZ", "amount": 100}, "positions": {"300274.SZ": 100, "CASH": 914916.55}}
+{"date": "2024-11-13", "id": 2, "this_action": {"action": "no_trade", "symbol": "", "amount": 0}, "positions": {"300274.SZ": 100, "CASH": 914916.55}}
+{"date": "2024-11-14", "id": 3, "this_action": {"action": "buy", "symbol": "300274.SZ", "amount": 200}, "positions": {"300274.SZ": 300, "CASH": 741601.9700000001}}
+{"date": "2024-11-15", "id": 4, "this_action": {"action": "no_trade", "symbol": "", "amount": 0}, "positions": {"300274.SZ": 300, "CASH": 741601.9700000001}}

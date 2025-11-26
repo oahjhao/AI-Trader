@@ -131,7 +131,8 @@ def get_price_local_daily(symbol: str, date: str) -> Dict[str, Any]:
             series = doc.get("Time Series (Daily)", {})
             day = series.get(date)
             if day is None:
-                sample_dates = sorted(series.keys(), reverse=True)[:5]
+                # sample_dates = sorted(series.keys(), reverse=True)[:5]
+                sample_dates = sorted([d for d in series.keys() if d < day], reverse=True)[:5]
                 return {
                     "error": f"Data not found for date {date}. Please verify the date exists in data. Sample available dates: {sample_dates}",
                     "symbol": symbol,

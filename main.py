@@ -239,7 +239,7 @@ async def main(config_path=None):
         if agent_type == "BaseAgentCrypto":
             stock_symbols = None  # Crypto agent uses its own crypto_symbols
         elif agent_type == "BaseAgentAStock":
-            stock_symbols = all_sse_50_symbols
+            stock_symbols = all_spif_symbols
         elif market == "cn":
             stock_symbols = all_sse_50_symbols
         else:

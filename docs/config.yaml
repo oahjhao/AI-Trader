@@ -17,11 +17,21 @@ markets:
     time_granularity: "daily"  # daily dates without hour component
     enabled: true
     agents:  # CN market specific agents
+      - folder: "DS_1S_5d20d"
+        display_name: "DS_1S_5d20d"
+        icon: "./figs/deepseek.svg"
+        color: "#00ffcc"
+        enabled: true
+      - folder: "DS_50S5p_5d20d"
+        display_name: "DS_50S5p_5d20d"
+        icon: "./figs/deepseek.svg"
+        color: "#ff006e"
+        enabled: true
       - folder: "DS_5S3E_5d20d"
         display_name: "DS_5S3E_5d20d"
         icon: "./figs/deepseek.svg"
         color: "#00ffcc"
-        enabled: true
+        enabled: false
       - folder: "DS_5S3E_5d"
         display_name: "DS_5S3E_5d"
         icon: "./figs/deepseek.svg"
@@ -42,16 +52,7 @@ markets:
         icon: "./figs/deepseek.svg"
         color: "#8338ec"
         enabled: false
-      - folder: "DS_5S_5d20d"
-        display_name: "DS_5S_5d20d"
-        icon: "./figs/deepseek.svg"
-        color: "#3a86ff"
-        enabled: false
-      - folder: "DS_50S10p_5d20d"
-        display_name: "DS_50S10p_5d20d"
-        icon: "./figs/deepseek.svg"
-        color: "#ff006e"
-        enabled: false
+      
 
   us:
     name: "US Market (Nasdaq-100)"

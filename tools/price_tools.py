@@ -200,13 +200,13 @@ all_sse_50_symbols = [
 ]
 
 all_spif_symbols = [
-    "510050.SH",
-    "512100.SH",
-    "588000.SH",
-    "688256.SH",
-    "600519.SH",
-    "601288.SH",
-    "300059.SZ",
+    # "510050.SH",
+    # "512100.SH",
+    # "588000.SH",
+    # "688256.SH",
+    # "600519.SH",
+    # "601288.SH",
+    # "300059.SZ",
     "300274.SZ",
 ]
 
@@ -652,6 +652,7 @@ def get_yesterday_diff(
         (买入价字典, 卖出价字典) 的元组；若未找到对应日期或标的，则值为 None。
     """
     wanted = set(symbols)
+    diff_result: Dict[str, Optional[float]] = {}
     diff_5d_result: Dict[str, Optional[float]] = {}
     diff_20d_result: Dict[str, Optional[float]] = {}
 
@@ -661,7 +662,7 @@ def get_yesterday_diff(
         merged_file = Path(merged_path)
 
     if not merged_file.exists():
-        return diff_5d_result, diff_20d_result
+        return diff_result, diff_5d_result, diff_20d_result
 
     yesterday_date = get_yesterday_date(today_date, merged_path=merged_path, market=market)
 
@@ -689,22 +690,27 @@ def get_yesterday_diff(
             # 尝试获取昨日买入价和卖出价
             bar = series.get(yesterday_date)
             if isinstance(bar, dict):
-                diff_5d_val = bar.get("10. diff_5d")  # 买入价字段
-                diff_20d_val = bar.get("11. diff_20d")  # 卖出价字段
+                diff_val = bar.get("7. diff")
+                diff_5d_val = bar.get("10. diff_5d") 
+                diff_20d_val = bar.get("11. diff_20d") 
 
                 try:
-                    diff_5d_price = float(diff_5d_val) if diff_5d_val is not None else None
-                    diff_20d_price = float(diff_20d_val) if diff_20d_val is not None else None
-                    diff_5d_result[f"{sym}_price"] = diff_5d_price
-                    diff_20d_result[f"{sym}_price"] = diff_20d_price
+                    diff_p = float(diff_val) if diff_val is not None else None
+                    diff_5d_p = float(diff_5d_val) if diff_5d_val is not None else None
+                    diff_20d_p = float(diff_20d_val) if diff_20d_val is not None else None
+                    diff_result[f"{sym}_p"] = diff_p
+                    diff_5d_result[f"{sym}_p"] = diff_5d_p
+                    diff_20d_result[f"{sym}_p"] = diff_20d_p
                 except Exception:
-                    diff_5d_result[f"{sym}_price"] = None
-                    diff_20d_result[f"{sym}_price"] = None
+                    diff_result[f"{sym}_p"] = None
+                    diff_5d_result[f"{sym}_p"] = None
+                    diff_20d_result[f"{sym}_p"] = None
             else:
-                diff_5d_result[f'{sym}_price'] = None
-                diff_20d_result[f'{sym}_price'] = None
+                diff_result[f"{sym}_p"] = None
+                diff_5d_result[f"{sym}_p"] = None
+                diff_20d_result[f"{sym}_p"] = None
 
-    return diff_5d_result, diff_20d_result
+    return diff_result, diff_5d_result, diff_20d_result
 
 
 def get_yesterday_profit(

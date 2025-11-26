@@ -7,10 +7,22 @@
   },
   "models": [
     {
+      "name": "DS_1S_5d20d",
+      "basemodel": "deepseek-chat",
+      "signature": "DS_1S_5d20d",
+      "enabled": true
+    },
+    {
+      "name": "DS_50S5p_5d20d",
+      "basemodel": "deepseek-chat",
+      "signature": "DS_50S5p_5d20d",
+      "enabled": true
+    },
+    {
       "name": "DS_5S3E_5d20d",
       "basemodel": "deepseek-chat",
       "signature": "DS_5S3E_5d20d",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "DS_5S3E_5d",
@@ -34,18 +46,6 @@
       "name": "DS_5S3E_normal",
       "basemodel": "deepseek-chat",
       "signature": "DS_5S3E_normal",
-      "enabled": false
-    },
-    {
-      "name": "DS_5S_5d20d",
-      "basemodel": "deepseek-chat",
-      "signature": "DS_5S_5d20d",
-      "enabled": false
-    },
-    {
-      "name": "DS_50S10p_5d20d",
-      "basemodel": "deepseek-chat",
-      "signature": "DS_50S10p_5d20d",
       "enabled": false
     }
   ],

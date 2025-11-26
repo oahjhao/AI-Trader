@@ -1,0 +1,412 @@
+🌐 Starting Web UI server...
+
+Press Ctrl+C to stop the server
+
+127.0.0.1 - - [25/Nov/2025 08:46:42] "GET / HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 09:10:53] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 09:10:53] "GET /.env HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 09:10:54] code 501, message Unsupported method ('POST')
+127.0.0.1 - - [25/Nov/2025 09:10:54] "POST / HTTP/1.0" 501 -
+127.0.0.1 - - [25/Nov/2025 09:21:11] "GET / HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 09:22:56] "GET / HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 09:26:47] "GET / HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 10:16:20] "GET /portfolio.html HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 10:16:20] "GET /assets/js/portfolio.js?v=7.0 HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 10:16:20] "GET /assets/js/data-loader.js?v=7.0 HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 10:16:20] "GET /config.yaml HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 10:16:20] "GET /data/agent_data_astock/DS_50S5p_5d20d/position/position.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 10:16:21] "GET /data/A_stock/merged.jsonl HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 10:20:12] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 10:20:12] "GET /data/agent_data_astock/DS_50S5p_5d20d/log/2025-11-10/log.jsonl HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 10:20:17] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 10:20:17] "GET /data/agent_data_astock/DS_50S5p_5d20d/log/2024-11-11/log.jsonl HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 10:20:20] "GET /data/agent_data_astock/DS_50S5p_5d20d/log/2024-11-12/log.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 10:30:46] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 10:30:46] "GET /data/agent_data_astock/DS_5S_5d20d/position/position.jsonl HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 10:30:47] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 10:30:47] "GET /data/agent_data_astock/DS_50S10p_5d20d/position/position.jsonl HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 10:30:48] "GET /data/A_stock/merged.jsonl HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 10:30:49] "GET /index.html HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 10:30:49] "GET /assets/js/data-loader.js?v=12.0 HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 10:30:50] "GET /config.yaml HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 10:30:50] "GET /data/agent_data_astock/DS_50S5p_5d20d/position/position.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 10:31:14] "GET /portfolio.html HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 10:31:14] "GET /assets/js/portfolio.js?v=7.0 HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 10:31:14] "GET /assets/js/data-loader.js?v=7.0 HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 10:31:15] "GET /data/agent_data_astock/DS_50S5p_5d20d/position/position.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 10:31:22] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 10:31:22] "GET /data/agent_data_astock/DS_50S5p_5d20d/log/2025-11-10/log.jsonl HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 10:31:31] "GET /data/agent_data_astock/DS_50S5p_5d20d/log/2024-11-12/log.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 10:33:20] "GET /data/agent_data_astock/DS_50S5p_5d20d/log/2024-11-13/log.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 10:34:24] "GET /data/agent_data_astock/DS_50S5p_5d20d/log/2024-11-12/log.jsonl HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 10:34:30] "GET /data/agent_data_astock/DS_50S5p_5d20d/log/2024-11-13/log.jsonl HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 10:34:33] "GET /data/agent_data_astock/DS_50S5p_5d20d/log/2024-11-14/log.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 11:05:31] "GET /data/agent_data_astock/DS_50S5p_5d20d/position/position.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 11:05:32] "GET /data/A_stock/merged.jsonl HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 11:10:37] "GET / HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 11:41:35] "GET / HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 11:41:35] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 11:41:35] "GET /form.html HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 11:41:35] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 11:41:35] "GET /upl.php HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 11:41:35] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 11:41:35] "GET /t4 HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 11:41:35] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 11:41:35] "GET /geoip/ HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 11:41:35] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 11:41:35] "GET /favicon.ico HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 11:41:36] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 11:41:36] "GET /1.php HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 11:41:36] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 11:41:36] "GET /systembc/password.php HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 11:41:36] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 11:41:36] "GET /password.php HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 11:45:00] "GET /data/A_stock/merged.jsonl HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 11:45:04] "GET /assets/js/data-loader.js?v=12.0 HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 11:45:05] "GET /config.yaml HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 11:45:05] "GET /data/agent_data_astock/DS_50S5p_5d20d/position/position.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 11:45:12] "GET /portfolio.html HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 11:45:12] "GET /assets/js/portfolio.js?v=7.0 HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 11:45:12] "GET /assets/js/data-loader.js?v=7.0 HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 11:45:26] "GET /data/agent_data_astock/DS_5S3E_5d20d/log/2024-11-25/log.jsonl HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 11:45:32] "GET /data/agent_data_astock/DS_50S5p_5d20d/position/position.jsonl HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 11:45:34] "GET /index.html HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 11:45:50] "GET /data/agent_data_astock/DS_5S3E_5d20d/log/2025-01-08/log.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 11:47:29] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 11:47:29] "GET /boaform/admin/formLogin?username=admin&psd=admin HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 11:48:25] "GET /data/agent_data_astock/DS_5S3E_5d20d/log/2025-01-09/log.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 12:06:30] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 12:06:30] "GET /.env HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 12:06:30] code 501, message Unsupported method ('POST')
+127.0.0.1 - - [25/Nov/2025 12:06:30] "POST / HTTP/1.0" 501 -
+127.0.0.1 - - [25/Nov/2025 12:08:27] "GET /data/agent_data_astock/DS_5S3E_5d20d/log/2025-01-10/log.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 12:24:12] "GET /data/A_stock/merged.jsonl HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 12:24:13] "GET /data/agent_data_astock/DS_5S3E_5d20d/log/2025-01-14/log.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 12:24:19] "GET /data/agent_data_astock/DS_5S3E_5d20d/log/2025-01-15/log.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 12:24:24] "GET /data/agent_data_astock/DS_5S3E_5d20d/log/2025-01-20/log.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 12:24:36] "GET /data/agent_data_astock/DS_5S3E_5d20d/log/2025-01-22/log.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 12:24:42] "GET /data/agent_data_astock/DS_5S3E_5d20d/log/2025-02-07/log.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 12:24:47] "GET /data/agent_data_astock/DS_5S3E_5d20d/log/2025-02-19/log.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 12:24:55] "GET /data/agent_data_astock/DS_5S3E_5d20d/log/2025-02-20/log.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 12:25:01] "GET /data/agent_data_astock/DS_5S3E_5d20d/log/2025-02-25/log.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 12:26:29] "GET /data/agent_data_astock/DS_5S3E_5d20d/log/2025-02-26/log.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 12:26:36] "GET /data/agent_data_astock/DS_5S3E_5d20d/log/2025-03-03/log.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 12:26:41] "GET /data/agent_data_astock/DS_5S3E_5d20d/log/2025-03-10/log.jsonl HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 12:26:47] "GET /data/agent_data_astock/DS_5S3E_5d20d/log/2025-03-19/log.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 12:26:55] "GET /assets/js/data-loader.js?v=12.0 HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 12:26:55] "GET /config.yaml HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 12:26:56] "GET /data/agent_data_astock/DS_50S5p_5d20d/position/position.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 12:27:06] "GET /index.html HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 12:27:06] "GET /data/agent_data_astock/DS_50S5p_5d20d/position/position.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 12:46:29] "GET /index.html HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 12:46:29] "GET /config.yaml HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 12:46:29] "GET /data/agent_data_astock/DS_50S5p_5d20d/position/position.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 13:14:56] "GET /index.html HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 13:14:57] "GET /assets/js/data-loader.js?v=12.0 HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 13:14:57] "GET /config.yaml HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 13:14:58] "GET /data/agent_data_astock/DS_50S5p_5d20d/position/position.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 13:14:58] "GET /data/A_stock/merged.jsonl HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 13:29:59] "GET /index.html HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 13:30:00] "GET /data/agent_data_astock/DS_5S3E_enhance/position/position.jsonl HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 13:30:00] "GET /data/agent_data_astock/DS_50S5p_5d20d/position/position.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 14:11:11] "GET / HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 14:17:28] "GET / HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 14:51:06] "GET / HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 15:04:16] "GET / HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 15:04:17] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 15:04:17] "GET /robots.txt HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 15:04:17] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 15:04:17] "GET /sitemap.xml HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 15:04:17] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 15:04:17] "GET /.well-known/security.txt HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 15:04:19] "GET /figs/stock.svg HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 15:14:13] "GET / HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 15:24:48] "GET / HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 15:31:52] "GET / HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 16:18:13] "GET / HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 16:18:14] "GET /figs/stock.svg HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 16:44:48] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 16:44:48] "GET /.env HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 16:44:48] code 501, message Unsupported method ('POST')
+127.0.0.1 - - [25/Nov/2025 16:44:48] "POST / HTTP/1.0" 501 -
+127.0.0.1 - - [25/Nov/2025 16:53:38] "GET /index.html HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 16:53:38] "GET /assets/js/transaction-loader.js?v=12.0 HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 16:53:38] "GET /assets/js/asset-chart.js?v=12.0 HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 16:53:39] "GET /assets/js/data-loader.js?v=12.0 HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 16:53:39] "GET /config.yaml HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 16:53:40] "GET /data/agent_data_astock/DS_5S3E_5d20d/position/position.jsonl HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 16:53:40] "GET /data/agent_data_astock/DS_5S3E_5d/position/position.jsonl HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 16:53:41] "GET /data/agent_data_astock/DS_5S3E_20d/position/position.jsonl HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 16:53:41] "GET /data/agent_data_astock/DS_5S3E_normal/position/position.jsonl HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 16:53:41] "GET /data/agent_data_astock/DS_50S5p_5d20d/position/position.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 16:53:42] "GET /data/A_stock/merged.jsonl HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 16:54:21] "GET /portfolio.html HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 16:54:22] "GET /assets/js/portfolio.js?v=7.0 HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 16:54:22] "GET /assets/js/data-loader.js?v=7.0 HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 16:54:22] "GET /data/agent_data_astock/DS_50S5p_5d20d/position/position.jsonl HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 16:54:23] "GET /data/agent_data_astock/DS_5S3E_5d20d/log/2025-11-10/log.jsonl HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 16:54:28] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 16:54:28] "GET /data/agent_data_astock/DS_50S5p_5d20d/log/2025-11-10/log.jsonl HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 16:54:31] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 16:54:31] "GET /data/agent_data_astock/DS_50S5p_5d20d/log/2025-09-03/log.jsonl HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 16:54:34] "GET /data/agent_data_astock/DS_50S5p_5d20d/log/2025-07-25/log.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 16:56:20] "GET /data/agent_data_astock/DS_50S5p_5d20d/log/2025-07-28/log.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 16:57:15] "GET /data/agent_data_astock/DS_50S5p_5d20d/log/2025-07-30/log.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 16:57:20] "GET /data/agent_data_astock/DS_50S5p_5d20d/log/2025-07-31/log.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 16:58:03] "GET /data/agent_data_astock/DS_50S5p_5d20d/log/2025-08-05/log.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 16:58:27] "GET /data/agent_data_astock/DS_50S5p_5d20d/log/2025-08-06/log.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 17:00:33] "GET /data/agent_data_astock/DS_50S5p_5d20d/log/2025-08-15/log.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 17:14:32] "GET / HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 17:21:11] "GET /data/agent_data_astock/DS_50S5p_5d20d/log/2025-08-26/log.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 17:21:19] "GET /data/agent_data_astock/DS_50S5p_5d20d/log/2025-09-05/log.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 17:21:25] "GET /data/agent_data_astock/DS_50S5p_5d20d/log/2025-09-03/log.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 17:21:38] "GET /data/agent_data_astock/DS_50S5p_5d20d/log/2025-08-27/log.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 17:21:41] "GET /portfolio.html HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 17:21:42] "GET /data/agent_data_astock/DS_50S5p_5d20d/position/position.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 17:21:50] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 17:21:50] "GET /data/agent_data_astock/DS_50S5p_5d20d/log/2025-11-10/log.jsonl HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 17:22:05] "GET /data/agent_data_astock/DS_50S5p_5d20d/log/2025-08-28/log.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 17:22:46] "GET /data/agent_data_astock/DS_50S5p_5d20d/log/2025-08-29/log.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 17:22:59] "GET /data/agent_data_astock/DS_50S5p_5d20d/position/position.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 17:22:59] "GET /data/agent_data_astock/DS_50S5p_5d20d/position/position.jsonl HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 17:29:49] "GET / HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 17:56:16] "GET / HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 18:05:02] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 18:05:02] "GET /developmentserver/metadatauploader HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 18:14:40] code 501, message Unsupported method ('POST')
+127.0.0.1 - - [25/Nov/2025 18:14:40] "POST /hello.world?%ADd+allow_url_include%3d1+%ADd+auto_prepend_file%3dphp://input HTTP/1.0" 501 -
+127.0.0.1 - - [25/Nov/2025 18:14:40] code 501, message Unsupported method ('POST')
+127.0.0.1 - - [25/Nov/2025 18:14:40] "POST /?%ADd+allow_url_include%3d1+%ADd+auto_prepend_file%3dphp://input HTTP/1.0" 501 -
+127.0.0.1 - - [25/Nov/2025 18:14:40] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 18:14:40] "GET /vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 18:14:41] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 18:14:41] "GET /vendor/phpunit/phpunit/Util/PHP/eval-stdin.php HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 18:14:41] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 18:14:41] "GET /vendor/phpunit/src/Util/PHP/eval-stdin.php HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 18:14:41] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 18:14:41] "GET /vendor/phpunit/Util/PHP/eval-stdin.php HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 18:14:41] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 18:14:41] "GET /vendor/phpunit/phpunit/LICENSE/eval-stdin.php HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 18:14:42] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 18:14:42] "GET /vendor/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 18:14:42] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 18:14:42] "GET /phpunit/phpunit/src/Util/PHP/eval-stdin.php HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 18:14:42] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 18:14:42] "GET /phpunit/phpunit/Util/PHP/eval-stdin.php HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 18:14:43] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 18:14:43] "GET /phpunit/src/Util/PHP/eval-stdin.php HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 18:14:43] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 18:14:43] "GET /phpunit/Util/PHP/eval-stdin.php HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 18:14:43] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 18:14:43] "GET /lib/phpunit/phpunit/src/Util/PHP/eval-stdin.php HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 18:14:43] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 18:14:43] "GET /lib/phpunit/phpunit/Util/PHP/eval-stdin.php HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 18:14:44] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 18:14:44] "GET /lib/phpunit/src/Util/PHP/eval-stdin.php HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 18:14:44] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 18:14:44] "GET /lib/phpunit/Util/PHP/eval-stdin.php HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 18:14:44] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 18:14:44] "GET /lib/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 18:14:44] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 18:14:44] "GET /laravel/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 18:14:45] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 18:14:45] "GET /www/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 18:14:45] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 18:14:45] "GET /ws/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 18:14:45] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 18:14:45] "GET /yii/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 18:14:46] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 18:14:46] "GET /zend/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 18:14:46] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 18:14:46] "GET /ws/ec/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 18:14:46] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 18:14:46] "GET /V2/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 18:14:46] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 18:14:46] "GET /tests/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 18:14:47] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 18:14:47] "GET /test/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 18:14:47] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 18:14:47] "GET /testing/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 18:14:47] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 18:14:47] "GET /api/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 18:14:47] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 18:14:47] "GET /demo/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 18:14:48] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 18:14:48] "GET /cms/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 18:14:48] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 18:14:48] "GET /crm/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 18:14:48] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 18:14:48] "GET /admin/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 18:14:49] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 18:14:49] "GET /backup/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 18:14:49] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 18:14:49] "GET /blog/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 18:14:49] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 18:14:49] "GET /workspace/drupal/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 18:14:49] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 18:14:49] "GET /panel/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 18:14:50] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 18:14:50] "GET /public/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 18:14:50] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 18:14:50] "GET /apps/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 18:14:50] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 18:14:50] "GET /app/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 18:14:51] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 18:14:51] "GET /index.php?s=/index/\\think\\app/invokefunction&function=call_user_func_array&vars[0]=md5&vars[1][]=Hello HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 18:14:51] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 18:14:51] "GET /public/index.php?s=/index/\\think\\app/invokefunction&function=call_user_func_array&vars[0]=md5&vars[1][]=Hello HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 18:14:51] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 18:14:51] "GET /index.php?lang=../../../../../../../../usr/local/lib/php/pearcmd&+config-create+/&/<?echo(md5("hi"));?>+/tmp/index1.php HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 18:14:51] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 18:14:51] "GET /index.php?lang=../../../../../../../../tmp/index1 HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 18:14:52] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 18:14:52] "GET /containers/json HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 18:32:09] "GET / HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 18:55:00] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 18:55:00] "GET /.env HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 18:55:00] code 501, message Unsupported method ('POST')
+127.0.0.1 - - [25/Nov/2025 18:55:00] "POST / HTTP/1.0" 501 -
+127.0.0.1 - - [25/Nov/2025 18:57:02] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 18:57:02] "GET /boaform/admin/formLogin?username=ec8&psd=ec8 HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 19:24:27] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 19:24:27] "GET /ReportServer HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 19:45:50] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 19:45:50] "GET /admin/config.php HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 19:58:53] "GET / HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 20:07:27] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 20:07:27] "GET /robots.txt HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 20:18:53] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 20:18:53] "GET /.env HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 20:18:54] code 501, message Unsupported method ('POST')
+127.0.0.1 - - [25/Nov/2025 20:18:54] "POST / HTTP/1.0" 501 -
+127.0.0.1 - - [25/Nov/2025 20:47:59] "GET / HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 20:48:00] "GET /figs/stock.svg HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 21:15:16] "GET / HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 21:16:42] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 21:16:42] "GET /web/.git/config HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 21:16:42] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 21:16:42] "GET /test/.git/config HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 21:16:42] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 21:16:42] "GET /config/.git/config HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 21:16:43] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 21:16:43] "GET /public/.git/config HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 21:16:43] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 21:16:43] "GET /dashboard/.git/config HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 21:16:43] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 21:16:43] "GET /portal/.git/config HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 21:16:44] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 21:16:44] "GET /v1/.git/config HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 21:16:44] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 21:16:44] "GET /src/.git/config HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 21:16:44] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 21:16:44] "GET /shop/.git/config HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 21:16:44] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 21:16:44] "GET /site/.git/config HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 21:59:54] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 21:59:54] "GET /login.rsp HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 22:09:31] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 22:09:31] "GET /actuator/health HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 22:44:15] "GET / HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 23:07:41] "GET / HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 23:13:55] "GET /index.html HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 23:13:56] "GET /assets/css/styles.css?v=4.0 HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 23:13:56] "GET /assets/js/data-loader.js?v=12.0 HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 23:13:56] "GET /config.yaml HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 23:13:56] "GET /data/agent_data_astock/DS_5S3E_enhance/position/position.jsonl HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 23:13:56] "GET /data/agent_data_astock/DS_50S5p_5d20d/position/position.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 23:13:57] "GET /data/A_stock/merged.jsonl HTTP/1.0" 304 -
+127.0.0.1 - - [25/Nov/2025 23:17:57] "GET / HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 23:18:15] "GET / HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 23:18:15] "GET /figs/stock.svg HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 23:18:15] "GET /assets/js/config-loader.js?v=12.0 HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 23:18:15] "GET /assets/js/data-loader.js?v=12.0 HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 23:18:16] "GET /assets/js/transaction-loader.js?v=12.0 HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 23:18:16] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 23:18:16] "GET /sitemap.xml HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 23:18:16] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 23:18:16] "GET /robots.txt HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 23:32:14] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 23:32:14] "GET /live/.git/config HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 23:32:15] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 23:32:15] "GET /deploy/.git/config HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 23:32:15] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 23:32:15] "GET /repo/.git/config HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 23:32:15] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 23:32:15] "GET /blog/.git/config HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 23:32:16] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 23:32:16] "GET /old/.git/config HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 23:32:16] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 23:32:16] "GET /new/.git/config HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 23:32:16] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 23:32:16] "GET /storage/.git/config HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 23:32:17] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 23:32:17] "GET /m/.git/config HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 23:32:17] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 23:32:17] "GET /crm/.git/config HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 23:32:17] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 23:32:17] "GET /core/.git/config HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 23:32:17] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 23:32:17] "GET /dev/.git/config HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 23:32:18] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 23:32:18] "GET /panel/.git/config HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 23:32:18] code 404, message File not found
+127.0.0.1 - - [25/Nov/2025 23:32:18] "GET /login/.git/config HTTP/1.0" 404 -
+127.0.0.1 - - [25/Nov/2025 23:43:47] "GET / HTTP/1.0" 200 -
+127.0.0.1 - - [25/Nov/2025 23:43:48] code 501, message Unsupported method ('POST')
+127.0.0.1 - - [25/Nov/2025 23:43:48] "POST /cgi-bin/login HTTP/1.0" 501 -
+127.0.0.1 - - [26/Nov/2025 00:12:48] "GET / HTTP/1.0" 200 -
+127.0.0.1 - - [26/Nov/2025 00:33:56] "GET / HTTP/1.0" 200 -
+127.0.0.1 - - [26/Nov/2025 00:37:37] "GET / HTTP/1.0" 200 -
+127.0.0.1 - - [26/Nov/2025 00:42:18] code 404, message File not found
+127.0.0.1 - - [26/Nov/2025 00:42:18] "GET /.env HTTP/1.0" 404 -
+127.0.0.1 - - [26/Nov/2025 00:42:18] code 501, message Unsupported method ('POST')
+127.0.0.1 - - [26/Nov/2025 00:42:18] "POST / HTTP/1.0" 501 -
+127.0.0.1 - - [26/Nov/2025 00:50:18] "GET /index.html HTTP/1.0" 200 -
+127.0.0.1 - - [26/Nov/2025 00:50:18] "GET /assets/css/styles.css?v=4.0 HTTP/1.0" 200 -
+127.0.0.1 - - [26/Nov/2025 00:50:20] "GET /index.html HTTP/1.0" 304 -
+127.0.0.1 - - [26/Nov/2025 00:50:21] "GET /assets/js/transaction-loader.js?v=12.0 HTTP/1.0" 304 -
+127.0.0.1 - - [26/Nov/2025 00:50:21] "GET /assets/js/data-loader.js?v=12.0 HTTP/1.0" 200 -
+127.0.0.1 - - [26/Nov/2025 00:50:21] "GET /assets/css/styles.css?v=4.0 HTTP/1.0" 304 -
+127.0.0.1 - - [26/Nov/2025 00:50:21] "GET /assets/js/asset-chart.js?v=12.0 HTTP/1.0" 304 -
+127.0.0.1 - - [26/Nov/2025 00:50:21] "GET /config.yaml HTTP/1.0" 200 -
+127.0.0.1 - - [26/Nov/2025 00:50:21] "GET /data/agent_data_astock/DS_5S3E_5d20d/position/position.jsonl HTTP/1.0" 304 -
+127.0.0.1 - - [26/Nov/2025 00:50:21] code 404, message File not found
+127.0.0.1 - - [26/Nov/2025 00:50:21] "GET /apple-touch-icon-precomposed.png HTTP/1.0" 404 -
+127.0.0.1 - - [26/Nov/2025 00:50:22] "GET /data/agent_data_astock/DS_5S3E_5d/position/position.jsonl HTTP/1.0" 304 -
+127.0.0.1 - - [26/Nov/2025 00:50:22] "GET /figs/stock.svg HTTP/1.0" 200 -
+127.0.0.1 - - [26/Nov/2025 00:50:22] code 404, message File not found
+127.0.0.1 - - [26/Nov/2025 00:50:22] "GET /favicon.ico HTTP/1.0" 404 -
+127.0.0.1 - - [26/Nov/2025 00:50:22] code 404, message File not found
+127.0.0.1 - - [26/Nov/2025 00:50:22] "GET /apple-touch-icon.png HTTP/1.0" 404 -
+127.0.0.1 - - [26/Nov/2025 00:50:22] "GET /data/agent_data_astock/DS_5S3E_20d/position/position.jsonl HTTP/1.0" 304 -
+127.0.0.1 - - [26/Nov/2025 00:50:22] "GET /data/agent_data_astock/DS_5S3E_enhance/position/position.jsonl HTTP/1.0" 304 -
+127.0.0.1 - - [26/Nov/2025 00:50:22] "GET /data/agent_data_astock/DS_5S3E_normal/position/position.jsonl HTTP/1.0" 304 -
+127.0.0.1 - - [26/Nov/2025 00:50:22] "GET /data/agent_data_astock/DS_50S5p_5d20d/position/position.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [26/Nov/2025 00:50:23] "GET /data/A_stock/merged.jsonl HTTP/1.0" 304 -
+127.0.0.1 - - [26/Nov/2025 00:50:23] "GET /data/agent_data_astock/DS_50S5p_5d20d/position/position.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [26/Nov/2025 01:23:41] "GET / HTTP/1.0" 200 -
+127.0.0.1 - - [26/Nov/2025 01:36:35] "GET / HTTP/1.0" 200 -
+127.0.0.1 - - [26/Nov/2025 01:41:28] "GET /index.html HTTP/1.0" 304 -
+127.0.0.1 - - [26/Nov/2025 01:41:28] "GET /assets/css/styles.css?v=4.0 HTTP/1.0" 304 -
+127.0.0.1 - - [26/Nov/2025 01:41:28] "GET /assets/js/data-loader.js?v=12.0 HTTP/1.0" 200 -
+127.0.0.1 - - [26/Nov/2025 01:41:28] "GET /assets/js/asset-chart.js?v=12.0 HTTP/1.0" 304 -
+127.0.0.1 - - [26/Nov/2025 01:41:28] "GET /assets/js/transaction-loader.js?v=12.0 HTTP/1.0" 304 -
+127.0.0.1 - - [26/Nov/2025 01:41:29] "GET /config.yaml HTTP/1.0" 304 -
+127.0.0.1 - - [26/Nov/2025 01:41:29] "GET /data/agent_data_astock/DS_5S3E_5d20d/position/position.jsonl HTTP/1.0" 304 -
+127.0.0.1 - - [26/Nov/2025 01:41:29] "GET /data/agent_data_astock/DS_5S3E_5d/position/position.jsonl HTTP/1.0" 304 -
+127.0.0.1 - - [26/Nov/2025 01:41:29] "GET /data/agent_data_astock/DS_5S3E_20d/position/position.jsonl HTTP/1.0" 304 -
+127.0.0.1 - - [26/Nov/2025 01:41:30] "GET /data/agent_data_astock/DS_5S3E_enhance/position/position.jsonl HTTP/1.0" 304 -
+127.0.0.1 - - [26/Nov/2025 01:41:30] "GET /data/agent_data_astock/DS_5S3E_normal/position/position.jsonl HTTP/1.0" 304 -
+127.0.0.1 - - [26/Nov/2025 01:41:30] "GET /data/agent_data_astock/DS_50S5p_5d20d/position/position.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [26/Nov/2025 01:41:30] "GET /data/A_stock/merged.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [26/Nov/2025 01:41:41] "GET /portfolio.html HTTP/1.0" 304 -
+127.0.0.1 - - [26/Nov/2025 01:41:42] "GET /assets/js/portfolio.js?v=7.0 HTTP/1.0" 304 -
+127.0.0.1 - - [26/Nov/2025 01:41:42] "GET /assets/js/data-loader.js?v=7.0 HTTP/1.0" 304 -
+127.0.0.1 - - [26/Nov/2025 01:41:42] "GET /data/agent_data_astock/DS_5S3E_5d20d/log/2025-11-10/log.jsonl HTTP/1.0" 304 -
+127.0.0.1 - - [26/Nov/2025 01:41:46] "GET /data/agent_data_astock/DS_50S5p_5d20d/log/2025-11-10/log.jsonl HTTP/1.0" 200 -
+127.0.0.1 - - [26/Nov/2025 01:55:31] "GET / HTTP/1.0" 200 -
+127.0.0.1 - - [26/Nov/2025 01:55:38] "GET / HTTP/1.0" 200 -
+127.0.0.1 - - [26/Nov/2025 02:27:42] "GET / HTTP/1.0" 200 -
+127.0.0.1 - - [26/Nov/2025 02:27:45] "GET / HTTP/1.0" 200 -
+127.0.0.1 - - [26/Nov/2025 02:27:45] code 404, message File not found
+127.0.0.1 - - [26/Nov/2025 02:27:45] "GET /favicon.ico HTTP/1.0" 404 -

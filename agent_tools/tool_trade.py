@@ -14,7 +14,7 @@ import json
 
 from tools.general_tools import get_config_value, write_config_value
 from tools.price_tools import (get_latest_position, get_open_prices,
-                               get_yesterday_date,
+                               get_yesterday_date,get_yesterday_diff,
                                get_yesterday_open_and_close_price,
                                get_yesterday_profit)
 
@@ -138,6 +138,23 @@ def buy(symbol: str, amount: int) -> Dict[str, Any]:
             "symbol": symbol,
             "date": today_date,
         }
+    
+    this_symbol_diff,diff_5d,diff_20d = get_yesterday_diff(today_date, [symbol], market=market)
+    if market == 'cn' and this_symbol_diff[f"{symbol}_p"]: 
+        if (symbol.startswith("688") or symbol.startswith("300")) and (this_symbol_diff[f"{symbol}_p"] >= 20 or this_symbol_diff[f"{symbol}_p"] <= -20):
+            return {
+                "error": f"Symbol {symbol} yesterday diff > 20%. This action will not be allowed.",
+                "symbol": symbol,
+                "date": today_date,
+                "diff": this_symbol_diff[f"{symbol}_p"],
+            }
+        elif (this_symbol_diff[f"{symbol}_p"] >= 10 or this_symbol_diff[f"{symbol}_p"] <= -10):
+            return {
+                "error": f"Symbol {symbol} yesterday diff > 10%. This action will not be allowed.",
+                "symbol": symbol,
+                "date": today_date,
+                "diff": this_symbol_diff[f"{symbol}_p"],
+            }
 
     # Step 4: Validate buy conditions
     # Calculate cash required for purchase: stock price × buy quantity
