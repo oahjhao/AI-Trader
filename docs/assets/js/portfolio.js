@@ -435,7 +435,7 @@ async function updateTransactions(agentName, date) {
                     <span class="thinking-icon">🧠</span>
                     Agent Reasoning
                 </div>
-                <div class="action-thinking">${line.str3}</div>
+                <div class="action-thinking" style="white-space: pre-line;">${line.str3}</div>
             </div>
         `;
         cardEl.innerHTML = cardHTML;

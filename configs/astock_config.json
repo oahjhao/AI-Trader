@@ -7,15 +7,33 @@
   },
   "models": [
     {
+      "name": "DS_1S_enhance_v3",
+      "basemodel": "deepseek-chat", 
+      "signature": "DS_1S_enhance_v3",
+      "enabled": true
+    },
+    {
+      "name": "DS_1S_enhance_v2",
+      "basemodel": "deepseek-chat",
+      "signature": "DS_1S_enhance_v2",
+      "enabled": true
+    },
+    {
+      "name": "DS_1S_enhance",
+      "basemodel": "deepseek-chat",
+      "signature": "DS_1S_enhance",
+      "enabled": true
+    },
+    {
       "name": "DS_1S_5d20d",
       "basemodel": "deepseek-chat",
       "signature": "DS_1S_5d20d",
       "enabled": true
     },
     {
-      "name": "DS_50S5p_5d20d",
+      "name": "DS_1S_normal",
       "basemodel": "deepseek-chat",
-      "signature": "DS_50S5p_5d20d",
+      "signature": "DS_1S_normal",
       "enabled": true
     },
     {

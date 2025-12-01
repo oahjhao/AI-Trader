@@ -251,7 +251,7 @@ URL: {result['url']}
 Title: {result['title']}
 Description: {result['description']}
 Publish Time: {result['publish_time']}
-Content: {result['content'][:1000]}...
+Content: {result['content']}...
 """
                 )
 
