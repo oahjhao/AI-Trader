@@ -14,6 +14,8 @@ __pycache__/
 dist/
 build/
 .env
+pyrightconfig.json
+tags
 
 runtime_env.json
 

@@ -748,8 +748,7 @@ body {
 
 /* Holdings Table */
 .holdings-section {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    display: flex;
     margin-bottom: 3rem;
     padding: 0 2rem;
 }
@@ -762,6 +761,8 @@ body {
 
 .holdings-scroll-wrapper {
     height: 400px;
+    width: 50%;
+    display: flex;
     overflow-y: scroll;
     overflow-x: hidden;
     border: 1px solid var(--border-color);
@@ -801,7 +802,7 @@ body {
 }
 
 .holdings-table {
-    width: 100%;
+    width: 50%;
     border-collapse: collapse;
     min-width: 600px;
 }

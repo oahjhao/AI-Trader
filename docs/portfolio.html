@@ -70,8 +70,25 @@
             </div>
         </section>
 
+        <h3>Trades and Holdings </h3>
         <section class="holdings-section">
-            <h3>Current Holdings</h3>
+            <div class="holdings-scroll-wrapper">
+                <div class="holdings-table-container">
+                    <table class="holdings-table">
+                        <thead>
+                            <tr>
+                                <th>Action</th>
+                                <th>Symbol</th>
+                                <th>Amount</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="actionTableBody">
+                            <!-- Populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
             <div class="holdings-scroll-wrapper">
                 <div class="holdings-table-container">
                     <table class="holdings-table">
@@ -86,23 +103,6 @@
                             </tr>
                         </thead>
                         <tbody id="holdingsTableBody">
-                            <!-- Populated by JavaScript -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <h3>Buys and Sells </h3>
-            <div class="holdings-scroll-wrapper">
-                <div class="holdings-table-container">
-                    <table class="holdings-table">
-                        <thead>
-                            <tr>
-                                <th>Action</th>
-                                <th>Symbol</th>
-                                <th>Amount</th>
-                            </tr>
-                        </thead>
-                        <tbody id="actionTableBody">
                             <!-- Populated by JavaScript -->
                         </tbody>
                     </table>
