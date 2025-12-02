@@ -709,10 +709,10 @@ async function exportLog() {
 // Set up event listeners
 function setupEventListeners() {
     document.getElementById('toggle-log').addEventListener('click', toggleScale);
-    // document.getElementById('export-chart').addEventListener('click', exportLog);
+    document.getElementById('export-chart').addEventListener('click', exportData);
 
-    const exportLogBtn = document.getElementById('export-chart');
-    exportLogBtn.addEventListener('click', async () => {await exportLog();});
+    // const exportLogBtn = document.getElementById('export-chart');
+    // exportLogBtn.addEventListener('click', async () => {await exportData();});
 
     // Market switching
     const usMarketBtn = document.getElementById('usMarketBtn');

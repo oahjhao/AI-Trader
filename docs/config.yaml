@@ -26,22 +26,22 @@ markets:
         display_name: "DS_1S_enhance_v2"
         icon: "./figs/deepseek.svg"
         color: "#10a37f"
-        enabled: true
+        enabled: false 
       - folder: "DS_1S_enhance"
         display_name: "DS_1S_enhance"
         icon: "./figs/deepseek.svg"
         color: "#ffbe0b"
-        enabled: true
+        enabled: false 
       - folder: "DS_1S_5d20d"
         display_name: "DS_1S_5d20d"
         icon: "./figs/deepseek.svg"
         color: "#00ffcc"
-        enabled: true
+        enabled: false
       - folder: "DS_1S_normal"
         display_name: "DS_1S_normal"
         icon: "./figs/deepseek.svg"
         color: "#ff006e"
-        enabled: true
+        enabled: false
       - folder: "DS_5S3E_5d20d"
         display_name: "DS_5S3E_5d20d"
         icon: "./figs/deepseek.svg"

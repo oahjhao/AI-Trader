@@ -748,6 +748,8 @@ body {
 
 /* Holdings Table */
 .holdings-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     margin-bottom: 3rem;
     padding: 0 2rem;
 }

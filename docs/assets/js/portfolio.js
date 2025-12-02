@@ -94,6 +94,8 @@ async function loadAgentPortfolio(agentName, date) {
 
         // Update holdings table
         await updateHoldingsTable(agentName, date);
+        // Update action history 
+	await updateActionHistory(data, date)
 
         // Update allocation chart
         await updateAllocationChart(agentName, date);
@@ -123,13 +125,7 @@ async function updateMetrics(data, date) {
     const totalReturn = data.assetHistory.length > 0 ? (data.assetHistory[id]?.value - data.assetHistory[0]?.value)/data.assetHistory[0]?.value * 100 : 0;
     const latestPosition = data.positions && data.positions.length > 0 ? data.positions[id] : null;
     const cashPosition = latestPosition && latestPosition.positions ? latestPosition.positions.CASH || 0 : 0;
-    const totalTrades = data.positions ? data.positions.filter(p => p.this_action && p.date <= date).length : 0;
-
-    // const totalAsset = data.assetHistory[data.assetHistory.length - 1]?.value;
-    // const totalReturn = data.assetHistory.length > 0 ? (data.assetHistory[data.assetHistory.length - 1]?.value - data.assetHistory[0]?.value)/data.assetHistory[0]?.value * 100 : 0;
-    // const latestPosition = data.positions && data.positions.length > 0 ? data.positions[data.positions.length - 1] : null;
-    // const cashPosition = latestPosition && latestPosition.positions ? latestPosition.positions.CASH || 0 : 0;
-    // const totalTrades = data.positions ? data.positions.filter(p => p.this_action).length : 0;
+    const totalTrades = data.positions ? data.positions.filter(p => p.this_action && p.this_action.action !== 'no_trade' && p.date <= date).length : 0;
 
     document.getElementById('totalAsset').textContent = dataLoader.formatCurrency(totalAsset);
     document.getElementById('totalReturn').textContent = dataLoader.formatPercent(totalReturn);
@@ -138,6 +134,25 @@ async function updateMetrics(data, date) {
     document.getElementById('totalTrades').textContent = totalTrades;
 }
 
+// Update performance metrics
+async function updateActionHistory(data, date) {
+    const tableBody = document.getElementById('actionTableBody');
+    tableBody.innerHTML = '';
+    const actionsHistory = data.positions ? data.positions.filter(p => p.this_action && p.this_action.action !== 'no_trade' && p.date <= date) : null;
+
+    // Create table rows
+    actionsHistory.forEach(p => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td class="symbol">${p.this_action.action}</td>
+            <td class="symbol">${p.this_action.symbol}</td>
+            <td>${p.this_action.amount}</td>
+            <td>${p.date}</td>
+        `;
+        tableBody.appendChild(row);
+    });
+    
+}
 // Update holdings table
 async function updateHoldingsTable(agentName, date) {
     const holdings = dataLoader.getCurrentHoldings(agentName, date);

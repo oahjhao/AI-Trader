@@ -1,7 +1,8 @@
 logs/
 data/*.json
 data/*.jsonl
-# data/agent_data/
+data/agent_data/
+data/agent_data_astock/
 __pycache__/
 *.pyc
 *.pyo

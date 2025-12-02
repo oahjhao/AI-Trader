@@ -16,25 +16,25 @@
       "name": "DS_1S_enhance_v2",
       "basemodel": "deepseek-chat",
       "signature": "DS_1S_enhance_v2",
-      "enabled": true
+      "enabled": false 
     },
     {
       "name": "DS_1S_enhance",
       "basemodel": "deepseek-chat",
       "signature": "DS_1S_enhance",
-      "enabled": true
+      "enabled": false 
     },
     {
       "name": "DS_1S_5d20d",
       "basemodel": "deepseek-chat",
       "signature": "DS_1S_5d20d",
-      "enabled": true
+      "enabled": false 
     },
     {
       "name": "DS_1S_normal",
       "basemodel": "deepseek-chat",
       "signature": "DS_1S_normal",
-      "enabled": true
+      "enabled": false 
     },
     {
       "name": "DS_5S3E_5d20d",
