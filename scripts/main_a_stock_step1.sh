@@ -11,10 +11,10 @@ cd "$PROJECT_ROOT"
 cd data/A_stock
 
 # for alphavantage
-python get_daily_price_alphavantage.py
-python merge_jsonl_alphavantage.py
+#python get_daily_price_alphavantage.py
+#python merge_jsonl_alphavantage.py
 # # for tushare
-# python get_daily_price_tushare.py
-# python merge_jsonl_tushare.py
+python get_daily_price_tushare.py
+python merge_jsonl_tushare.py
 
 cd ..

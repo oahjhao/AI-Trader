@@ -748,7 +748,6 @@ body {
 
 /* Holdings Table */
 .holdings-section {
-    display: flex;
     margin-bottom: 3rem;
     padding: 0 2rem;
 }
@@ -761,10 +760,8 @@ body {
 
 .holdings-scroll-wrapper {
     height: 400px;
-    width: 50%;
-    display: flex;
     overflow-y: scroll;
-    overflow-x: scroll;
+    overflow-x: hidden;
     border: 1px solid var(--border-color);
     border-radius: 12px;
     background: var(--card-bg);
@@ -802,7 +799,7 @@ body {
 }
 
 .holdings-table {
-    width: 50%;
+    width: 100%;
     border-collapse: collapse;
     min-width: 600px;
 }

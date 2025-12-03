@@ -139,7 +139,7 @@ def buy(symbol: str, amount: int) -> Dict[str, Any]:
             "date": today_date,
         }
     
-    this_symbol_diff,diff_5d,diff_20d = get_yesterday_diff(today_date, [symbol], market=market)
+    this_symbol_diff = get_yesterday_diff(today_date, [symbol], market=market)
     if market == 'cn' and this_symbol_diff[f"{symbol}_p"]: 
         if (symbol.startswith("688") or symbol.startswith("300")) and (this_symbol_diff[f"{symbol}_p"] >= 20 or this_symbol_diff[f"{symbol}_p"] <= -20):
             return {

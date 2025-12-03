@@ -15,6 +15,14 @@ PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
 
 cd "$PROJECT_ROOT"
 
+JSON_FILE="configs/astock_config.json"
+TODAY=$(date +%Y-%m-%d)
+jq --arg date "$TODAY" '.date_range.end_date = $date' "$JSON_FILE" > "${JSON_FILE}.tmp" && mv "${JSON_FILE}.tmp" "$JSON_FILE"
+echo "$(date): Updated end_date to $TODAY in $JSON_FILE"
+
+echo 'step1 starting...'
+sh scripts/main_a_stock_step1.sh > logs/step1.log
+sleep 2
 echo 'step2 starting...'
 nohup sh scripts/main_a_stock_step2.sh > logs/step2.log 2>&1 &
 sleep 2

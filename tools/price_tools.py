@@ -653,8 +653,8 @@ def get_yesterday_diff(
     """
     wanted = set(symbols)
     diff_result: Dict[str, Optional[float]] = {}
-    diff_5d_result: Dict[str, Optional[float]] = {}
-    diff_20d_result: Dict[str, Optional[float]] = {}
+    #diff_5d_result: Dict[str, Optional[float]] = {}
+    #diff_20d_result: Dict[str, Optional[float]] = {}
 
     if merged_path is None:
         merged_file = get_merged_file_path(market)
@@ -662,7 +662,7 @@ def get_yesterday_diff(
         merged_file = Path(merged_path)
 
     if not merged_file.exists():
-        return diff_result, diff_5d_result, diff_20d_result
+        return diff_result 
 
     yesterday_date = get_yesterday_date(today_date, merged_path=merged_path, market=market)
 
@@ -690,27 +690,27 @@ def get_yesterday_diff(
             # 尝试获取昨日买入价和卖出价
             bar = series.get(yesterday_date)
             if isinstance(bar, dict):
-                diff_val = bar.get("7. diff")
-                diff_5d_val = bar.get("10. diff_5d") 
-                diff_20d_val = bar.get("11. diff_20d") 
+                diff_val = bar.get("6. pct_chg")
+                #diff_5d_val = bar.get("10. diff_5d") 
+                #diff_20d_val = bar.get("11. diff_20d") 
 
                 try:
                     diff_p = float(diff_val) if diff_val is not None else None
-                    diff_5d_p = float(diff_5d_val) if diff_5d_val is not None else None
-                    diff_20d_p = float(diff_20d_val) if diff_20d_val is not None else None
+                    #diff_5d_p = float(diff_5d_val) if diff_5d_val is not None else None
+                    #diff_20d_p = float(diff_20d_val) if diff_20d_val is not None else None
                     diff_result[f"{sym}_p"] = diff_p
-                    diff_5d_result[f"{sym}_p"] = diff_5d_p
-                    diff_20d_result[f"{sym}_p"] = diff_20d_p
+                    #diff_5d_result[f"{sym}_p"] = diff_5d_p
+                    #diff_20d_result[f"{sym}_p"] = diff_20d_p
                 except Exception:
                     diff_result[f"{sym}_p"] = None
-                    diff_5d_result[f"{sym}_p"] = None
-                    diff_20d_result[f"{sym}_p"] = None
+                    #diff_5d_result[f"{sym}_p"] = None
+                    #diff_20d_result[f"{sym}_p"] = None
             else:
                 diff_result[f"{sym}_p"] = None
-                diff_5d_result[f"{sym}_p"] = None
-                diff_20d_result[f"{sym}_p"] = None
+                #diff_5d_result[f"{sym}_p"] = None
+                #diff_20d_result[f"{sym}_p"] = None
 
-    return diff_result, diff_5d_result, diff_20d_result
+    return diff_result
 
 
 def get_yesterday_profit(

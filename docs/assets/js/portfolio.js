@@ -113,17 +113,19 @@ async function loadAgentPortfolio(agentName, date) {
 // Update performance metrics
 async function updateMetrics(data, date) {
     // const totalAsset = data.currentValue;
-    let id = 0;
+    let id = data.assetHistory.length - 1;
 
-    for(; id < data.assetHistory.length - 1; id++){
-        if(date == data.assetHistory[id]?.date){
+    for(; id > 0; id--){
+	console.log('id:', id);
+	console.log('date:', date, data.assetHistory[id]?.date);
+        if(date === data.assetHistory[id]?.date){
             break;
         }
     }
     
     const totalAsset = data.assetHistory[id]?.value;
     const totalReturn = data.assetHistory.length > 0 ? (data.assetHistory[id]?.value - data.assetHistory[0]?.value)/data.assetHistory[0]?.value * 100 : 0;
-    const latestPosition = data.positions && data.positions.length > 0 ? data.positions[id] : null;
+    const latestPosition = data.positions && data.positions.length > 0 ? data.positions[data.assetHistory[id]?.id] : null;
     const cashPosition = latestPosition && latestPosition.positions ? latestPosition.positions.CASH || 0 : 0;
     const totalTrades = data.positions ? data.positions.filter(p => p.this_action && p.this_action.action !== 'no_trade' && p.date <= date).length : 0;
 
@@ -144,8 +146,8 @@ async function updateActionHistory(data, date) {
     actionsHistory.forEach(p => {
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td class="symbol">${p.this_action.action}</td>
             <td class="symbol">${p.this_action.symbol}</td>
+            <td class="symbol">${p.this_action.action}</td>
             <td>${p.this_action.amount}</td>
             <td>${p.date}</td>
         `;

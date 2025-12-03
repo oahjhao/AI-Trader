@@ -162,10 +162,8 @@ def get_daily_price_a_stock(
                 return None
 
         code_list = df["con_code"].tolist()
-        code_list_spif = ['510050.SH']
+        code_list_spif = []
         code_str = ",".join(code_list + code_list_spif)
-        print(code_str)
-        input("按 Enter 键退出...")
         num_stocks = len(code_list + code_list_spif)
 
         # Calculate batch size based on 6000 records limit
@@ -287,6 +285,7 @@ def convert_index_daily_to_json(
             "3. low": f"{row['low']:.4f}",
             "4. close": f"{row['close']:.4f}",
             "5. volume": str(int(row["vol"])) if pd.notna(row["vol"]) else "0",
+            "6. pct_chg": f"{row['pct_chg']:.4f}",
         }
 
     # Save to file if output_file is specified

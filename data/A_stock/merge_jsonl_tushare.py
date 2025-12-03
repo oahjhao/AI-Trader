@@ -76,18 +76,15 @@ def convert_a_stock_to_jsonl(
                 date_formatted = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:]}"
 
                 # For the latest date, only include buy price (to prevent future information leakage)
-                if date_str == latest_date:
-                    time_series[date_formatted] = {"1. buy price": str(row["open"])}
-                else:
-                    time_series[date_formatted] = {
-                        "1. buy price": str(row["open"]),
-                        "2. high": str(row["high"]),
-                        "3. low": str(row["low"]),
-                        "4. sell price": str(row["close"]),
-                        "5. volume": (
-                            str(int(row["vol"] * 100)) if pd.notna(row["vol"]) else "0"
-                        ),  # Convert to shares (vol is in 手, 1手=100股)
-                    }
+                time_series[date_formatted] = {
+                    "1. buy price": str(row["open"]),
+                    "2. high": str(row["high"]),
+                    "3. low": str(row["low"]),
+                    "4. sell price": str(row["close"]),
+                    "5. volume": (
+                        str(int(row["vol"] * 100)) if pd.notna(row["vol"]) else "0"
+                    ),  # Convert to shares (vol is in 手, 1手=100股)
+                }
 
             # Get stock name from mapping
             stock_name = stock_name_map.get(ts_code, "Unknown")

@@ -212,7 +212,7 @@ prompt_astock_diff = """
 额外要求：
 - 需要你将近期涨跌幅信息纳入分析范围，并且提高这部分分析结果在决策时所占的比重
 近1天,5天,20天涨跌幅情况（%）：
-{diff_1d},{diff_5d},{diff_20d}
+{diff_1d}
 """
 
 def get_agent_system_prompt_astock(today_date: str, signature: str, stock_symbols: Optional[List[str]] = None) -> str:
@@ -244,7 +244,7 @@ def get_agent_system_prompt_astock(today_date: str, signature: str, stock_symbol
     yesterday_profit = get_yesterday_profit(
         today_date, yesterday_buy_prices, yesterday_sell_prices, today_init_position, stock_symbols
     )
-    diff_1d, diff_5d, diff_20d= get_yesterday_diff(today_date, stock_symbols, market="cn")
+    diff_1d = get_yesterday_diff(today_date, stock_symbols, market="cn")
 
     # A股市场显示中文股票名称
     yesterday_sell_prices_display = format_price_dict_with_names(yesterday_sell_prices, market="cn")
@@ -277,6 +277,16 @@ def get_agent_system_prompt_astock(today_date: str, signature: str, stock_symbol
             today_buy_price=today_buy_price_display,
             yesterday_profit=yesterday_profit,
         )
+    elif "5d20d" in signature:
+        return (agent_system_prompt_astock + prompt_astock_rules + prompt_astock_info + prompt_astock_diff).format(
+            date=today_date,
+            positions=today_init_position,
+            STOP_SIGNAL=STOP_SIGNAL,
+            yesterday_close_price=yesterday_sell_prices_display,
+            today_buy_price=today_buy_price_display,
+            yesterday_profit=yesterday_profit,
+            diff_1d=diff_1d,
+        )
     elif "enhance" in signature:
         return (agent_system_prompt_astock_enhance + prompt_astock_rules + prompt_astock_info + prompt_astock_diff).format(
             date=today_date,
@@ -286,8 +296,6 @@ def get_agent_system_prompt_astock(today_date: str, signature: str, stock_symbol
             today_buy_price=today_buy_price_display,
             yesterday_profit=yesterday_profit,
             diff_1d=diff_1d,
-            diff_5d=diff_5d,
-            diff_20d=diff_20d,
         )
     elif "normal" in signature:
         return (agent_system_prompt_astock + prompt_astock_rules + prompt_astock_info).format(
