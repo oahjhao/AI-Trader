@@ -7,6 +7,24 @@
   },
   "models": [
     {
+      "name": "DS_1S_news",
+      "basemodel": "deepseek-chat", 
+      "signature": "DS_1S_news",
+      "enabled": true
+    },
+    {
+      "name": "DS_1S_foucs",
+      "basemodel": "deepseek-chat", 
+      "signature": "DS_1S_foucs",
+      "enabled": true
+    },
+    {
+      "name": "DS_1S_hitup",
+      "basemodel": "deepseek-chat", 
+      "signature": "DS_1S_hitup",
+      "enabled": true
+    },
+    {
       "name": "DS_1S_enhance_v3",
       "basemodel": "deepseek-chat", 
       "signature": "DS_1S_enhance_v3",

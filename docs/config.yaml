@@ -17,6 +17,21 @@ markets:
     time_granularity: "daily"  # daily dates without hour component
     enabled: true
     agents:  # CN market specific agents
+      - folder: "DS_1S_news"
+        display_name: "DS_1S_news"
+        icon: "./figs/deepseek.svg"
+        color: "#10a37f"
+        enabled: true
+      - folder: "DS_1S_foucs"
+        display_name: "DS_1S_foucs"
+        icon: "./figs/deepseek.svg"
+        color: "#00ffcc"
+        enabled: true
+      - folder: "DS_1S_hitup"
+        display_name: "DS_1S_hitup"
+        icon: "./figs/deepseek.svg"
+        color: "#ffbe0b"
+        enabled: true 
       - folder: "DS_1S_enhance_v3"
         display_name: "DS_1S_enhance_v3"
         icon: "./figs/deepseek.svg"
