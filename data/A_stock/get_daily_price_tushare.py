@@ -278,7 +278,6 @@ def convert_index_daily_to_json(
     for _, row in df.iterrows():
         trade_date = row["trade_date"]
         date_formatted = f"{trade_date[:4]}-{trade_date[4:6]}-{trade_date[6:]}"
-
         json_data["Time Series (Daily)"][date_formatted] = {
             "1. open": f"{row['open']:.4f}",
             "2. high": f"{row['high']:.4f}",

@@ -9,8 +9,8 @@ import argparse
 load_dotenv()
 
 # Import tools and prompts
-from tools.general_tools import write_config_value
-from prompts.agent_prompt import all_nasdaq_100_symbols
+from tools.general_tools import write_config_value, get_config_value
+from tools.price_tools import (all_nasdaq_100_symbols, all_sse_50_symbols)
 
 
 # Agent class mapping table - for dynamic import and instantiation
@@ -22,6 +22,10 @@ AGENT_REGISTRY = {
     "BaseAgent_Hour": {
         "module": "agent.base_agent.base_agent_hour",
         "class": "BaseAgent_Hour"
+    },
+    "BaseAgentAStock": {
+        "module": "agent.base_agent_astock.base_agent_astock",
+        "class": "BaseAgentAStock"
     },
 }
 
@@ -97,9 +101,10 @@ def load_config(config_path=None):
         exit(1)
 
 
-async def _run_model_in_current_process(AgentClass, model_config, INIT_DATE, END_DATE, agent_config, log_config):
+async def _run_model_in_current_process(AgentClass, model_config, INIT_DATE, END_DATE, agent_config, log_config, market):
     model_name = model_config.get("name", "unknown")
     basemodel = model_config.get("basemodel")
+    stock_symbols = model_config.get("stock_symbols","unknown")
     signature = model_config.get("signature")
     openai_base_url = model_config.get("openai_base_url", None)
     openai_api_key = model_config.get("openai_api_key", None)
@@ -110,33 +115,60 @@ async def _run_model_in_current_process(AgentClass, model_config, INIT_DATE, END
     if not signature:
         print(f"❌ Model {model_name} missing signature field")
         return
+    if stock_symbols == "all_sse_50_symbols":
+        symbols = all_sse_50_symbols
+    elif stock_symbols == "all_nasdaq_100_symbols":
+        symbols = all_nasdaq_100_symbols 
+    else:
+        print(f"❌ Stock {stock_symbols} missing stock_symbols field")
+        return
 
     print("=" * 60)
     print(f"🤖 Processing model: {model_name}")
     print(f"📝 Signature: {signature}")
     print(f"🔧 BaseModel: {basemodel}")
+    print(f"🔧 stock_symbols: {stock_symbols}")
 
     project_root = Path(__file__).resolve().parent
-    runtime_env_dir = project_root / "data" / "agent_data" / signature
+    log_path = log_config.get("log_path", "./data/agent_data")
+    if log_path.startswith("./data/"):
+        agent_path = log_path[7:]  # Remove "./data/" prefix
+    runtime_env_dir = project_root / "data" / agent_path / signature
     runtime_env_dir.mkdir(parents=True, exist_ok=True)
     runtime_env_path = runtime_env_dir / ".runtime_env.json"
-    os.environ["RUNTIME_ENV_PATH"] = str(runtime_env_path)
-    os.environ["SIGNATURE"] = signature
-    write_config_value("TODAY_DATE", END_DATE)
-    write_config_value("IF_TRADE", False)
+    #os.environ["RUNTIME_ENV_PATH"] = str(runtime_env_path)
+    #os.environ["SIGNATURE"] = signature
 
     max_steps = agent_config.get("max_steps", 10)
     max_retries = agent_config.get("max_retries", 3)
     base_delay = agent_config.get("base_delay", 0.5)
     initial_cash = agent_config.get("initial_cash", 10000.0)
 
-    log_path = log_config.get("log_path", "./data/agent_data")
+    # Check position file to determine if this is a fresh start
+    position_file = project_root / log_path / signature / "position" / "position.jsonl"
+    
+    # If position file doesn't exist, reset config to start from INIT_DATE
+    if not position_file.exists():
+        # Clear the shared config file for fresh start
+        from tools.general_tools import _resolve_runtime_env_path
+        runtime_env_path = _resolve_runtime_env_path()
+        if os.path.exists(runtime_env_path):
+            os.remove(runtime_env_path)
+            print(f"🔄 Position file not found, cleared config for fresh start from {INIT_DATE}")
+    
+    # Write config values to shared config file (from .env RUNTIME_ENV_PATH)
+    write_config_value("SIGNATURE", signature)
+    write_config_value("IF_TRADE", False)
+    write_config_value("MARKET", market)
+    write_config_value("LOG_PATH", log_path)
+    
+    print(f"✅ Runtime config initialized: SIGNATURE={signature}, MARKET={market}")
 
     try:
         agent = AgentClass(
             signature=signature,
             basemodel=basemodel,
-            stock_symbols=all_nasdaq_100_symbols,
+            stock_symbols=symbols,
             log_path=log_path,
             openai_base_url=openai_base_url,
             openai_api_key=openai_api_key,
@@ -172,6 +204,8 @@ async def _spawn_model_subprocesses(config_path, enabled_models):
     tasks = []
     python_exec = sys.executable
     this_file = str(Path(__file__).resolve())
+    for model in enabled_models:
+        signature = model.get("signature")
     for model in enabled_models:
         signature = model.get("signature")
         if not signature:
@@ -244,6 +278,7 @@ async def main(config_path=None, only_signature: str | None = None):
     # Get agent configuration
     agent_config = config.get("agent_config", {})
     log_config = config.get("log_config", {})
+    market = config.get("market", {})
 
     # Display enabled model information
     model_names = [m.get("name", m.get("signature")) for m in enabled_models]
@@ -254,7 +289,7 @@ async def main(config_path=None, only_signature: str | None = None):
 
     if len(enabled_models) <= 1:
         for model_config in enabled_models:
-            await _run_model_in_current_process(AgentClass, model_config, INIT_DATE, END_DATE, agent_config, log_config)
+            await _run_model_in_current_process(AgentClass, model_config, INIT_DATE, END_DATE, agent_config, log_config, market)
         print("🎉 All models processing completed!")
     else:
         print("⚡ Multiple models enabled; running them in parallel using subprocesses...")

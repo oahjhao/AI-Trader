@@ -1,11 +1,14 @@
 #!/bin/bash
+export PATH="/usr/local/bin:/usr/bin:/bin"
 
-# Kill existing agent tool process 
+# Kill existing agent tool process
 echo 'Kill existing agent tool process...'
 ps aux|grep agent_tools | grep -v grep | awk '{print $2}' |xargs -I {} sudo kill -9 {}
 sleep 5
 echo 'Kill existing trading steps...'
-ps aux|grep main_a_stock_step | grep -v grep | awk '{print $2}' |xargs -I {} sudo kill -9 {}
+ps aux|grep main_a_stock | grep -v grep | awk '{print $2}' |xargs -I {} sudo kill -9 {}
+sleep 1
+ps aux|grep astock_config | grep -v grep | awk '{print $2}' |xargs -I {} sudo kill -9 {}
 sleep 1
 echo 'done.'
 
@@ -21,11 +24,11 @@ jq --arg date "$TODAY" '.date_range.end_date = $date' "$JSON_FILE" > "${JSON_FIL
 echo "$(date): Updated end_date to $TODAY in $JSON_FILE"
 
 echo 'step1 starting...'
-sh scripts/main_a_stock_step1.sh > logs/step1.log
-sleep 2
+sh scripts/main_a_stock_step1.sh > logs/step1.log 2>&1
+sleep 5
 echo 'step2 starting...'
 nohup sh scripts/main_a_stock_step2.sh > logs/step2.log 2>&1 &
-sleep 2
+sleep 5
 echo 'step3 starting...'
 nohup sh scripts/main_a_stock_step3.sh > logs/step3.log 2>&1 &
 echo 'done.'

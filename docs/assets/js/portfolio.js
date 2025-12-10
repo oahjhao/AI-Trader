@@ -140,7 +140,7 @@ async function updateMetrics(data, date) {
 async function updateActionHistory(data, date) {
     const tableBody = document.getElementById('actionTableBody');
     tableBody.innerHTML = '';
-    const actionsHistory = data.positions ? data.positions.filter(p => p.this_action && p.this_action.action !== 'no_trade' && p.date <= date) : null;
+    const actionsHistory = data.positions ? data.positions.filter(p => p.this_action && p.this_action.action !== 'no_trade' && p.date <= date).reverse() : null;
 
     // Create table rows
     actionsHistory.forEach(p => {
@@ -430,7 +430,7 @@ async function updateTransactions(agentName, date) {
     for (const line of lines) {
         const cardEl = document.createElement('div');
         cardEl.className = 'trans-card';
-        console.log('line:', line);
+        // console.log('line:', line);
 
         // Build card HTML - only include reasoning section if thinking is available
         let cardHTML = `

@@ -47,6 +47,36 @@ markets:
         icon: "./figs/deepseek.svg"
         color: "#3a86ff"
         enabled: true 
+      - folder: "test_sse50_news"
+        display_name: "test_sse50_news"
+        icon: "./figs/openai.svg"
+        color: "#10a37f"
+        enabled: true
+      - folder: "test_sse50_foucs"
+        display_name: "test_sse50_foucs"
+        icon: "./figs/openai.svg"
+        color: "#00ffcc"
+        enabled: true
+      - folder: "test_sse50_hitup"
+        display_name: "test_sse50_hitup"
+        icon: "./figs/openai.svg"
+        color: "#ffbe0b"
+        enabled: true 
+      - folder: "test_sse50_enhance_v3"
+        display_name: "test_sse50_enhance_v3"
+        icon: "./figs/openai.svg"
+        color: "#8338ec"
+        enabled: true
+      - folder: "test_sse50_5d20d"
+        display_name: "test_sse50_5d20d"
+        icon: "./figs/openai.svg"
+        color: "#00d4ff"
+        enabled: true 
+      - folder: "test_sse50_normal"
+        display_name: "test_sse50_normal"
+        icon: "./figs/openai.svg"
+        color: "#3a86ff"
+        enabled: true 
       
 
   us:
@@ -72,9 +102,9 @@ markets:
         icon: "./figs/qwen.svg"
         color: "#00ffcc"
         enabled: false
-      - folder: "deepseek-chat-v3.1"
+      - folder: "openai-chat-v3.1"
         display_name: "DeepSeek Chat v3.1"
-        icon: "./figs/deepseek.svg"
+        icon: "./figs/openai.svg"
         color: "#ff006e"
         enabled: false
       - folder: "gpt-5"

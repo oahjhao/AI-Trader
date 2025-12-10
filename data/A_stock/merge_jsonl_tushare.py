@@ -84,6 +84,7 @@ def convert_a_stock_to_jsonl(
                     "5. volume": (
                         str(int(row["vol"] * 100)) if pd.notna(row["vol"]) else "0"
                     ),  # Convert to shares (vol is in 手, 1手=100股)
+                    "6. pct_chg": str(row["pct_chg"]),
                 }
 
             # Get stock name from mapping

@@ -222,6 +222,7 @@ async def main(config_path=None):
             # Clear the shared config file for fresh start
             from tools.general_tools import _resolve_runtime_env_path
             runtime_env_path = _resolve_runtime_env_path()
+            print(f"✅ Position file path : {runtime_env_path}")
             if os.path.exists(runtime_env_path):
                 os.remove(runtime_env_path)
                 print(f"🔄 Position file not found, cleared config for fresh start from {INIT_DATE}")

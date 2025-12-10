@@ -3,7 +3,7 @@
   "market": "cn",
   "date_range": {
     "init_date": "2025-12-01",
-    "end_date": "2025-12-03"
+    "end_date": "2025-12-10"
   },
   "models": [
     {
