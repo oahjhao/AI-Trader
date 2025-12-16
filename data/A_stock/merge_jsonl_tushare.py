@@ -66,14 +66,16 @@ def convert_a_stock_to_jsonl(
 
             # Get latest date for Meta Data
             latest_date = str(group_df["trade_date"].max())
-            latest_date_formatted = f"{latest_date[:4]}-{latest_date[4:6]}-{latest_date[6:]}"
+            #latest_date_formatted = f"{latest_date[:4]}-{latest_date[4:6]}-{latest_date[6:]}"
+            latest_date_formatted = f"{latest_date}"
 
             # Build Time Series (Daily) data
             time_series = {}
 
             for idx, row in group_df.iterrows():
                 date_str = str(row["trade_date"])
-                date_formatted = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:]}"
+                #date_formatted = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:]}"
+                date_formatted = f"{date_str}"
 
                 # For the latest date, only include buy price (to prevent future information leakage)
                 time_series[date_formatted] = {
@@ -85,6 +87,20 @@ def convert_a_stock_to_jsonl(
                         str(int(row["vol"] * 100)) if pd.notna(row["vol"]) else "0"
                     ),  # Convert to shares (vol is in 手, 1手=100股)
                     "6. pct_chg": str(row["pct_chg"]),
+                    #MA_5,MA_10,MA_20,MA_60,EMA_5,EMA_10,EMA_20,EMA_60,RSI,DIF,DEA,ATR,OBV
+                    "7. MA_5": str(row["MA_5"]),
+                    "8. MA_10": str(row["MA_10"]),
+                    "9. MA_20": str(row["MA_20"]),
+                    "10. MA_60": str(row["MA_60"]),
+                    "11. EMA_5": str(row["EMA_5"]),
+                    "12. EMA_10": str(row["EMA_10"]),
+                    "13. EMA_20": str(row["EMA_20"]),
+                    "14. EMA_60": str(row["EMA_60"]),
+                    "15. RSI": str(row["RSI"]),
+                    "16. DIF": str(row["DIF"]),
+                    "17. DEA": str(row["DEA"]),
+                    "18. ATR": str(row["ATR"]),
+                    "19. OBV": str(row["OBV"]),
                 }
 
             # Get stock name from mapping

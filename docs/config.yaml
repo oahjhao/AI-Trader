@@ -17,6 +17,11 @@ markets:
     time_granularity: "daily"  # daily dates without hour component
     enabled: true
     agents:  # CN market specific agents
+      - folder: "DS_sse50_monk"
+        display_name: "DS_sse50_monk"
+        icon: "./figs/deepseek.svg"
+        color: "#f15b6c"
+        enabled: true
       - folder: "DS_sse50_news"
         display_name: "DS_sse50_news"
         icon: "./figs/deepseek.svg"
@@ -47,6 +52,16 @@ markets:
         icon: "./figs/deepseek.svg"
         color: "#3a86ff"
         enabled: true 
+      - folder: "test_sse50_tech"
+        display_name: "test_sse50_tech"
+        icon: "./figs/openai.svg"
+        color: "#00d4ff"
+        enabled: true 
+      - folder: "test_sse50_monk"
+        display_name: "test_sse50_monk"
+        icon: "./figs/openai.svg"
+        color: "#f15b6c"
+        enabled: true
       - folder: "test_sse50_news"
         display_name: "test_sse50_news"
         icon: "./figs/openai.svg"
@@ -67,16 +82,6 @@ markets:
         icon: "./figs/openai.svg"
         color: "#8338ec"
         enabled: true
-      - folder: "test_sse50_5d20d"
-        display_name: "test_sse50_5d20d"
-        icon: "./figs/openai.svg"
-        color: "#00d4ff"
-        enabled: true 
-      - folder: "test_sse50_normal"
-        display_name: "test_sse50_normal"
-        icon: "./figs/openai.svg"
-        color: "#3a86ff"
-        enabled: true 
       
 
   us:

@@ -160,6 +160,21 @@ def get_price_local_daily(symbol: str, date: str) -> Dict[str, Any]:
                         "low": day.get("3. low"), 
                         "close": day.get("4. sell price"),
                         "volume": day.get("5. volume"),
+                        #MA_5,MA_10,MA_20,MA_60,EMA_5,EMA_10,EMA_20,EMA_60,RSI,DIF,DEA,ATR,OBV
+                        "pct_chg":day.get("6. pct_chg"),
+                        "MA_5":day.get("7. MA_5"),
+                        "MA_10":day.get("8. MA_10"),
+                        "MA_20":day.get("9. MA_20"),
+                        "MA_60":day.get("10. MA_60"),
+                        "EMA_5":day.get("11. EMA_5"),
+                        "EMA_10":day.get("12. EMA_10"),
+                        "EMA_20":day.get("13. EMA_20"),
+                        "EMA_60":day.get("14. EMA_60"),
+                        "RSI":day.get("15. RSI"),
+                        "DIF":day.get("16. DIF"),
+                        "DEA":day.get("17. DEA"),
+                        "ATR":day.get("18. ATR"),
+                        "OBV":day.get("19. OBV"),
                     },
                 }
 

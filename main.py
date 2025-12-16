@@ -1,7 +1,7 @@
 import asyncio
 import json
 import os
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from pathlib import Path as _Path
 from dotenv import load_dotenv
@@ -202,6 +202,7 @@ async def main(config_path=None):
             continue
 
         print("=" * 60)
+        print(datetime.now())
         print(f"🤖 Processing model: {model_name}")
         print(f"📝 Signature: {signature}")
         print(f"🔧 BaseModel: {basemodel}")

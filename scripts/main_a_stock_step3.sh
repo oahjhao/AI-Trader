@@ -7,5 +7,6 @@ PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
 cd "$PROJECT_ROOT"
 
 echo "🤖 正在启动主交易智能体（A股模式）..."
+date
 /home/ec2-user/AI-Trader/venv/bin/python main.py configs/astock_config.json  # 运行A股配置
 echo "✅ AI-Trader 已停止"

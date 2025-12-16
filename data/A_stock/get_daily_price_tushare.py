@@ -7,6 +7,8 @@ from typing import Dict, Optional
 
 import pandas as pd
 import tushare as ts
+import talib
+import numpy as np
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -105,6 +107,62 @@ def api_call_with_retry(api_func, pro_api_instance, max_retries: int = 3, retry_
     
     raise Exception("所有重试尝试均失败")
 
+def calc_ma(df):
+    # 确保日期列是datetime类型
+    df['trade_date'] = pd.to_datetime(df['trade_date'])
+
+    # 按名称分组处理
+    grouped = df.groupby('ts_code')
+
+    results = []
+
+    for ts_code, group in grouped:
+        # 确保每个组内按日期排序
+        group = group.sort_values('trade_date')
+
+        # 提取close列作为numpy数组（ta-lib需要的格式）
+        close_prices = group['close'].values
+        high_prices = group['high'].values
+        low_prices = group['low'].values
+        volumes = group['vol'].values
+
+        # 使用ta-lib计算移动平均线
+        ma_5 = talib.MA(close_prices, timeperiod=5)
+        ma_10 = talib.MA(close_prices, timeperiod=10)
+        ma_20 = talib.MA(close_prices, timeperiod=20)
+        ma_60 = talib.MA(close_prices, timeperiod=60)
+
+        ema_5 = talib.EMA(close_prices, timeperiod=5)
+        ema_10 = talib.EMA(close_prices, timeperiod=10)
+        ema_20 = talib.EMA(close_prices, timeperiod=20)
+        ema_60 = talib.EMA(close_prices, timeperiod=60)
+
+        rsi = talib.RSI(close_prices, timeperiod=14)
+        macd, macdsignal, macdhist = talib.MACD(close_prices,fastperiod=12, slowperiod=26, signalperiod=9)
+        atr = talib.ATR(high_prices, low_prices, close_prices, timeperiod=14)
+        obv = talib.OBV(close_prices, volumes)
+        # 创建结果DataFrame
+        result_df = group.copy()
+        result_df['MA_5'] = np.round(ma_5, 3)
+        result_df['MA_10'] = np.round(ma_10, 3)
+        result_df['MA_20'] = np.round(ma_20, 3)
+        result_df['MA_60'] = np.round(ma_60, 3)
+
+        result_df['EMA_5'] = np.round(ema_5, 3)
+        result_df['EMA_10'] = np.round(ema_10, 3)
+        result_df['EMA_20'] = np.round(ema_20, 3)
+        result_df['EMA_60'] = np.round(ema_60, 3)
+
+        result_df['RSI'] = np.round(rsi, 3) 
+        result_df['DIF'] = np.round(macd, 3) 
+        result_df['DEA'] = np.round(macdsignal, 3) 
+        result_df['ATR'] = np.round(atr, 3) 
+        result_df['OBV'] = np.round(obv, 3) 
+        results.append(result_df)
+
+    # 合并所有结果
+    final_result = pd.concat(results, ignore_index=True)
+    return final_result
 
 def get_daily_price_a_stock(
     index_code: str = "000016.SH",
@@ -210,10 +268,12 @@ def get_daily_price_a_stock(
             print("No daily price data found")
             return None
 
-        df2 = pd.concat(all_data, ignore_index=True)
-
+        df_calc = pd.concat(all_data, ignore_index=True)
+        df_calc = df_calc.sort_values(by=["ts_code", "trade_date"], ascending=True).reset_index(drop=True)
+        df_calc_ma = calc_ma(df_calc)
+        #df2 = df_calc.merge(df_calc_ma, on=["ts_code", "trade_date"], how='left') 
         # Sort by trade_date and ts_code in ascending order
-        df2 = df2.sort_values(by=["trade_date", "ts_code"], ascending=True).reset_index(drop=True)
+        df2 = df_calc_ma.sort_values(by=["trade_date", "ts_code"], ascending=True).reset_index(drop=True)
 
         if output_dir is None:
             # Use absolute path relative to script location (already in A_stock directory)
@@ -369,10 +429,10 @@ if __name__ == "__main__":
     fallback_path = Path(__file__).parent / "sse_50_weight.csv"
 
     # Get constituent stocks daily prices
-    df = get_daily_price_a_stock(index_code="000016.SH", daily_start_date="20250101", fallback_csv=fallback_path)
+    df = get_daily_price_a_stock(index_code="000016.SH", daily_start_date="20240911", fallback_csv=fallback_path)
 
     # Get index daily data and convert to JSON
     print("\n" + "=" * 50)
     print("Fetching index daily data...")
     print("=" * 50)
-    df_index = get_index_daily_data(index_code="000016.SH", start_date="20250101")
+    df_index = get_index_daily_data(index_code="000016.SH", start_date="20240911")
