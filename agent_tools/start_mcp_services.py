@@ -135,6 +135,7 @@ class MCPServiceManager:
     def check_service_health(self, service_id):
         """Check service health status"""
         if service_id not in self.services:
+            print(f"service id not found.")
             return False
 
         service = self.services[service_id]
@@ -143,6 +144,7 @@ class MCPServiceManager:
 
         # Check if process is still running
         if process.poll() is not None:
+            print(f"process.poll error.")
             return False
 
         # Check if port is responding (simple check)
@@ -154,7 +156,8 @@ class MCPServiceManager:
             result = sock.connect_ex(("localhost", port))
             sock.close()
             return result == 0
-        except:
+        except Exception as e:
+            print(f"❌ Responding error in {service_id} service: {e}")
             return False
 
     def start_all_services(self):
@@ -176,6 +179,7 @@ class MCPServiceManager:
         # Start all services
         success_count = 0
         for service_id, config in self.service_configs.items():
+            time.sleep(1)
             if self.start_service(service_id, config):
                 success_count += 1
 

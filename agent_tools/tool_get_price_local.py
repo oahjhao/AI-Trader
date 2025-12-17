@@ -1,7 +1,7 @@
 import json
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -81,10 +81,15 @@ def get_price_local(symbol: str, date: str) -> Dict[str, Any]:
     result = None
     if ' ' in date or 'T' in date:
         # Contains time component, use hourly
-        result =  get_price_local_hourly(symbol, date)
+        result_hourly = get_price_local_hourly(symbol, date)
+        date_dt = datetime.strptime(date, "%Y-%m-%d %H:%M:%S")
+        date_yes = (date_dt - timedelta(days=1)).strftime("%Y-%m-%d")
+        result_daily = get_price_local_daily(symbol, date_yes)
+        return {'result_hourly': result_hourly,'result_daily': result_daily}
     else:
         # Date only, use daily
         result = get_price_local_daily(symbol, date)
+        return result
     
     # log_file = get_config_value("LOG_FILE")
     # signature = get_config_value("SIGNATURE")
@@ -96,7 +101,6 @@ def get_price_local(symbol: str, date: str) -> Dict[str, Any]:
     # with open(log_file, "a", encoding="utf-8") as f:
     #     f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
     
-    return result
 
 
 
@@ -192,13 +196,13 @@ def get_price_local_hourly(symbol: str, date: str) -> Dict[str, Any]:
     Returns:
         Dictionary containing symbol, date and ohlcv data.
     """
-    filename = "merged.jsonl"
+    filename = "merged_hourly.jsonl"
     try:
         _validate_date_hourly(date)
     except ValueError as e:
         return {"error": str(e), "symbol": symbol, "date": date}
 
-    data_path = _workspace_data_path(filename)
+    data_path = _workspace_data_path(filename, symbol)
     if not data_path.exists():
         return {"error": f"Data file not found: {data_path}", "symbol": symbol, "date": date}
 
@@ -302,4 +306,5 @@ def get_price_local_function(symbol: str, date: str, filename: str = "merged.jso
 if __name__ == "__main__":
     
     port = int(os.getenv("GETPRICE_HTTP_PORT", "8003"))
+    print(f"mcp:price starting...")
     mcp.run(transport="streamable-http", port=port)

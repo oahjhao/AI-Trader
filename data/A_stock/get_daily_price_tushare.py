@@ -107,7 +107,7 @@ def api_call_with_retry(api_func, pro_api_instance, max_retries: int = 3, retry_
     
     raise Exception("所有重试尝试均失败")
 
-def calc_ma(df):
+def calc_factor(df):
     # 确保日期列是datetime类型
     df['trade_date'] = pd.to_datetime(df['trade_date'])
 
@@ -270,10 +270,10 @@ def get_daily_price_a_stock(
 
         df_calc = pd.concat(all_data, ignore_index=True)
         df_calc = df_calc.sort_values(by=["ts_code", "trade_date"], ascending=True).reset_index(drop=True)
-        df_calc_ma = calc_ma(df_calc)
+        df_calc_factor= calc_factor(df_calc)
         #df2 = df_calc.merge(df_calc_ma, on=["ts_code", "trade_date"], how='left') 
         # Sort by trade_date and ts_code in ascending order
-        df2 = df_calc_ma.sort_values(by=["trade_date", "ts_code"], ascending=True).reset_index(drop=True)
+        df2 = df_calc_factor.sort_values(by=["trade_date", "ts_code"], ascending=True).reset_index(drop=True)
 
         if output_dir is None:
             # Use absolute path relative to script location (already in A_stock directory)

@@ -1,0 +1,25 @@
+{
+  "agent_type": "BaseAgentAStockHourly",
+  "market": "cn",
+  "date_range": {
+    "init_date": "2025-12-01 10:00:00",
+    "end_date": "2025-12-16 15:30:00"
+  },
+  "models": [
+    {
+      "name": "DS_sse50_hourly_normal",
+      "basemodel": "deepseek-chat",
+      "signature": "DS_sse50_hourly_normal",
+      "enabled": true
+    }
+  ],
+  "agent_config": {
+    "max_steps": 30,
+    "max_retries": 3,
+    "base_delay": 1.0,
+    "initial_cash": 1000000.0
+  },
+  "log_config": {
+    "log_path": "./data/agent_data_astock"
+  }
+}

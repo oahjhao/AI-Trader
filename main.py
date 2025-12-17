@@ -27,6 +27,10 @@ AGENT_REGISTRY = {
         "module": "agent.base_agent_astock.base_agent_astock",
         "class": "BaseAgentAStock"
     },
+    "BaseAgentAStockHourly": {
+        "module": "agent.base_agent_astock.base_agent_astock_hourly",
+        "class": "BaseAgentAStockHourly"
+    },
     "BaseAgentCrypto": {
         "module": "agent.base_agent_crypto.base_agent_crypto",
         "class": "BaseAgentCrypto"

@@ -19,5 +19,6 @@ cd "$PROJECT_ROOT"
 
 echo 'step2 starting...'
 nohup sh scripts/main_a_stock_step2.sh > logs/step2.log 2>&1 &
-sleep 2
+sleep 5
+ps aux|grep agent_tool|grep -v grep
 echo 'done.'

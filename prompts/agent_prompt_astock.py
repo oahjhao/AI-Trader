@@ -328,19 +328,29 @@ def get_agent_system_prompt_astock(today_date: str, signature: str, stock_symbol
     if stock_symbols is None:
         stock_symbols = all_sse_50_symbols
 
+    #if ' ' in today_date or 'T' in today_date:
+    #    today_date = today_date.split(' ')[0]
+
     # 获取昨日买入和卖出价格，硬编码market="cn"
+    print(f"step: get_yesterday_open_and_close_price")
     yesterday_buy_prices, yesterday_sell_prices = get_yesterday_open_and_close_price(
         today_date, stock_symbols, market="cn"
     )
+    print(f"step: get_open_prices")
     today_buy_price = get_open_prices(today_date, stock_symbols, market="cn")
+    print(f"step: today_init_position")
     today_init_position = get_today_init_position(today_date, signature)
+    print(f"step: get_yesterday_profit")
     yesterday_profit = get_yesterday_profit(
         today_date, yesterday_buy_prices, yesterday_sell_prices, today_init_position, stock_symbols
     )
+    print(f"step: get_yesterday_diff")
     diff_1d = get_yesterday_diff(today_date, stock_symbols, market="cn")
 
     # A股市场显示中文股票名称
+    print(f"step: format_price_dict_with_names")
     yesterday_sell_prices_display = format_price_dict_with_names(yesterday_sell_prices, market="cn")
+    print(f"step: format_price_dict_with_names")
     today_buy_price_display = format_price_dict_with_names(today_buy_price, market="cn")
 
     if "tech" in signature:

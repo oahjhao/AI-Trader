@@ -390,19 +390,23 @@ def get_yesterday_date(today_date: str, merged_path: Optional[str] = None, marke
     Returns:
         yesterday_date: 上一个交易日或时间点的字符串，格式与输入一致。
     """
-    # 解析输入日期/时间
-    if ' ' in today_date:
-        input_dt = datetime.strptime(today_date, "%Y-%m-%d %H:%M:%S")
-        date_only = False
-    else:
-        input_dt = datetime.strptime(today_date, "%Y-%m-%d")
-        date_only = True
     
     # 获取 merged.jsonl 文件路径
     if merged_path is None:
         merged_file = get_merged_file_path(market)
     else:
         merged_file = Path(merged_path)
+
+    # 解析输入日期/时间
+    if ' ' in today_date:
+        input_dt = datetime.strptime(today_date, "%Y-%m-%d %H:%M:%S")
+        date_only = False
+        #base_name = str(merged_file)[:-6]
+        #merged_file = Path(base_name + '_hourly.jsonl')
+        merged_file.with_name(merged_file.stem + '_hourly.jsonl')
+    else:
+        input_dt = datetime.strptime(today_date, "%Y-%m-%d")
+        date_only = True
     
     if not merged_file.exists():
         # 如果文件不存在，根据输入类型回退
@@ -498,9 +502,13 @@ def get_open_prices(
     else:
         merged_file = Path(merged_path)
 
+    if ' ' in today_date:
+        merged_file = merged_file.with_name(merged_file.stem + '_hourly.jsonl')
+
     if not merged_file.exists():
         return results
 
+    print(f"get_open_prices:merged_file:{merged_file}")
     with merged_file.open("r", encoding="utf-8") as f:
         for line in f:
             if not line.strip():
@@ -522,7 +530,6 @@ def get_open_prices(
             if not isinstance(series, dict):
                 continue
             bar = series.get(today_date)
-            
             if isinstance(bar, dict):
                 open_val = bar.get("1. buy price")
                 
@@ -661,10 +668,21 @@ def get_yesterday_diff(
     else:
         merged_file = Path(merged_path)
 
+    yesterday_date = get_yesterday_date(today_date, merged_path=merged_path, market=market)
+    #print(f"today:{today_date} yes:{yesterday_date}")
+    input_date_yes = datetime.strptime(yesterday_date, "%Y-%m-%d %H:%M:%S")
+    input_date_to = datetime.strptime(today_date, "%Y-%m-%d %H:%M:%S")
+
+    # 解析输入日期/时间
+    if ' ' in yesterday_date:
+        if input_date_yes.strftime("%Y-%m-%d") == input_date_to.strftime("%Y-%m-%d"): 
+            input_dt = (input_date_yes - timedelta(days=1)).strftime("%Y-%m-%d") 
+    else:
+        input_dt = input_date_yes.strftime("%Y-%m-%d")
+
+    print(f"input_dt : {input_dt}")
     if not merged_file.exists():
         return diff_result 
-
-    yesterday_date = get_yesterday_date(today_date, merged_path=merged_path, market=market)
 
     with merged_file.open("r", encoding="utf-8") as f:
         for line in f:
@@ -688,7 +706,7 @@ def get_yesterday_diff(
                 continue
 
             # 尝试获取昨日买入价和卖出价
-            bar = series.get(yesterday_date)
+            bar = series.get(input_dt)
             if isinstance(bar, dict):
                 diff_val = bar.get("6. pct_chg")
                 #diff_5d_val = bar.get("10. diff_5d") 
@@ -856,9 +874,9 @@ def get_latest_position(today_date: str, signature: str) -> Tuple[Dict[str, floa
         position_file = Path(log_path) / signature / "position" / "position.jsonl"
     else:
         if log_path.startswith("./data/"):
-            log_path = log_path[7:]  # Remove "./data/" prefix
-        position_file = base_dir / "data" / log_path / signature / "position" / "position.jsonl"
-
+            log_path = str(log_path)[7:]  # Remove "./data/" prefix
+        position_file = base_dir / "data" / Path(log_path) / signature / "position" / "position.jsonl"
+    print(f"position_file : {position_file}")
     if not position_file.exists():
         return {}, -1
 
@@ -888,7 +906,7 @@ def get_latest_position(today_date: str, signature: str) -> Tuple[Dict[str, floa
         return latest_positions_today, max_id_today
     
     # Step 2: 当天没有记录，则回退到上一个交易日
-    prev_date = get_yesterday_date(today_date, market=market)
+    prev_dateposition_file = get_yesterday_date(today_date, market=market)
     
     max_id_prev = -1
     latest_positions_prev: Dict[str, float] = {}

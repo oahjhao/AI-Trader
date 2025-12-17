@@ -82,6 +82,11 @@ markets:
         icon: "./figs/openai.svg"
         color: "#8338ec"
         enabled: true
+      - folder: "DS_sse50_hourly_normal"
+        display_name: "DS_sse50_hourly_normal"
+        icon: "./figs/google.svg"
+        color: "#A8FF24"
+        enabled: true
       
 
   us:
