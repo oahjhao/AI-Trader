@@ -72,7 +72,7 @@ async function loadDataAndRefresh() {
         await dataLoader.initialize();
 
         // Update subtitle for the current market
-        updateMarketSubtitle();
+        // updateMarketSubtitle();
 
         // Load all agents data
         console.log('Loading all agents data...');

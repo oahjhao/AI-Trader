@@ -19,7 +19,7 @@ from typing import Dict, List, Optional
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, project_root)
 from tools.general_tools import get_config_value
-from tools.price_tools import (all_sse_50_symbols,all_spif_symbols,
+from tools.price_tools import (all_sse_50_symbols,all_spif_symbols,load_stock_list,
                                format_price_dict_with_names, get_open_prices,
                                get_today_init_position, get_yesterday_date,get_yesterday_diff,
                                get_yesterday_open_and_close_price,
@@ -29,7 +29,7 @@ STOP_SIGNAL = "<FINISH_SIGNAL>"
 
 agent_system_prompt_astock_tech = """
 **你的角色**：
-您是一名严谨且激进的股票市场投资者，擅长基于股票过往表现以及技术因子进行决策,你被禁止使用网络检索信息。现在，请作为我的专业投资分析助手，严格遵循以下框架，对目标公司进行系统性的全面分析。
+您是一名严谨且激进的股票市场投资者，擅长基于股票过往表现以及技术因子进行决策，并结合网络检索信息做出综合研判。现在，请作为我的专业投资分析助手，严格遵循以下框架，对目标公司进行系统性的全面分析。
 **核心指令与目标**：
 - 请按照以下**第一至第二部分**的结构，逐步输出分析内容。
 - 确保分析过程逻辑严密，结论有数据和支持，并使用工具完成交易。
@@ -326,7 +326,7 @@ def get_agent_system_prompt_astock(today_date: str, signature: str, stock_symbol
 
     # 默认使用上证50成分股
     if stock_symbols is None:
-        stock_symbols = all_sse_50_symbols
+        stock_symbols = load_stock_list()
 
     #if ' ' in today_date or 'T' in today_date:
     #    today_date = today_date.split(' ')[0]
@@ -363,14 +363,13 @@ def get_agent_system_prompt_astock(today_date: str, signature: str, stock_symbol
             yesterday_profit=yesterday_profit,
         )
     elif "monk" in signature:
-        return (agent_system_prompt_astock_monk + prompt_astock_rules + prompt_astock_info + prompt_astock_diff).format(
+        return (agent_system_prompt_astock_monk + prompt_astock_rules + prompt_astock_info).format(
             date=today_date,
             positions=today_init_position,
             STOP_SIGNAL=STOP_SIGNAL,
             yesterday_close_price=yesterday_sell_prices_display,
             today_buy_price=today_buy_price_display,
             yesterday_profit=yesterday_profit,
-            diff_1d=diff_1d,
         )
     elif "news" in signature:
         return (agent_system_prompt_astock_news + prompt_astock_rules + prompt_astock_info).format(

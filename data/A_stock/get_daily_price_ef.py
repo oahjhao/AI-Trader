@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 from datetime import datetime, timedelta
 import logging
+import json
 
 import pandas as pd
 import efinance as ef
@@ -109,7 +110,7 @@ class AStockIntradayDataFetcher:
             Tuple[str, str]: (begin_date, end_date) 格式为 'YYYYMMDD'
         """
         # 结束日期始终为今天
-        end_date = datetime.now().strftime("%Y%m%d %H:%M:%S")
+        end_date = datetime.now().strftime("%Y%m%d")
         
         # 检查输出文件是否存在
         if self.output_path.exists():
@@ -122,12 +123,12 @@ class AStockIntradayDataFetcher:
                     # trade_date格式: "2025-10-09 10:30"
                     last_date_str = df_existing['trade_date'].max()
                     
-                    # 日期
-                    last_date = datetime.strptime(last_date_str, "%Y-%m-%d %H:%M:%S")
+                    # 提取日期部分（去掉时间）
+                    last_date = datetime.strptime(last_date_str.split()[0], "%Y-%m-%d")
                     
                     # 计算下一天
-                    next_date = last_date + timedelta(minutes=30)
-                    begin_date = next_date.strftime("%Y%m%d %H:%M:%S")
+                    next_date = last_date + timedelta(days=1)
+                    begin_date = next_date.strftime("%Y%m%d")
                     
                     logger.info(f"已有数据的最后日期: {last_date.strftime('%Y-%m-%d')}")
                     logger.info(f"将从 {begin_date} 开始增量更新")
@@ -272,12 +273,11 @@ class AStockIntradayDataFetcher:
         df_new.columns = ['stock_name', 'stock_code', 'trade_date', 'open', 'close', 'high', 'low', 'volume', 'amount', 'pct_w','pct_chg','amount_chg','exchg']
         
         # 统一股票代码格式（添加.SH后缀）
-        df_new["stock_code"] = df_new["stock_code"].apply(lambda x: x + ".SH")
-        #df_new["trade_date"] = df_new["trade_date"].apply(lambda x: x + ":00")
+        # df_new["stock_code"] = df_new["stock_code"].apply(lambda x: x + ".SH")
         df_new["trade_date"] = pd.to_datetime(df_new["trade_date"])
         df_new["trade_date"] = df_new["trade_date"].dt.strftime('%Y-%m-%d %H:%M:%S')
-        #df_calc_factor = self.calc_factor(df_new)
-        df_calc_factor = df_new 
+        df_calc_factor = self.calc_factor(df_new)
+        # df_calc_factor = df_new 
         #print(df_calc_factor.head(10)) 
 
         # 如果是增量更新且已有文件存在，则合并数据
@@ -378,14 +378,14 @@ def main():
     """
     # 创建数据获取器实例
     fetcher = AStockIntradayDataFetcher(
-        frequency=60,  # 60分钟K线
+        frequency=101,
         stock_list_file="sse_pick.csv",  # 上证50权重文件
-        output_file="A_stock_hourly.csv"
+        output_file="A_stock_daily.csv"
     )
     
     # 执行数据获取（自动检测日期范围）
     df = fetcher.run(
-        default_start_date="20251201",  # 仅在首次运行时使用
+        default_start_date="20250101",  # 仅在首次运行时使用
         auto_date_range=True  # 启用自动日期范围检测
     )
     

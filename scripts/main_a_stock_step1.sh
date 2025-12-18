@@ -15,7 +15,12 @@ cd data/A_stock
 #python merge_jsonl_alphavantage.py
 # # for tushare
 date
-/home/ec2-user/AI-Trader/venv/bin/python get_daily_price_tushare.py
-/home/ec2-user/AI-Trader/venv/bin/python merge_jsonl_tushare.py
+/home/ec2-user/AI-Trader/venv/bin/python get_daily_price_ef.py
+sleep 5
+/home/ec2-user/AI-Trader/venv/bin/python get_hourly_price_ef.py
+sleep 5
+/home/ec2-user/AI-Trader/venv/bin/python merge_jsonl_daily_ef.py
+sleep 2
+/home/ec2-user/AI-Trader/venv/bin/python merge_jsonl_hourly_ef.py
 
 cd ..

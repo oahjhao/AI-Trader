@@ -2,14 +2,38 @@
   "agent_type": "BaseAgentAStockHourly",
   "market": "cn",
   "date_range": {
-    "init_date": "2025-12-01 10:00:00",
-    "end_date": "2025-12-16 15:30:00"
+    "init_date": "2025-12-08 10:00:00",
+    "end_date": "2025-12-18 15:13:56"
   },
   "models": [
     {
-      "name": "DS_sse50_hourly_normal",
+      "name": "DS_pick_tech",
       "basemodel": "deepseek-chat",
-      "signature": "DS_sse50_hourly_normal",
+      "signature": "DS_pick_tech",
+      "enabled": true
+    },
+    {
+      "name": "DS_pick_news",
+      "basemodel": "deepseek-chat",
+      "signature": "DS_pick_news",
+      "enabled": true
+    },
+    {
+      "name": "DS_pick_monk",
+      "basemodel": "deepseek-chat",
+      "signature": "DS_pick_monk",
+      "enabled": true
+    },
+    {
+      "name": "DS_pick_enhance",
+      "basemodel": "deepseek-chat",
+      "signature": "DS_pick_enhance",
+      "enabled": true
+    },
+    {
+      "name": "DS_pick_normal",
+      "basemodel": "deepseek-chat",
+      "signature": "DS_pick_normal",
       "enabled": true
     }
   ],

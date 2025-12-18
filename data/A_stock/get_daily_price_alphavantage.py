@@ -172,7 +172,7 @@ def get_daily_price(SYMBOL: str):
 
 
 if __name__ == "__main__":
-    for symbol in spif_codes:
-        get_daily_price(symbol)
-    get_daily_price("000906.SHH")
-    # get_daily_price("000016.SHH")
+    # for symbol in spif_codes:
+    #     get_daily_price(symbol)
+    # get_daily_price("000906.SHH")
+    get_daily_price("000016.SHH")

@@ -95,7 +95,7 @@ async function loadAgentPortfolio(agentName, date) {
         // Update holdings table
         await updateHoldingsTable(agentName, date);
         // Update action history 
-	await updateActionHistory(data, date)
+	    await updateActionHistory(data, date)
 
         // Update allocation chart
         await updateAllocationChart(agentName, date);
@@ -118,7 +118,7 @@ async function updateMetrics(data, date) {
     for(; id > 0; id--){
 	console.log('id:', id);
 	console.log('date:', date, data.assetHistory[id]?.date);
-        if(date === data.assetHistory[id]?.date){
+        if(date.split(' ')[0] === data.assetHistory[id]?.date){
             break;
         }
     }
@@ -140,7 +140,7 @@ async function updateMetrics(data, date) {
 async function updateActionHistory(data, date) {
     const tableBody = document.getElementById('actionTableBody');
     tableBody.innerHTML = '';
-    const actionsHistory = data.positions ? data.positions.filter(p => p.this_action && p.this_action.action !== 'no_trade' && p.date <= date).reverse() : null;
+    const actionsHistory = data.positions ? data.positions.filter(p => p.this_action && p.this_action.action !== 'no_trade' && p.date.split(' ')[0] <= date).reverse() : null;
 
     // Create table rows
     actionsHistory.forEach(p => {

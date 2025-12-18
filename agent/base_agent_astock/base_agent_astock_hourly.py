@@ -9,6 +9,7 @@ import json
 import os
 # Import project tools
 import sys
+import pandas as pd
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -82,11 +83,9 @@ class DeepSeekChatOpenAI(ChatOpenAI):
         return result
 
 
-from prompts.agent_prompt_astock import (STOP_SIGNAL,
-                                         get_agent_system_prompt_astock)
-from tools.general_tools import (extract_conversation, extract_tool_messages,
-                                 get_config_value, write_config_value)
-from tools.price_tools import add_no_trade_record
+from prompts.agent_prompt_astock import (STOP_SIGNAL,get_agent_system_prompt_astock)
+from tools.general_tools import (extract_conversation, extract_tool_messages,get_config_value, write_config_value)
+from tools.price_tools import (add_no_trade_record,load_stock_list)
 
 # Load environment variables
 load_dotenv()
@@ -107,56 +106,16 @@ class BaseAgentAStockHourly:
 
     # Default SSE 50 stock symbols (A-shares only)
     DEFAULT_SSE50_SYMBOLS = [
-        "600519.SH",
-        "601318.SH",
-        "600036.SH",
-        "601899.SH",
-        "600900.SH",
-        "601166.SH",
-        "600276.SH",
-        "600030.SH",
-        "603259.SH",
-        "688981.SH",
-        "688256.SH",
-        "601398.SH",
-        "688041.SH",
-        "601211.SH",
-        "601288.SH",
-        "601328.SH",
-        "688008.SH",
-        "600887.SH",
-        "600150.SH",
-        "601816.SH",
-        "601127.SH",
-        "600031.SH",
-        "688012.SH",
-        "603501.SH",
-        "601088.SH",
-        "600309.SH",
-        "601601.SH",
-        "601668.SH",
-        "603993.SH",
-        "601012.SH",
-        "601728.SH",
-        "600690.SH",
-        "600809.SH",
-        "600941.SH",
-        "600406.SH",
-        "601857.SH",
-        "601766.SH",
-        "601919.SH",
-        "600050.SH",
-        "600760.SH",
-        "601225.SH",
-        "600028.SH",
-        "601988.SH",
-        "688111.SH",
-        "601985.SH",
-        "601888.SH",
-        "601628.SH",
-        "601600.SH",
-        "601658.SH",
-        "600048.SH",
+        '000686.SZ',
+        '002139.SZ',
+        '002151.SZ',
+        '002171.SZ',
+        '002332.SZ',
+        '002643.SZ',
+        '300236.SZ',
+        '600641.SH',
+        '600850.SH',
+        '600877.SH',
     ]
 
     def __init__(
@@ -199,7 +158,7 @@ class BaseAgentAStockHourly:
 
         # 默认使用上证50成分股
         if stock_symbols is None:
-            self.stock_symbols = self.DEFAULT_SSE50_SYMBOLS
+            self.stock_symbols = load_stock_list()
         else:
             self.stock_symbols = stock_symbols
 
@@ -234,6 +193,8 @@ class BaseAgentAStockHourly:
         # Data paths
         self.data_path = os.path.join(self.base_log_path, self.signature)
         self.position_file = os.path.join(self.data_path, "position", "position.jsonl")
+    
+
 
     def _get_default_mcp_config(self) -> Dict[str, Dict[str, Any]]:
         """Get default MCP configuration"""
@@ -347,8 +308,13 @@ class BaseAgentAStockHourly:
         """
         print(f"📈 Starting A-shares hourly trading session: {today_date}")
 
+        log_date = ''
         # Set up logging
-        log_file = self._setup_logging(today_date)
+        if ' ' in today_date or 'T' in today_date:
+            log_date = datetime.strptime(today_date, "%Y-%m-%d %H:%M:%S")
+            log_date = log_date.strftime("%Y-%m-%d")
+
+        log_file = self._setup_logging(log_date)
         prompt=get_agent_system_prompt_astock(today_date, self.signature, self.stock_symbols)
 
         # Update system prompt - 使用A股专用提示词

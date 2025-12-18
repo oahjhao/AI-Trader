@@ -630,7 +630,7 @@ class DataLoader {
         if (!data || !data.positions || data.positions.length === 0) return null;
         let latestPosition = {};
         for(let i = data.positions.length - 1; i > 0; i--){
-            if (data.positions[i].date == date){
+            if (data.positions[i].date.split(' ')[0] == date){
                 latestPosition = data.positions[i];
                 break;
             }

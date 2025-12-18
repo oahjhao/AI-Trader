@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 load_dotenv()
 import json
 import sys
+import pandas as pd
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -210,6 +211,28 @@ all_spif_symbols = [
     "300274.SZ",
 ]
 
+def load_stock_list() -> List[str]:
+    stock_list_path = Path("/home/ec2-user/AI-Trader/data/A_stock/sse_pick.csv")
+
+    if not stock_list_path.exists():
+        raise FileNotFoundError(f"股票列表文件不存在: {stock_list_path}")
+    
+    print(f"从 {stock_list_path} 加载股票列表")
+    df = pd.read_csv(stock_list_path)
+    
+    # 从 con_code 列提取唯一的股票代码
+    if "con_code" not in df.columns:
+        raise ValueError(f"文件 {stock_list_path} 中缺少 'con_code' 列")
+    
+    stock_list = df["con_code"].unique()
+    
+    # 去除 .SH 或 .SZ 后缀
+    # stock_list = [code.replace(".SH", "").replace(".SZ", "") for code in stock_list]
+    
+    print(f"成功加载 {len(stock_list)} 只股票")
+    print(f"股票列表: {stock_list[:5]}..." if len(stock_list) > 5 else f"股票列表: {stock_list}")
+    
+    return stock_list
 
 def get_merged_file_path(market: str = "us") -> Path:
     """Get merged.jsonl path based on market type.
@@ -670,15 +693,16 @@ def get_yesterday_diff(
 
     yesterday_date = get_yesterday_date(today_date, merged_path=merged_path, market=market)
     #print(f"today:{today_date} yes:{yesterday_date}")
-    input_date_yes = datetime.strptime(yesterday_date, "%Y-%m-%d %H:%M:%S")
-    input_date_to = datetime.strptime(today_date, "%Y-%m-%d %H:%M:%S")
 
+    input_dt = ''
     # 解析输入日期/时间
     if ' ' in yesterday_date:
+        input_date_yes = datetime.strptime(yesterday_date, "%Y-%m-%d %H:%M:%S")
+        input_date_to = datetime.strptime(today_date, "%Y-%m-%d %H:%M:%S")
         if input_date_yes.strftime("%Y-%m-%d") == input_date_to.strftime("%Y-%m-%d"): 
             input_dt = (input_date_yes - timedelta(days=1)).strftime("%Y-%m-%d") 
     else:
-        input_dt = input_date_yes.strftime("%Y-%m-%d")
+        input_dt = yesterday_date
 
     print(f"input_dt : {input_dt}")
     if not merged_file.exists():
