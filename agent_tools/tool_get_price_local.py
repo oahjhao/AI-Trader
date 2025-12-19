@@ -142,7 +142,7 @@ def get_price_local_daily(symbol: str, date: str) -> Dict[str, Any]:
                     "symbol": symbol,
                     "date": date,
                 }
-            if date == get_config_value("TODAY_DATE"):
+            if date == get_config_value("TODAY_DATE").split(' ')[0]:
                 return {
                     "symbol": symbol,
                     "date": date,

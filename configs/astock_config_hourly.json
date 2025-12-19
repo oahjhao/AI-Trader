@@ -3,7 +3,7 @@
   "market": "cn",
   "date_range": {
     "init_date": "2025-12-08 10:00:00",
-    "end_date": "2025-12-18 15:13:56"
+    "end_date": "2025-12-18 22:43:38"
   },
   "models": [
     {
@@ -13,21 +13,9 @@
       "enabled": true
     },
     {
-      "name": "DS_pick_news",
-      "basemodel": "deepseek-chat",
-      "signature": "DS_pick_news",
-      "enabled": true
-    },
-    {
       "name": "DS_pick_monk",
       "basemodel": "deepseek-chat",
       "signature": "DS_pick_monk",
-      "enabled": true
-    },
-    {
-      "name": "DS_pick_enhance",
-      "basemodel": "deepseek-chat",
-      "signature": "DS_pick_enhance",
       "enabled": true
     },
     {

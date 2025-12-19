@@ -22,20 +22,10 @@ markets:
         icon: "./figs/deepseek.svg"
         color: "#A8FF24"
         enabled: true
-      - folder: "DS_pick_news"
-        display_name: "DS_pick_news"
-        icon: "./figs/deepseek.svg"
-        color: "#ffbe0b"
-        enabled: true 
       - folder: "DS_pick_monk"
         display_name: "DS_pick_monk"
         icon: "./figs/deepseek.svg"
         color: "#f15b6c"
-        enabled: true
-      - folder: "DS_pick_enhance"
-        display_name: "DS_pick_enhance"
-        icon: "./figs/deepseek.svg"
-        color: "#10a37f"
         enabled: true
       - folder: "DS_pick_normal"
         display_name: "DS_pick_normal"
