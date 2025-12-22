@@ -94,6 +94,13 @@ data/agent_data/test*/
 data/agent_data/*test*/
 data/merged_daily.jsonl
 data/merged_hour.jsonl
+data/A_stock/A_stock_daily.csv
+data/A_stock/A_stock_hourly.csv
+data/A_stock/merged.jsonl
+data/A_stock/merged_hourly.jsonl
+data/A_stock/sse_50_weight.csv
+data/A_stock/sse_bench.csv
+data/A_stock/sse_pick.csv
 
 # Jupyter Notebook
 .ipynb_checkpoints
