@@ -101,6 +101,7 @@ data/A_stock/merged_hourly.jsonl
 data/A_stock/sse_50_weight.csv
 data/A_stock/sse_bench.csv
 data/A_stock/sse_pick.csv
+data/A_stock/index_daily_sse_50.json
 
 # Jupyter Notebook
 .ipynb_checkpoints
