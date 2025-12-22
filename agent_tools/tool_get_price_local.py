@@ -90,14 +90,16 @@ def get_price_local(symbol: str, date: str) -> Dict[str, Any]:
         result_hourly = get_price_local_hourly(symbol, date)
         # date_dt = datetime.strptime(date, "%Y-%m-%d %H:%M:%S")
         # date_dt_only = (date_dt).strftime("%Y-%m-%d")
-        date_yes = get_yesterday_date(date, market=market)
+        date_yes = get_yesterday_date(date.split(' ')[0], market=market)
         result_daily = get_price_local_daily(symbol, date_yes)
+        print(f"get_price_local : result_hourly, result_daily {result_hourly} {result_daily}")
         return {'result_hourly': result_hourly,'result_daily': result_daily}
     else:
         # Date only, use daily
         # date_dt_only = datetime.strptime(date, "%Y-%m-%d")
         date_yes = get_yesterday_date(date, market=market)
         result = get_price_local_daily(symbol, date_yes)
+        print(f"get_price_local : result {result}")
         return result
     
     # log_file = get_config_value("LOG_FILE")
@@ -236,35 +238,35 @@ def get_price_local_hourly(symbol: str, date: str) -> Dict[str, Any]:
                     "symbol": symbol,
                     "date": date
                 }
-            if date == get_config_value("TODAY_DATE"):
-                return {
-                    "symbol": symbol,
-                    "date": date,
-                    "ohlcv": {
-                        "open": day.get("1. buy price"),
-                        "high": "You can not get the current high price",
-                        "low": "You can not get the current low price", 
-                        "close": "You can not get the next close price",
-                        "volume": "You can not get the current volume",
-                    },
-                }
-            else:
-                return {
-                    "symbol": symbol,
-                    "date": date,
-                    "ohlcv": {
-                        "open": day.get("1. buy price"),
-                        "high": day.get("2. high"),
-                        "low": day.get("3. low"), 
-                        "close": day.get("4. sell price"),
-                        "volume": day.get("5. volume"),
-                        "pct_chg": day.get("6. pct_chg"),
-                        "pct_w": day.get("7. pct_w"),
-                        "amount": day.get("8. amount"),
-                        "amount_chg": day.get("9. amount_chg"),
-                        "exchg": day.get("10. exchg"),
-                    },
-                }
+            # if date == get_config_value("TODAY_DATE"):
+            #     return {
+            #         "symbol": symbol,
+            #         "date": date,
+            #         "ohlcv": {
+            #             "open": "You can not get the current high price",
+            #             "high": "You can not get the current high price",
+            #             "low": "You can not get the current low price", 
+            #             "close": "You can not get the next close price",
+            #             "volume": "You can not get the current volume",
+            #         },
+            #     }
+            # else:
+            return {
+                "symbol": symbol,
+                "date": date,
+                "ohlcv": {
+                    "open": day.get("1. buy price"),
+                    "high": day.get("2. high"),
+                    "low": day.get("3. low"), 
+                    "close": day.get("4. sell price"),
+                    "volume": day.get("5. volume"),
+                    "pct_chg": day.get("6. pct_chg"),
+                    "pct_w": day.get("7. pct_w"),
+                    "amount": day.get("8. amount"),
+                    "amount_chg": day.get("9. amount_chg"),
+                    "exchg": day.get("10. exchg"),
+                },
+            }
 
     return {"error": f"No records found for stock {symbol} in local data", "symbol": symbol, "date": date}
 
