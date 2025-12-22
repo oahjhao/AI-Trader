@@ -7,21 +7,21 @@
   },
   "models": [
     {
-      "name": "DS_pick_1222_normal",
+      "name": "DS_pick_normal_251222",
       "basemodel": "deepseek-chat",
-      "signature": "DS_pick_1222_normal",
+      "signature": "DS_pick_normal_251222",
       "enabled": true
     },
     {
-      "name": "DS_pick_1222_monk",
+      "name": "DS_pick_monk_251222",
       "basemodel": "deepseek-chat",
-      "signature": "DS_pick_1222_monk",
+      "signature": "DS_pick_monk_251222",
       "enabled": true
     },
     {
-      "name": "DS_pick_1222_tech",
+      "name": "DS_pick_tech_251222",
       "basemodel": "deepseek-chat",
-      "signature": "DS_pick_1222_tech",
+      "signature": "DS_pick_tech_251222",
       "enabled": true
     }
   ],

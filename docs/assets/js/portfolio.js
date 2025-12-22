@@ -25,11 +25,12 @@ async function loadDataAndRefresh() {
         // Load first agent by default
         const firstAgent = Object.keys(allAgentsData)[0];
         const assert = allAgentsData[Object.keys(allAgentsData)[0]].positions;
-        const lastDate = assert[assert.length - 1].date.split(' ')[0];
+        // const lastDate = assert[assert.length - 1].date.split(' ')[0];
+        const lastDate = assert[assert.length - 1].date;
         if (firstAgent && lastDate) {
             currentAgent = firstAgent;
-            currentDate = lastDate;
-            document.getElementById('dateSelect').value=lastDate
+            currentDate = lastDate.split(' ')[0];
+            document.getElementById('dateSelect').value=lastDate.split(' ')[0]
             await loadAgentPortfolio(firstAgent, lastDate);
         }
 
@@ -103,15 +104,16 @@ async function loadAgentPortfolio(agentName, date) {
         await updateMetrics(data, date);
 
         // Update holdings table
-        await updateHoldingsTable(agentName, date);
+        await updateHoldingsTable(agentName, date.split(' ')[0]);
+
         // Update action history 
-	    await updateActionHistory(data, date)
+	    await updateActionHistory(data, date.split(' ')[0])
 
         // Update allocation chart
-        await updateAllocationChart(agentName, date);
+        await updateAllocationChart(agentName, date.split(' ')[0]);
 
         // Update trade history
-        await updateTransactions(agentName, date);
+        await updateTransactions(agentName, date.split(' ')[0]);
 
     } catch (error) {
         console.error('Error loading portfolio:', error);
@@ -126,15 +128,16 @@ async function updateMetrics(data, date) {
     let id = data.assetHistory.length - 1;
 
     for(; id > 0; id--){
-	console.log('id:', id);
-	console.log('date:', date, data.assetHistory[id]?.date);
+        // console.log('id:', id);
+        // console.log('date:', date, data.assetHistory[id]?.date);
         if(date.split(' ')[0] === data.assetHistory[id]?.date){
             break;
         }
     }
     
     const totalAsset = data.assetHistory[id]?.value;
-    const totalReturn = data.assetHistory.length > 0 ? (data.assetHistory[id]?.value - data.assetHistory[0]?.value)/data.assetHistory[0]?.value * 100 : 0;
+    const initialValue = data.positions[0]?.positions.CASH;
+    const totalReturn = data.assetHistory.length >= 0 ? (data.assetHistory[id]?.value - initialValue)/data.assetHistory[0]?.value * 100 : 0;
     const latestPosition = data.positions && data.positions.length > 0 ? data.positions[data.assetHistory[id]?.id] : null;
     const cashPosition = latestPosition && latestPosition.positions ? latestPosition.positions.CASH || 0 : 0;
     const totalTrades = data.positions ? data.positions.filter(p => p.this_action && p.this_action.action !== 'no_trade' && p.date <= date).length : 0;
@@ -198,6 +201,7 @@ async function updateHoldingsTable(agentName, date) {
             const marketValue = price ? shares * price : shares * priceRecent;
             totalValue += marketValue;
             const priceReturn = price ? price : priceRecent
+            // console.log('return:', symbol, name, price, priceReturn);
             return { symbol, name, shares, priceReturn, marketValue };
         })
     );
@@ -212,7 +216,7 @@ async function updateHoldingsTable(agentName, date) {
             <td class="symbol">${holding.symbol}</td>
             <td class="symbol">${holding.name}</td>
             <td>${holding.shares}</td>
-            <td>${dataLoader.formatCurrency(holding.price || 0)}</td>
+            <td>${dataLoader.formatCurrency(holding.priceReturn || 0)}</td>
             <td>${dataLoader.formatCurrency(holding.marketValue)}</td>
             <td>${weight}%</td>
         `;
@@ -225,6 +229,7 @@ async function updateHoldingsTable(agentName, date) {
         const cashRow = document.createElement('tr');
         cashRow.innerHTML = `
             <td class="symbol">CASH</td>
+            <td>-</td>
             <td>-</td>
             <td>-</td>
             <td>${dataLoader.formatCurrency(holdings.CASH)}</td>

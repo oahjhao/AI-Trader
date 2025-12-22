@@ -139,7 +139,7 @@ class ConfigLoader {
     getUIConfig() {
         if (!this.config || !this.config.ui) {
             return {
-                initial_value: 10000,
+                initial_value: 1000000,
                 max_recent_trades: 20,
                 date_formats: {
                     hourly: 'MM/DD HH:mm',

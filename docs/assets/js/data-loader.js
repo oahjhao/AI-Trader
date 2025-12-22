@@ -102,17 +102,26 @@ class DataLoader {
     // Load all A-share stock names from merged.jsonl
     async getSymbolName(symbol) {
         try {
-            const response = await fetch(`${this.baseDataPath}/A_stock/merged.jsonl`);
+            const response = await fetch(`${this.baseDataPath}/A_stock/sse_pick.csv`);
             if (!response.ok) throw new Error('Failed to load A-share names');
 
             const text = await response.text();
             const lines = text.trim().split('\n');
 
+            // for (const line of lines) {
+            //     if (!line.trim()) continue;
+            //     const data = JSON.parse(line);
+            //     if(symbol === data['Meta Data']['2. Symbol']){
+            //         const name = data['Meta Data']['2.1. Name'];
+            //         console.log(`getSymbolName for ${symbol}`);
+            //         return name;
+            //     }
+            // }
             for (const line of lines) {
                 if (!line.trim()) continue;
-                const data = JSON.parse(line);
-                if(symbol === data['Meta Data']['2. Symbol']){
-                    const name = data['Meta Data']['2.1. Name'];
+                const [sym, value] = line.split(',');
+                if(symbol === sym){
+                    const name = value;
                     console.log(`getSymbolName for ${symbol}`);
                     return name;
                 }
@@ -649,9 +658,9 @@ class DataLoader {
                 positions: [],
                 assetHistory: assetHistory,
                 initialValue: initialValue,
-                currentValue: assetHistory.length > 0 ? assetHistory[assetHistory.length - 1].value : initialValue,
-                return: assetHistory.length > 0 ?
-                    ((assetHistory[assetHistory.length - 1].value - assetHistory[0].value) / assetHistory[0].value * 100) : 0,
+                currentValue: assetHistory.length >= 0 ? assetHistory[assetHistory.length - 1].value : initialValue,
+                return: assetHistory.length >= 0 ?
+                    ((assetHistory[assetHistory.length - 1].value - initialValue) / assetHistory[0].value * 100) : 0,
                 currency: currency
             };
 
