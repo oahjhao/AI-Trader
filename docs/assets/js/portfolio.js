@@ -197,7 +197,8 @@ async function updateHoldingsTable(agentName, date) {
             const name = await dataLoader.getSymbolName(symbol);
             const marketValue = price ? shares * price : shares * priceRecent;
             totalValue += marketValue;
-            return { symbol, name, shares, price, marketValue };
+            const priceReturn = price ? price : priceRecent
+            return { symbol, name, shares, priceReturn, marketValue };
         })
     );
 

@@ -3,25 +3,25 @@
   "market": "cn",
   "date_range": {
     "init_date": "2025-12-22 10:00:00",
-    "end_date": "2025-12-26 15:05:09"
+    "end_date": "2025-12-22 15:16:25"
   },
   "models": [
     {
       "name": "DS_pick_1222_tech",
       "basemodel": "deepseek-chat",
-      "signature": "DS_pick_tech",
+      "signature": "DS_pick_1222_tech",
       "enabled": true
     },
     {
       "name": "DS_pick_1222_monk",
       "basemodel": "deepseek-chat",
-      "signature": "DS_pick_monk",
+      "signature": "DS_pick_1222_monk",
       "enabled": true
     },
     {
       "name": "DS_pick_1222_normal",
       "basemodel": "deepseek-chat",
-      "signature": "DS_pick_normal",
+      "signature": "DS_pick_1222_normal",
       "enabled": true
     }
   ],

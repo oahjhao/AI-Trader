@@ -426,7 +426,7 @@ def get_yesterday_date(today_date: str, merged_path: Optional[str] = None, marke
         date_only = False
         #base_name = str(merged_file)[:-6]
         #merged_file = Path(base_name + '_hourly.jsonl')
-        merged_file.with_name(merged_file.stem + '_hourly.jsonl')
+        merged_file = merged_file.with_name(merged_file.stem + '_hourly.jsonl')
     else:
         input_dt = datetime.strptime(today_date, "%Y-%m-%d")
         date_only = True
@@ -473,26 +473,44 @@ def get_yesterday_date(today_date: str, merged_path: Optional[str] = None, marke
             return yesterday_dt.strftime("%Y-%m-%d %H:%M:%S")
     
     # 将所有时间戳转换为 datetime 对象，并找到小于 today_date 的最大时间戳
-    previous_timestamp = None
+    if date_only:
+        all_timestamps = [datetime.strptime(ts, '%Y-%m-%d') for ts in all_timestamps]
+        sorted_timestamps = sorted(all_timestamps, key=lambda x: x)
+        previous_timestamp = None
+        for ts_dt in sorted_timestamps:
+            try:
+                # print(f"get_yesterday_date:ts_dt vs input_dt:{ts_dt} {type(ts_dt)} {input_dt} {type(input_dt)} ")
+                if ts_dt < input_dt:
+                    if previous_timestamp is None or ts_dt > previous_timestamp:
+                        previous_timestamp = ts_dt
+            except Exception:
+                continue
+    else:
+        all_timestamps = [datetime.strptime(ts, '%Y-%m-%d %H:%M:%S') for ts in all_timestamps]
+        sorted_timestamps = sorted(all_timestamps, key=lambda x: x)
+        previous_timestamp = None
+        for ts_dt in sorted_timestamps:
+            try:
+                # print(f"get_yesterday_date:ts_dt vs input_dt:{ts_dt} {type(ts_dt)} {input_dt} {type(input_dt)} ")
+                if ts_dt <= input_dt:
+                    if previous_timestamp is None or ts_dt > previous_timestamp:
+                        previous_timestamp = ts_dt
+            except Exception:
+                continue
     
-    for ts_str in all_timestamps:
-        try:
-            ts_dt = datetime.strptime(ts_str, "%Y-%m-%d %H:%M:%S")
-            if ts_dt < input_dt:
-                if previous_timestamp is None or ts_dt > previous_timestamp:
-                    previous_timestamp = ts_dt
-        except Exception:
-            continue
-    
+    # print(f"get_yesterday_date:sorted_timestamps:{sorted_timestamps}")
+    # print(f"get_yesterday_date:previous_timestamp:{previous_timestamp}")
     # 如果没有找到更早的时间戳，根据输入类型回退
     if previous_timestamp is None:
         if date_only:
             yesterday_dt = input_dt - timedelta(days=1)
             while yesterday_dt.weekday() >= 5:
                 yesterday_dt -= timedelta(days=1)
+            # print(f"get_yesterday_date:previous_timestamp:{yesterday_dt.strftime("%Y-%m-%d")}")
             return yesterday_dt.strftime("%Y-%m-%d")
         else:
             yesterday_dt = input_dt - timedelta(hours=1)
+            # print(f"get_yesterday_date:previous_timestamp:{yesterday_dt.strftime("%Y-%m-%d %H:%M:%S")}")
             return yesterday_dt.strftime("%Y-%m-%d %H:%M:%S")
 
     # 返回结果
@@ -531,7 +549,7 @@ def get_open_prices(
     if not merged_file.exists():
         return results
 
-    print(f"get_open_prices:merged_file:{merged_file}")
+    # print(f"get_open_prices:merged_file:{merged_file}")
     with merged_file.open("r", encoding="utf-8") as f:
         for line in f:
             if not line.strip():
@@ -586,11 +604,15 @@ def get_yesterday_open_and_close_price(
         merged_file = get_merged_file_path(market)
     else:
         merged_file = Path(merged_path)
+    
+    if ' ' in today_date:
+        merged_file = merged_file.with_name(merged_file.stem + '_hourly.jsonl')
 
     if not merged_file.exists():
         return buy_results, sell_results
 
-    yesterday_date = get_yesterday_date(today_date, merged_path=merged_path, market=market)
+    yesterday_date = get_yesterday_date(today_date, market=market)
+    # print(f"get_yesterday_open_and_close_price:yesterday_date:{yesterday_date}")
 
     with merged_file.open("r", encoding="utf-8") as f:
         for line in f:
@@ -690,21 +712,23 @@ def get_yesterday_diff(
         merged_file = get_merged_file_path(market)
     else:
         merged_file = Path(merged_path)
+    
+    if ' ' in today_date:
+        merged_file = merged_file.with_name(merged_file.stem + '_hourly.jsonl')
 
-    yesterday_date = get_yesterday_date(today_date, merged_path=merged_path, market=market)
+    input_dt = get_yesterday_date(today_date, merged_path=merged_path, market=market)
     #print(f"today:{today_date} yes:{yesterday_date}")
 
-    input_dt = ''
     # 解析输入日期/时间
-    if ' ' in yesterday_date:
-        input_date_yes = datetime.strptime(yesterday_date, "%Y-%m-%d %H:%M:%S")
-        input_date_to = datetime.strptime(today_date, "%Y-%m-%d %H:%M:%S")
-        if input_date_yes.strftime("%Y-%m-%d") == input_date_to.strftime("%Y-%m-%d"): 
-            input_dt = (input_date_yes - timedelta(days=1)).strftime("%Y-%m-%d") 
-    else:
-        input_dt = yesterday_date
+    # if ' ' in yesterday_date:
+    #     input_date_yes = datetime.strptime(yesterday_date, "%Y-%m-%d %H:%M:%S")
+    #     input_date_to = datetime.strptime(today_date, "%Y-%m-%d %H:%M:%S")
+    #     if input_date_yes.strftime("%Y-%m-%d") == input_date_to.strftime("%Y-%m-%d"): 
+    #         input_dt = (input_date_yes - timedelta(days=1)).strftime("%Y-%m-%d") 
+    # else:
+    #     input_dt = yesterday_date
 
-    print(f"input_dt : {input_dt}")
+    # print(f"input_dt : {input_dt}")
     if not merged_file.exists():
         return diff_result 
 
@@ -1016,13 +1040,29 @@ def add_no_trade_record(today_date: str, signature: str):
 
 
 if __name__ == "__main__":
-    today_date = get_config_value("TODAY_DATE")
-    signature = get_config_value("SIGNATURE")
-    if signature is None:
-        raise ValueError("SIGNATURE environment variable is not set")
-    print(today_date, signature)
-    yesterday_date = get_yesterday_date(today_date)
-    print(yesterday_date)
+    # today_date = get_config_value("TODAY_DATE")
+    # signature = get_config_value("SIGNATURE")
+    # if signature is None:
+    #     raise ValueError("SIGNATURE environment variable is not set")
+    # print(today_date, signature)
+
+    # yesterday_date = get_yesterday_date("2025-12-22 10:30:00", market="cn")
+    # print(yesterday_date)
+    # yesterday_date = get_yesterday_date("2025-12-22 10:31:00", market="cn")
+    # print(yesterday_date)
+
+    # yesterday_date = get_yesterday_date("2025-12-19", market="cn")
+    # print(yesterday_date)
+    # yesterday_date = get_yesterday_date("2025-12-22", market="cn")
+    # print(yesterday_date)
+    # yesterday_date = get_yesterday_date("2025-12-23", market="cn")
+    # print(yesterday_date)
+
+    buy_results, sell_results = get_yesterday_open_and_close_price("2025-12-22 10:31:00", ['601677.SH'], market="cn")
+    print(buy_results, sell_results)
+
+    buy_results, sell_results = get_yesterday_open_and_close_price("2025-12-22", ['601677.SH'], market="cn")
+    print(buy_results, sell_results)
     # today_buy_price = get_open_prices(today_date, all_nasdaq_100_symbols)
     # print(today_buy_price)
     # yesterday_buy_prices, yesterday_sell_prices = get_yesterday_open_and_close_price(today_date, all_nasdaq_100_symbols)
@@ -1031,8 +1071,8 @@ if __name__ == "__main__":
     # print(today_init_position)
     # latest_position, latest_action_id = get_latest_position('2025-10-24', 'qwen3-max')
     # print(latest_position, latest_action_id)
-    latest_position, latest_action_id = get_latest_position('2025-10-16 16:00:00', 'test')
-    print(latest_position, latest_action_id)
+    # latest_position, latest_action_id = get_latest_position('2025-10-16 16:00:00', 'test')
+    # print(latest_position, latest_action_id)
     
     # yesterday_profit = get_yesterday_profit(today_date, yesterday_buy_prices, yesterday_sell_prices, today_init_position)
     # # print(yesterday_profit)

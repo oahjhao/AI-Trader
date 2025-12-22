@@ -272,7 +272,7 @@ class AStockIntradayDataFetcher:
         df_new.columns = ['stock_name', 'stock_code', 'trade_date', 'open', 'close', 'high', 'low', 'volume', 'amount', 'pct_w','pct_chg','amount_chg','exchg']
         
         # 统一股票代码格式（添加.SH后缀）
-        df_new["stock_code"] = df_new["stock_code"].apply(lambda x: x + ".SH")
+        # df_new["stock_code"] = df_new["stock_code"].apply(lambda x: x + ".SH")
         #df_new["trade_date"] = df_new["trade_date"].apply(lambda x: x + ":00")
         df_new["trade_date"] = pd.to_datetime(df_new["trade_date"])
         df_new["trade_date"] = df_new["trade_date"].dt.strftime('%Y-%m-%d %H:%M:%S')

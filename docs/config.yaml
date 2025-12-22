@@ -17,18 +17,18 @@ markets:
     time_granularity: "daily"  # daily dates without hour component
     enabled: true
     agents:  # CN market specific agents
-      - folder: "DS_pick_tech"
-        display_name: "DS_pick_tech"
+      - folder: "DS_pick_1222_tech"
+        display_name: "DS_pick_1222_tech"
         icon: "./figs/deepseek.svg"
         color: "#A8FF24"
         enabled: true
-      - folder: "DS_pick_monk"
-        display_name: "DS_pick_monk"
+      - folder: "DS_pick_1222_monk"
+        display_name: "DS_pick_1222_monk"
         icon: "./figs/deepseek.svg"
         color: "#f15b6c"
         enabled: true
-      - folder: "DS_pick_normal"
-        display_name: "DS_pick_normal"
+      - folder: "DS_pick_1222_normal"
+        display_name: "DS_pick_1222_normal"
         icon: "./figs/deepseek.svg"
         color: "#00ffcc"
         enabled: true

@@ -26,7 +26,7 @@ def convert_a_stock_to_jsonl(
     """
     csv_path = Path(csv_path)
     output_path = Path(output_path)
-    # stock_name_csv = Path(stock_name_csv)
+    stock_name_csv = Path(stock_name_csv)
 
     if not csv_path.exists():
         print(f"Error: CSV file not found: {csv_path}")
@@ -38,15 +38,15 @@ def convert_a_stock_to_jsonl(
     df = pd.read_csv(csv_path)
 
     # Read stock name mapping
-    # stock_name_map = {}
-    # if stock_name_csv.exists():
-    #     print(f"Reading stock names from: {stock_name_csv}")
-    #     name_df = pd.read_csv(stock_name_csv)
-    #     # Create mapping from con_code (stock_code) to stock_name
-    #     stock_name_map = dict(zip(name_df["con_code"], name_df["stock_name"]))
-    #     print(f"Loaded {len(stock_name_map)} stock names")
-    # else:
-    #     print(f"Warning: Stock name file not found: {stock_name_csv}")
+    stock_name_map = {}
+    if stock_name_csv.exists():
+        print(f"Reading stock names from: {stock_name_csv}")
+        name_df = pd.read_csv(stock_name_csv)
+        # Create mapping from con_code (stock_code) to stock_name
+        stock_name_map = dict(zip(name_df["stock_name"], name_df["con_code"]))
+        print(f"Loaded {len(stock_name_map)} stock names")
+    else:
+        print(f"Warning: Stock name file not found: {stock_name_csv}")
 
     print(f"Total records: {len(df)}")
     print(f"Columns: {df.columns.tolist()}")
@@ -66,6 +66,7 @@ def convert_a_stock_to_jsonl(
 
             # Get stock name from mapping
             stock_name = str(group_df["stock_name"].max())
+            stock_code_all = stock_name_map.get(stock_name, "Unknown")
 
             # Get latest date for Meta Data
             latest_date = str(group_df["trade_date"].max())
@@ -100,7 +101,7 @@ def convert_a_stock_to_jsonl(
             json_obj = {
                 "Meta Data": {
                     "1. Information": "Daily Prices (buy price, high, low, sell price) and Volumes",
-                    "2. Symbol": stock_code,
+                    "2. Symbol": stock_code_all,
                     "2.1. Name": stock_name,
                     "3. Last Refreshed": latest_date_formatted,
                     "4. Output Size": "Full",

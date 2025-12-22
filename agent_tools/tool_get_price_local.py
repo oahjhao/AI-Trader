@@ -13,6 +13,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 load_dotenv()
 
+from tools.price_tools import get_yesterday_date
+
 mcp = FastMCP("LocalPrices")
 
 # Ensure project root is on sys.path for absolute imports like `tools.*`
@@ -79,16 +81,23 @@ def get_price_local(symbol: str, date: str) -> Dict[str, Any]:
     """
     # Detect date format
     result = None
+    market = "us"
+    if symbol and (symbol.endswith(".SH") or symbol.endswith(".SZ")):
+        market = "cn"
+    
     if ' ' in date or 'T' in date:
         # Contains time component, use hourly
         result_hourly = get_price_local_hourly(symbol, date)
-        date_dt = datetime.strptime(date, "%Y-%m-%d %H:%M:%S")
-        date_yes = (date_dt - timedelta(days=1)).strftime("%Y-%m-%d")
+        # date_dt = datetime.strptime(date, "%Y-%m-%d %H:%M:%S")
+        # date_dt_only = (date_dt).strftime("%Y-%m-%d")
+        date_yes = get_yesterday_date(date, market=market)
         result_daily = get_price_local_daily(symbol, date_yes)
         return {'result_hourly': result_hourly,'result_daily': result_daily}
     else:
         # Date only, use daily
-        result = get_price_local_daily(symbol, date)
+        # date_dt_only = datetime.strptime(date, "%Y-%m-%d")
+        date_yes = get_yesterday_date(date, market=market)
+        result = get_price_local_daily(symbol, date_yes)
         return result
     
     # log_file = get_config_value("LOG_FILE")
@@ -249,6 +258,11 @@ def get_price_local_hourly(symbol: str, date: str) -> Dict[str, Any]:
                         "low": day.get("3. low"), 
                         "close": day.get("4. sell price"),
                         "volume": day.get("5. volume"),
+                        "pct_chg": day.get("6. pct_chg"),
+                        "pct_w": day.get("7. pct_w"),
+                        "amount": day.get("8. amount"),
+                        "amount_chg": day.get("9. amount_chg"),
+                        "exchg": day.get("10. exchg"),
                     },
                 }
 
