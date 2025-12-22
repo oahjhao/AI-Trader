@@ -375,7 +375,7 @@ class BaseAgentAStockHourly:
                 # self._log_message(log_file, new_messages[1])
 
             except Exception as e:
-                print(f"❌ Trading session error: {str(e)}")
+                print(f"❌ Trading session error: {datetime.now().isoformat()} {str(e)}")
                 print(f"Error details: {e}")
                 raise
 
@@ -560,7 +560,7 @@ class BaseAgentAStockHourly:
                 print(f"✅ {self.signature} - {today_date} run successful")
                 return
             except Exception as e:
-                print(f"❌ Attempt {attempt} failed: {str(e)}")
+                print(f"❌ Attempt {attempt} failed: {datetime.now().isoformat()}{str(e)}")
                 if attempt == self.max_retries:
                     print(f"💥 {self.signature} - {today_date} all retries failed")
                     raise

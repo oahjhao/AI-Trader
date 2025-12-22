@@ -24,8 +24,8 @@ async function loadDataAndRefresh() {
 
         // Load first agent by default
         const firstAgent = Object.keys(allAgentsData)[0];
-        const assert = allAgentsData[Object.keys(allAgentsData)[0]].assetHistory;
-        const lastDate = assert[assert.length - 1].date;
+        const assert = allAgentsData[Object.keys(allAgentsData)[0]].positions;
+        const lastDate = assert[assert.length - 1].date.split(' ')[0];
         if (firstAgent && lastDate) {
             currentAgent = firstAgent;
             currentDate = lastDate;
@@ -64,20 +64,30 @@ function populateAgentSelector() {
     });
 }
 
+function addUniqueOption(selectElement, value, text) {
+    // 检查是否已存在相同值的选项
+    const existingOption = Array.from(selectElement.options).find(opt => opt.value === value);
+    if (!existingOption) {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = text;
+        selectElement.appendChild(option);
+    }
+}
+
 // dateSelector dropdown
 function dateSelector() {
     const select = document.getElementById('dateSelect');
     select.innerHTML = '';
-
-    benchmarkName = dataLoader.getMarketConfig().benchmark_display_name;
     
-    const benchAssetHistory = allAgentsData[benchmarkName].assetHistory;
-    Object.keys(benchAssetHistory).forEach(key => {
+    const positions = allAgentsData[Object.keys(allAgentsData)[0]].positions;
+    Object.keys(positions).forEach(key => {
         const option = document.createElement('option');
-        option.value = benchAssetHistory[key].date;
+        option.value = positions[key].date.split(' ')[0];
         // Use text only for dropdown options (HTML select doesn't support images well)
-        option.textContent = benchAssetHistory[key].date;
-        select.appendChild(option);
+        option.textContent = positions[key].date.split(' ')[0];
+        // select.appendChild(option);
+        addUniqueOption(select,option.value, option.textContent);
     });
 }
 
@@ -183,8 +193,9 @@ async function updateHoldingsTable(agentName, date) {
     const holdingsData = await Promise.all(
         stocks.map(async ([symbol, shares]) => {
             const price = await dataLoader.getClosingPrice(symbol, date);
+            const priceRecent = await dataLoader.getRecentPrice(symbol, date);
             const name = await dataLoader.getSymbolName(symbol);
-            const marketValue = price ? shares * price : 0;
+            const marketValue = price ? shares * price : shares * priceRecent;
             totalValue += marketValue;
             return { symbol, name, shares, price, marketValue };
         })
@@ -251,9 +262,12 @@ async function updateAllocationChart(agentName, date) {
             }
         } else if (shares > 0) {
             const price = await dataLoader.getClosingPrice(symbol, date);
+            const priceRecent = await dataLoader.getRecentPrice(symbol, date);
             const name = await dataLoader.getSymbolName(symbol);
             if (price) {
                 allocations.push({ label: name, value: shares * price });
+            }else{
+                allocations.push({ label: name, value: shares * priceRecent });
             }
         }
     }

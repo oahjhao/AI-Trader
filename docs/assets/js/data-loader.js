@@ -5,6 +5,7 @@ class DataLoader {
     constructor() {
         this.agentData = {};
         this.priceCache = {};
+        this.priceRencentCache = {};
         this.config = null;
         this.baseDataPath = './data';
         this.currentMarket = 'cn'; // 'us' or 'cn'
@@ -15,6 +16,7 @@ class DataLoader {
         this.currentMarket = market;
         this.agentData = {};
         this.priceCache = {};
+        this.priceRencentCache = {};
     }
 
     // Get current market
@@ -117,6 +119,34 @@ class DataLoader {
             }
         } catch (error) {
             console.error('Error getSymbolName:', error);
+            return {};
+        }
+    }
+
+    // Load all A-share stock prices from merged.jsonl
+    async loadAStockPricesRecent(symbolName) {
+        if (Object.keys(this.priceRencentCache).length > 0) {
+            return this.priceRencentCache[symbolName];
+        }
+
+        try {
+            const response = await fetch(`${this.baseDataPath}/A_stock/merged_hourly.jsonl`);
+            if (!response.ok) throw new Error('Failed to load A-share prices');
+
+            const text = await response.text();
+            const lines = text.trim().split('\n');
+
+            for (const line of lines) {
+                if (!line.trim()) continue;
+                const data = JSON.parse(line);
+                const symbol = data['Meta Data']['2. Symbol'];
+                this.priceRencentCache[symbol] = data['Time Series (60min)'];
+            }
+
+            console.log(`Loaded prices for ${Object.keys(this.priceRencentCache).length} A-share stocks`);
+            return this.priceRencentCache[symbolName];
+        } catch (error) {
+            console.error('Error loading A-share prices:', error);
             return {};
         }
     }
@@ -227,6 +257,46 @@ class DataLoader {
         return null;
     }
 
+    // Get closing price for a symbol on a specific date/time
+    async getRecentPrice(symbol, dateOrTimestamp) {
+        const prices = await this.loadAStockPricesRecent(symbol);
+        if (!prices) {
+            console.error(`[getRecentPrice] ❌ ${dateOrTimestamp}${symbol}`);
+            return null;
+        }
+        
+        // Try exact match first (for hourly data like "2025-10-01 10:00:00")
+        if (prices[dateOrTimestamp]) {
+            const recentPrice = prices[dateOrTimestamp]['4. close'] || prices[dateOrTimestamp]['4. sell price'];
+            console.log(`[getRecentPrice] ${symbol} ${recentPrice}`);
+            return recentPrice ? parseFloat(recentPrice) : null;
+        }
+        
+        // For A-shares: Extract date only for daily data matching
+        if (this.currentMarket === 'cn') {
+            const dateOnly = dateOrTimestamp.split(' ')[0]; // "2025-10-01 10:00:00" -> "2025-10-01"
+            if (prices[dateOnly]) {
+                const recentPrice = prices[dateOnly]['4. close'] || prices[dateOnly]['4. sell price'];
+                console.log(`[getRecentPrice] ✅ ${symbol} ${dateOnly} ${recentPrice}`);
+                return recentPrice ? parseFloat(recentPrice) : null;
+            }
+
+            // If still not found, try to find the closest timestamp on the same date (for hourly data)
+            const datePrefix = dateOnly;
+            const matchingKeys = Object.keys(prices).filter(key => key.startsWith(datePrefix));
+            // console.log(`[getRecentPrice] ${dateOnly} ${Object.keys(prices)}`);
+            if (matchingKeys.length > 0) {
+                // Use the last (most recent) timestamp for that date
+                const lastKey = matchingKeys.sort().pop();
+                const recentPrice = prices[lastKey]['4. close'] || prices[lastKey]['4. sell price'];
+                // console.log(`[getRecentPrice matchingKeys] ✅ ${symbol} ${lastKey} ${recentPrice}`);
+                return recentPrice ? parseFloat(recentPrice) : null;
+            }
+        }
+        
+        return null;
+    }
+
     // Calculate total asset value for a position on a given date
     async calculateAssetValue(position, date) {
         let totalValue = position.positions.CASH || 0;
@@ -239,9 +309,16 @@ class DataLoader {
             const shares = position.positions[symbol];
             if (shares > 0) {
                 const price = await this.getClosingPrice(symbol, date);
+                const recentPrice = await this.getRecentPrice(symbol, date);
                 if (price && !isNaN(price)) {
                     totalValue += shares * price;
-                } else {
+                    // console.log(`[calculateAssetValue price] ✅ ${symbol} ${date} ${price}`);
+                    continue;
+                } else if(recentPrice && !isNaN(recentPrice)){
+                    totalValue += shares * recentPrice;
+                    // console.log(`[calculateAssetValue recentPrice] ✅ ${symbol} ${date} ${shares} ${recentPrice} ${totalValue}`);
+                    continue;
+                }else {
                     console.warn(`Missing or invalid price for ${symbol} on ${date}`);
                     hasMissingPrice = true;
                 }
