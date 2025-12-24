@@ -84,7 +84,8 @@ def get_price_local(symbol: str, date: str) -> Dict[str, Any]:
     market = "us"
     if symbol and (symbol.endswith(".SH") or symbol.endswith(".SZ")):
         market = "cn"
-    
+    print(datetime.now())
+
     if ' ' in date or 'T' in date:
         # Contains time component, use hourly
         result_hourly = get_price_local_hourly(symbol, date)

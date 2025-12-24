@@ -86,6 +86,7 @@ configs/day_config.json
 configs/hour_config.json
 configs/test_config.json
 configs/test_day_config.json
+configs/astock_config_hourly.json
 configs/astock.json
 configs/test_*.json
 

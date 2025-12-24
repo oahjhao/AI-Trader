@@ -232,6 +232,7 @@ def get_information(query: str) -> str:
         If scraping fails, returns corresponding error information.
     """
     try:
+        print(datetime.now())
         tool = WebScrapingJinaTool()
         results = tool(query)
 

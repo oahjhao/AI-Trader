@@ -81,6 +81,7 @@ class AStockIntradayDataFetcher:
         
         logger.info(f"从 {self.stock_list_path} 加载股票列表")
         df = pd.read_csv(self.stock_list_path)
+        df['con_code'] = df['con_code'].astype(str).str.zfill(6)
         
         # 从 con_code 列提取唯一的股票代码
         if "con_code" not in df.columns:
@@ -126,10 +127,10 @@ class AStockIntradayDataFetcher:
                     last_date = datetime.strptime(last_date_str, "%Y-%m-%d %H:%M:%S")
                     
                     # 计算下一天
-                    next_date = last_date + timedelta(minutes=30)
+                    next_date = last_date + timedelta(minutes=55)
                     begin_date = next_date.strftime("%Y%m%d %H:%M:%S")
-                    
-                    logger.info(f"已有数据的最后日期: {last_date.strftime('%Y-%m-%d')}")
+
+                    logger.info(f"已有数据的最后时间: {last_date.strftime('%Y-%m-%d %H:%M:%S')}")
                     logger.info(f"将从 {begin_date} 开始增量更新")
                     
                     # 检查是否已经是最新数据
@@ -274,20 +275,20 @@ class AStockIntradayDataFetcher:
         # 统一股票代码格式（添加.SH后缀）
         # df_new["stock_code"] = df_new["stock_code"].apply(lambda x: x + ".SH")
         #df_new["trade_date"] = df_new["trade_date"].apply(lambda x: x + ":00")
-        df_new["trade_date"] = pd.to_datetime(df_new["trade_date"])
-        df_new["trade_date"] = df_new["trade_date"].dt.strftime('%Y-%m-%d %H:%M:%S')
-        #df_calc_factor = self.calc_factor(df_new)
-        df_calc_factor = df_new 
-        #print(df_calc_factor.head(10)) 
+        df_new["trade_date"] = pd.to_datetime(df_new["trade_date"]).dt.strftime('%Y-%m-%d %H:%M:%S')
+        # df_new["trade_date"] = df_new["trade_date"].dt.strftime('%Y-%m-%d %H:%M:%S')
+        # print(df_calc_factor.head(10)) 
 
         # 如果是增量更新且已有文件存在，则合并数据
         if is_incremental and self.output_path.exists():
             try:
                 logger.info("增量更新模式：合并新旧数据")
                 df_old = pd.read_csv(self.output_path)
-                
+                df_old['stock_code'] = df_old['stock_code'].astype(str).str.zfill(6)
+                df_old["trade_date"] = pd.to_datetime(df_old["trade_date"]).dt.strftime('%Y-%m-%d %H:%M:%S')
                 # 合并新旧数据
-                df_total = pd.concat([df_old, df_calc_factor], ignore_index=True)
+                df_total = pd.concat([df_old, df_new], ignore_index=True)
+                df_total["trade_date"] = pd.to_datetime(df_total["trade_date"]).dt.strftime('%Y-%m-%d %H:%M:%S')
                 
                 # 去重（基于stock_code和trade_date，保留最新的数据）
                 df_total = df_total.drop_duplicates(
@@ -300,12 +301,23 @@ class AStockIntradayDataFetcher:
                     by=['trade_date', 'stock_code']
                 ).reset_index(drop=True)
                 
-                logger.info(f"合并后总记录数: {len(df_total)} (旧: {len(df_old)}, 新: {len(df_calc_factor)})")
+                logger.info(f"合并后总记录数: {len(df_total)} (旧: {len(df_old)}, 新: {len(df_new)})")
             except Exception as e:
                 logger.warning(f"合并数据失败: {e}，将只保存新数据")
-                df_total = df_calc_factor
+                df_total = df_new 
         else:
-            df_total = df_calc_factor
+            df_total = df_new 
+
+            # 去重（基于stock_code和trade_date，保留最新的数据）
+            df_total = df_total.drop_duplicates(
+                subset=['stock_code', 'trade_date'],
+                keep='last'
+            ).reset_index(drop=True)
+            
+            # 按日期和股票代码排序
+            df_total = df_total.sort_values(
+                by=['trade_date', 'stock_code']
+            ).reset_index(drop=True)
         
         # 保存到CSV
         df_total.to_csv(self.output_path, index=False, encoding='utf-8')

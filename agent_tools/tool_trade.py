@@ -1,7 +1,7 @@
 import os
 import sys
 from typing import Any, Dict, List, Optional
-
+from datetime import datetime, timedelta
 from fastmcp import FastMCP
 
 from typing import Dict, List, Optional, Any
@@ -74,6 +74,7 @@ def buy(symbol: str, amount: int) -> Dict[str, Any]:
     """
     # Step 1: Get environment variables and basic information
     # Get signature (model name) from environment variable, used to determine data storage path
+    print(datetime.now())
     signature = get_config_value("SIGNATURE")
     if signature is None:
         raise ValueError("SIGNATURE environment variable is not set")
@@ -285,6 +286,7 @@ def sell(symbol: str, amount: int) -> Dict[str, Any]:
     """
     # Step 1: Get environment variables and basic information
     # Get signature (model name) from environment variable, used to determine data storage path
+    print(datetime.now())
     signature = get_config_value("SIGNATURE")
     if signature is None:
         raise ValueError("SIGNATURE environment variable is not set")

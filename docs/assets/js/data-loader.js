@@ -658,9 +658,9 @@ class DataLoader {
                 positions: [],
                 assetHistory: assetHistory,
                 initialValue: initialValue,
-                currentValue: assetHistory.length >= 0 ? assetHistory[assetHistory.length - 1].value : initialValue,
-                return: assetHistory.length >= 0 ?
-                    ((assetHistory[assetHistory.length - 1].value - initialValue) / assetHistory[0].value * 100) : 0,
+                currentValue: assetHistory.length > 0 ? assetHistory[assetHistory.length - 1].value : initialValue,
+                return: assetHistory.length > 0 ?
+                    ((assetHistory[assetHistory.length - 1].value - assetHistory[0].value) / assetHistory[0].value * 100) : 0,
                 currency: currency
             };
 

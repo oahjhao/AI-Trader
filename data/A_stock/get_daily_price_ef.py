@@ -82,6 +82,7 @@ class AStockIntradayDataFetcher:
         
         logger.info(f"从 {self.stock_list_path} 加载股票列表")
         df = pd.read_csv(self.stock_list_path)
+        df['con_code'] = df['con_code'].astype(str).str.zfill(6)
         
         # 从 con_code 列提取唯一的股票代码
         if "con_code" not in df.columns:
@@ -184,7 +185,7 @@ class AStockIntradayDataFetcher:
 
     def calc_factor(self, df):
         # 确保日期列是datetime类型
-        df['trade_date'] = pd.to_datetime(df['trade_date'])
+        #df['trade_date'] = pd.to_datetime(df['trade_date'])
 
         # 按名称分组处理
         grouped = df.groupby('stock_code')
@@ -218,23 +219,22 @@ class AStockIntradayDataFetcher:
             atr = talib.ATR(high_prices, low_prices, close_prices, timeperiod=14)
             obv = talib.OBV(close_prices, volumes)
             # 创建结果DataFrame
-            result_df = group.copy()
-            result_df['MA_5'] = np.round(ma_5, 3)
-            result_df['MA_10'] = np.round(ma_10, 3)
-            result_df['MA_20'] = np.round(ma_20, 3)
-            result_df['MA_60'] = np.round(ma_60, 3)
+            group['MA_5'] = np.round(ma_5, 3)
+            group['MA_10'] = np.round(ma_10, 3)
+            group['MA_20'] = np.round(ma_20, 3)
+            group['MA_60'] = np.round(ma_60, 3)
 
-            result_df['EMA_5'] = np.round(ema_5, 3)
-            result_df['EMA_10'] = np.round(ema_10, 3)
-            result_df['EMA_20'] = np.round(ema_20, 3)
-            result_df['EMA_60'] = np.round(ema_60, 3)
+            group['EMA_5'] = np.round(ema_5, 3)
+            group['EMA_10'] = np.round(ema_10, 3)
+            group['EMA_20'] = np.round(ema_20, 3)
+            group['EMA_60'] = np.round(ema_60, 3)
 
-            result_df['RSI'] = np.round(rsi, 3) 
-            result_df['DIF'] = np.round(macd, 3) 
-            result_df['DEA'] = np.round(macdsignal, 3) 
-            result_df['ATR'] = np.round(atr, 3) 
-            result_df['OBV'] = np.round(obv, 3) 
-            results.append(result_df)
+            group['RSI'] = np.round(rsi, 3)
+            group['DIF'] = np.round(macd, 3)
+            group['DEA'] = np.round(macdsignal, 3)
+            group['ATR'] = np.round(atr, 3)
+            group['OBV'] = np.round(obv, 3)
+            results.append(group)
 
         # 合并所有结果
         final_result = pd.concat(results, ignore_index=True)
@@ -274,9 +274,9 @@ class AStockIntradayDataFetcher:
         
         # 统一股票代码格式（添加.SH后缀）
         # df_new["stock_code"] = df_new["stock_code"].apply(lambda x: x + ".SH")
-        df_new["trade_date"] = pd.to_datetime(df_new["trade_date"])
-        df_new["trade_date"] = df_new["trade_date"].dt.strftime('%Y-%m-%d %H:%M:%S')
-        df_calc_factor = self.calc_factor(df_new)
+        df_new["trade_date"] = pd.to_datetime(df_new["trade_date"]).dt.strftime('%Y-%m-%d')
+        # df_new["trade_date"] = df_new["trade_date"].dt.strftime('%Y-%m-%d')
+        # df_calc_factor = self.calc_factor(df_new)
         # df_calc_factor = df_new 
         #print(df_calc_factor.head(10)) 
 
@@ -285,9 +285,15 @@ class AStockIntradayDataFetcher:
             try:
                 logger.info("增量更新模式：合并新旧数据")
                 df_old = pd.read_csv(self.output_path)
-                
+                df_old['stock_code'] = df_old['stock_code'].astype(str).str.zfill(6)
+ 
                 # 合并新旧数据
-                df_total = pd.concat([df_old, df_calc_factor], ignore_index=True)
+                df_old["trade_date"] = pd.to_datetime(df_old["trade_date"]).dt.strftime('%Y-%m-%d')
+                df_new[['MA_5', 'MA_10','MA_20','MA_60','EMA_5','EMA_10','EMA_20','EMA_60','RSI' ,'DIF' ,'DEA' ,'ATR' ,'OBV' ]] = None
+                df_total = pd.concat([df_old, df_new], ignore_index=True)
+                df_total["trade_date"] = pd.to_datetime(df_total["trade_date"]).dt.strftime('%Y-%m-%d')
+                df_total = self.calc_factor(df_total)
+                #print(df_total.head(10)) 
                 
                 # 去重（基于stock_code和trade_date，保留最新的数据）
                 df_total = df_total.drop_duplicates(
@@ -299,18 +305,35 @@ class AStockIntradayDataFetcher:
                 df_total = df_total.sort_values(
                     by=['trade_date', 'stock_code']
                 ).reset_index(drop=True)
+                #print(df_total.head(10)) 
                 
-                logger.info(f"合并后总记录数: {len(df_total)} (旧: {len(df_old)}, 新: {len(df_calc_factor)})")
+                logger.info(f"合并后总记录数: {len(df_total)} (旧: {len(df_old)}, 新: {len(df_total)})")
             except Exception as e:
                 logger.warning(f"合并数据失败: {e}，将只保存新数据")
-                df_total = df_calc_factor
+                df_total = df_new
         else:
-            df_total = df_calc_factor
+            df_new[['MA_5', 'MA_10','MA_20','MA_60','EMA_5','EMA_10','EMA_20','EMA_60','RSI' ,'DIF' ,'DEA' ,'ATR' ,'OBV' ]] = None
+            df_total = df_new 
+            df_total["trade_date"] = pd.to_datetime(df_total["trade_date"]).dt.strftime('%Y-%m-%d')
+            df_total = self.calc_factor(df_total)
+
+            # 去重（基于stock_code和trade_date，保留最新的数据）
+            df_total = df_total.drop_duplicates(
+                subset=['stock_code', 'trade_date'],
+                keep='last'
+            ).reset_index(drop=True)
+            
+            # 按日期和股票代码排序
+            df_total = df_total.sort_values(
+                by=['trade_date', 'stock_code']
+            ).reset_index(drop=True)
+            #print(df_total.head(10)) 
         
         # 保存到CSV
         df_total.to_csv(self.output_path, index=False, encoding='utf-8')
         logger.info(f"数据已保存到: {self.output_path}")
         logger.info(f"总共 {len(df_total)} 条记录")
+        #print(df_total.head(10)) 
         
         return df_total
     
