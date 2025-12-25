@@ -19,12 +19,14 @@ PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
 cd "$PROJECT_ROOT"
 
 JSON_FILE="configs/astock_config_hourly.json"
-LOGFILE_STEP1 = "logs/step1_${TODAY}.log"
-LOGFILE_STEP2 = "logs/step2_${TODAY}.log"
-LOGFILE_STEP3 = "logs/step3_${TODAY}.log"
-TODAY=$(date +%Y-%m-%d'-'%H:%M:%S)
+TODAY=$(date +%Y-%m-%d' '%H:%M:%S)
 jq --arg date "$TODAY" '.date_range.end_date = $date' "$JSON_FILE" > "${JSON_FILE}.tmp" && mv "${JSON_FILE}.tmp" "$JSON_FILE"
 echo "$(date): Updated end_date to $TODAY in $JSON_FILE"
+
+TODAY_LOG=$(date +%Y-%m-%d'-'%H:%M:%S)
+LOGFILE_STEP1="logs/step1_${TODAY_LOG}.log"
+LOGFILE_STEP2="logs/step2_${TODAY_LOG}.log"
+LOGFILE_STEP3="logs/step3_${TODAY_LOG}.log"
 
 echo 'step1 starting...'
 sh scripts/main_a_stock_step1.sh 2>&1 | tee "$LOGFILE_STEP1" 
