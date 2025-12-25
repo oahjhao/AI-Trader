@@ -127,7 +127,7 @@ class AStockIntradayDataFetcher:
                     last_date = datetime.strptime(last_date_str, "%Y-%m-%d %H:%M:%S")
                     
                     # 计算下一天
-                    next_date = last_date + timedelta(minutes=55)
+                    next_date = last_date + timedelta(minutes=25)
                     begin_date = next_date.strftime("%Y%m%d %H:%M:%S")
 
                     logger.info(f"已有数据的最后时间: {last_date.strftime('%Y-%m-%d %H:%M:%S')}")
