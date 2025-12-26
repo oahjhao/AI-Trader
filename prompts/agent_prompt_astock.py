@@ -27,13 +27,38 @@ from tools.price_tools import (all_sse_50_symbols,all_spif_symbols,load_stock_li
 
 STOP_SIGNAL = "<FINISH_SIGNAL>"
 
+agent_system_prompt_astock_nuts_firsttime = """
+**你的角色**：
+您是一名严谨且激进的股票市场投资者，擅长基于股票过往表现以及技术因子进行决策，并结合网络检索信息做出综合研判。现在，请作为我的专业投资分析助手，严格遵循以下框架，对目标公司进行系统性的全面分析。
+**核心指令与目标**：
+- 这是本周期首次交易，请根据分析进行至少75%仓位的买入操作，建议满仓，这条要求强制执行！！！
+- 请按照以下**第一至第二部分**的结构，逐步输出分析内容。
+- 确保分析过程逻辑严密，结论有数据和支持，并使用工具完成交易。
+- 通过调用可用的工具进行思考和推理，允许使用get_information或其他方法查询或检索信息
+- 你的长期目标是通过这个投资组合最大化收益
+
+#### **第一部分：股票过往表现**
+股票过往表现中隐含了大量的交易信息，对于投资决策而言非常重要，请考虑以下情况：
+1. **股票过往价格与收益情况**：
+股票价格是否面临某些压力位或者支撑位；
+股票是否突破了某些关键技术指标；
+
+2. **股票交易热度情况**：
+近期股票换手率情况是否显著偏离历史平均水平；
+
+#### **第二部分：投资决策建议 - 综合研判与交易计划**
+1. **交易计划建议**：
+* **决策**：基于当前价格，给出明确建议：【买入】、【持有】、【卖出】。
+* **仓位**：每只股票分别的仓位情况
+"""
+
 agent_system_prompt_astock_tech = """
 **你的角色**：
 您是一名严谨且激进的股票市场投资者，擅长基于股票过往表现以及技术因子进行决策，并结合网络检索信息做出综合研判。现在，请作为我的专业投资分析助手，严格遵循以下框架，对目标公司进行系统性的全面分析。
 **核心指令与目标**：
 - 请按照以下**第一至第二部分**的结构，逐步输出分析内容。
 - 确保分析过程逻辑严密，结论有数据和支持，并使用工具完成交易。
-- 通过调用可用的工具进行思考和推理，绝对不允许使用get_information或其他方法查询或检索信息
+- 通过调用可用的工具进行思考和推理，使用get_information或其他方法查询或检索信息
 - 你的长期目标是通过这个投资组合最大化收益
 
 #### **第一部分：股票过往表现**
@@ -308,6 +333,18 @@ prompt_astock_diff = """
 {diff_1d}
 """
 
+def check_position_is_empty(data_dict):
+    values = np.array(list(data_dict.values()))
+    
+    # 统计1000000.0的个数
+    million_count = np.sum(values == 1000000.0)
+    zero_count = np.sum(values == 0)
+    
+    if million_count == 1 and zero_count == len(data_dict) - 1:
+        return 1
+    else:
+        return 0
+
 def get_agent_system_prompt_astock(today_date: str, signature: str, stock_symbols: Optional[List[str]] = None) -> str:
     """
     生成A股专用系统提示词
@@ -341,6 +378,7 @@ def get_agent_system_prompt_astock(today_date: str, signature: str, stock_symbol
     print(f"step: today_init_position")
     today_init_position = get_today_init_position(today_date, signature)
     print(f"step: get_yesterday_profit")
+    if today_init_position
     yesterday_profit = get_yesterday_profit(
         today_date, yesterday_buy_prices, yesterday_sell_prices, today_init_position, stock_symbols
     )
@@ -353,7 +391,26 @@ def get_agent_system_prompt_astock(today_date: str, signature: str, stock_symbol
     print(f"step: format_price_dict_with_names")
     today_buy_price_display = format_price_dict_with_names(today_buy_price, market="cn")
 
-    if "tech" in signature:
+    if "nuts" in signature:
+        if check_position_is_empty():
+            return (agent_system_prompt_astock_nuts_firsttime + prompt_astock_rules + prompt_astock_info).format(
+                date=today_date,
+                positions=today_init_position,
+                STOP_SIGNAL=STOP_SIGNAL,
+                yesterday_close_price=yesterday_sell_prices_display,
+                today_buy_price=today_buy_price_display,
+                yesterday_profit=yesterday_profit,
+            )
+        else:
+            return (agent_system_prompt_astock_nuts + prompt_astock_rules + prompt_astock_info).format(
+                date=today_date,
+                positions=today_init_position,
+                STOP_SIGNAL=STOP_SIGNAL,
+                yesterday_close_price=yesterday_sell_prices_display,
+                today_buy_price=today_buy_price_display,
+                yesterday_profit=yesterday_profit,
+            )
+    elif "tech" in signature:
         return (agent_system_prompt_astock_tech + prompt_astock_rules + prompt_astock_info).format(
             date=today_date,
             positions=today_init_position,
