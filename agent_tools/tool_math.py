@@ -38,6 +38,18 @@ def multiply(a: float, b: float) -> float:
     #     f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
     return float(a) * float(b)
 
+@mcp.tool()
+def divide(a: float, b: float) -> float:
+    """divide two numbers (supports int and float)"""
+    # log_file = get_config_value("LOG_FILE")
+    # signature = get_config_value("SIGNATURE")
+    # log_entry = {
+    #     "signature": signature,
+    #     "new_messages": [{"role": "tool:multiply", "content": f"{a} * {b} = {float(a) * float(b)}"}]
+    # }
+    # with open(log_file, "a", encoding="utf-8") as f:
+    #     f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+    return float(a) / float(b)
 
 if __name__ == "__main__":
     port = int(os.getenv("MATH_HTTP_PORT", "8000"))

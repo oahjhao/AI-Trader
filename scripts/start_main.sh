@@ -29,11 +29,11 @@ LOGFILE_STEP2="logs/step2_${TODAY_LOG}.log"
 LOGFILE_STEP3="logs/step3_${TODAY_LOG}.log"
 
 echo 'step1 starting...'
-sh scripts/main_a_stock_step1.sh 2>&1
+sh scripts/main_a_stock_step1.sh 2>&1 | tee "$LOGFILE_STEP1"
 sleep 10
 echo 'step2 starting...'
-nohup sh scripts/main_a_stock_step2.sh 2>&1 & 
+nohup sh scripts/main_a_stock_step2.sh 2>&1 | tee "$LOGFILE_STEP2" &
 sleep 5
 echo 'step3 starting...'
-nohup sh scripts/main_a_stock_step3.sh 2>&1 & 
+nohup sh scripts/main_a_stock_step3.sh 2>&1 | tee "$LOGFILE_STEP3" &
 echo 'done.'

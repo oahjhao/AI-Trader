@@ -10,6 +10,7 @@ import os
 # Import project tools
 import sys
 import pandas as pd
+import tiktoken
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -155,6 +156,7 @@ class BaseAgentAStockHourly:
         self.signature = signature
         self.basemodel = basemodel
         self.market = "cn"  # 硬编码为A股市场
+        self.encoding = None
 
         # 默认使用上证50成分股
         if stock_symbols is None:
@@ -286,6 +288,10 @@ class BaseAgentAStockHourly:
         log_entry = {"timestamp": datetime.now().isoformat(), "signature": self.signature, "new_messages": new_messages}
         with open(log_file, "a", encoding="utf-8") as f:
             f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+    
+    def count_tokens(self):
+        """计算消息的token数量"""
+        self.encoding = tiktoken.get_encoding("cl100k_base")  # DeepSeek使用的编码
 
     async def _ainvoke_with_retry(self, message: List[Dict[str, str]]) -> Any:
         """Agent invocation with retry"""
@@ -295,7 +301,7 @@ class BaseAgentAStockHourly:
             except Exception as e:
                 if attempt == self.max_retries:
                     raise e
-                print(f"⚠️ Attempt {attempt} failed, retrying after {self.base_delay * attempt} seconds...")
+                print(f"⚠️ Attempt {attempt} ainvoke failed, retrying after {self.base_delay * attempt} seconds...")
                 print(f"Error details: {e}")
                 await asyncio.sleep(self.base_delay * attempt)
 
@@ -328,6 +334,7 @@ class BaseAgentAStockHourly:
         init_prompt = [{"role": "assistant", "content": f"[AI: deepseek-chat]\n初始提示词:{prompt}"}]
         user_query = [{"role": "user", "content": f"请分析并更新今日（{today_date}）的持仓。"}]
         message = user_query.copy()
+        self.count_tokens()
 
         # Log initial message
         self._log_message(log_file, init_prompt)
@@ -335,10 +342,16 @@ class BaseAgentAStockHourly:
 
         # Trading loop
         current_step = 0
+        total_tokens = 0
         trading_done = False
         while current_step < self.max_steps:
             current_step += 1
             print(f"🔄 Step {current_step}/{self.max_steps}")
+            total_tokens = sum(len(self.encoding.encode(msg["content"])) for msg in message)
+            print(f"total tokens is {total_tokens}")
+
+            if total_tokens > 131072:
+                message = message[-5:]  # 保留最后5条消息
 
             try:
                 # Call agent
@@ -347,12 +360,12 @@ class BaseAgentAStockHourly:
                 # Extract agent response
                 agent_response = extract_conversation(response, "all")
                 for resp in agent_response:
-                    # print(resp)
                     self._log_message(log_file, [{"role": "assistant", "content": resp}])
+                    message.extend([{"role": "assistant", "content": resp}])
                     # Check stop signal
                     if STOP_SIGNAL in resp:
                         print("✅ Received stop signal, trading session ended")
-                        trading_done = True         
+                        trading_done = True        
 
                 if trading_done:
                     break
@@ -368,7 +381,7 @@ class BaseAgentAStockHourly:
                 # ]
 
                 # # Add new messages
-                # message.extend(new_messages)
+                # message.extend(agent_response)
 
                 # # Log messages
                 # self._log_message(log_file, new_messages[0])

@@ -11,6 +11,7 @@ load_dotenv()
 import json
 import os
 import sys
+import numpy as np
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -378,7 +379,6 @@ def get_agent_system_prompt_astock(today_date: str, signature: str, stock_symbol
     print(f"step: today_init_position")
     today_init_position = get_today_init_position(today_date, signature)
     print(f"step: get_yesterday_profit")
-    if today_init_position
     yesterday_profit = get_yesterday_profit(
         today_date, yesterday_buy_prices, yesterday_sell_prices, today_init_position, stock_symbols
     )
@@ -392,7 +392,7 @@ def get_agent_system_prompt_astock(today_date: str, signature: str, stock_symbol
     today_buy_price_display = format_price_dict_with_names(today_buy_price, market="cn")
 
     if "nuts" in signature:
-        if check_position_is_empty():
+        if check_position_is_empty(today_init_position):
             return (agent_system_prompt_astock_nuts_firsttime + prompt_astock_rules + prompt_astock_info).format(
                 date=today_date,
                 positions=today_init_position,
@@ -402,7 +402,7 @@ def get_agent_system_prompt_astock(today_date: str, signature: str, stock_symbol
                 yesterday_profit=yesterday_profit,
             )
         else:
-            return (agent_system_prompt_astock_nuts + prompt_astock_rules + prompt_astock_info).format(
+            return (agent_system_prompt_astock_tech + prompt_astock_rules + prompt_astock_info).format(
                 date=today_date,
                 positions=today_init_position,
                 STOP_SIGNAL=STOP_SIGNAL,
