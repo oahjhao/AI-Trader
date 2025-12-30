@@ -86,7 +86,6 @@ configs/day_config.json
 configs/hour_config.json
 configs/test_config.json
 configs/test_day_config.json
-configs/astock_config_hourly.json
 configs/astock.json
 configs/test_*.json
 
@@ -95,14 +94,6 @@ data/agent_data/test*/
 data/agent_data/*test*/
 data/merged_daily.jsonl
 data/merged_hour.jsonl
-data/A_stock/A_stock_daily.csv
-data/A_stock/A_stock_hourly.csv
-data/A_stock/merged.jsonl
-data/A_stock/merged_hourly.jsonl
-data/A_stock/sse_50_weight.csv
-data/A_stock/sse_bench.csv
-data/A_stock/sse_pick.csv
-data/A_stock/index_daily_sse_50.json
 
 # Jupyter Notebook
 .ipynb_checkpoints

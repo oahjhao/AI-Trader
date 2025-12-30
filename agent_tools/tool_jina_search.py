@@ -19,6 +19,222 @@ from tools.general_tools import get_config_value
 
 logger = logging.getLogger(__name__)
 
+from bs4 import BeautifulSoup
+from sumy.parsers.plaintext import PlaintextParser
+from sumy.nlp.tokenizers import Tokenizer
+from sumy.summarizers.lsa import LsaSummarizer
+from sumy.summarizers.text_rank import TextRankSummarizer
+import nltk
+
+class ContentCleaner:
+    def __init__(self):
+        self.noise_patterns = [
+            r'<script[^>]*>.*?</script>',
+            r'<style[^>]*>.*?</style>',
+            r'<!--.*?-->',
+            r'<nav[^>]*>.*?</nav>',
+            r'<header[^>]*>.*?</header>',
+            r'<footer[^>]*>.*?</footer>',
+            r'class="[^"]*(ad|banner|sidebar|menu|navigation)[^"]*"',
+            r'id="[^"]*(ad|banner|sidebar|menu|navigation)[^"]*"'
+        ]
+
+    def clean_jina_content(self, content, content_type="auto"):
+        """直接清洗Jina返回的内容"""
+        if content_type == "auto":
+            content_type = self.detect_content_type(content)
+
+        if content_type == "html":
+            return self._clean_html_content(content)
+        elif content_type == "pdf":
+            return self._clean_pdf_content(content)
+        else:
+            return self._clean_text_content(content)
+
+    def detect_content_type(self, content):
+        """自动检测内容类型"""
+        if content.startswith('<!DOCTYPE') or content.startswith('<html'):
+            return "html"
+        elif "PDF" in content.upper() or "%PDF" in content:
+            return "pdf"
+        else:
+            return "text"
+
+    def _clean_html_content(self, html_content):
+        """清洗HTML内容"""
+        # Jina可能已经返回了Markdown，但进一步清理
+        soup = BeautifulSoup(html_content, 'html.parser')
+
+        # 移除不需要的元素
+        for element in soup(['script', 'style', 'nav', 'header', 'footer']):
+            element.decompose()
+
+        # 提取文本并清理
+        text = soup.get_text()
+        text = self._post_process_text(text)
+        return text
+
+    def _clean_pdf_content(self, pdf_content):
+        """清洗PDF内容"""
+        # 移除PDF元数据行
+        lines = pdf_content.split('\n')
+        clean_lines = []
+
+        for line in lines:
+            line = line.strip()
+            # 过滤掉页码、文件路径等噪声
+            if (len(line) > 20 and
+                not re.search(r'page\s+\d+', line.lower()) and
+                not re.search(r'file:///', line) and
+                not re.search(r'^\d+$', line)):
+                clean_lines.append(line)
+
+        return '\n'.join(clean_lines)
+
+    def _clean_text_content(self, text_content):
+        """清洗纯文本内容"""
+        return self._post_process_text(text_content)
+
+    def _post_process_text(self, text):
+        """文本后处理"""
+        # 移除过多的空格
+        text = re.sub(r'\s+', ' ', text)
+
+        # 移除URL（保留链接文本）
+        text = re.sub(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', '', text)
+
+        return text.strip()
+
+
+class SmartSummarizer:
+    def __init__(self):
+        # 确保NLTK数据可用
+        try:
+            nltk.data.find('tokenizers/punkt')
+        except LookupError:
+            nltk.download('punkt')
+
+        self.summarizers = {
+            'lsa': LsaSummarizer(),
+            'text_rank': TextRankSummarizer()
+        }
+
+    def estimate_tokens(self, text):
+        """估算token数量"""
+        return int(len(text.split()) * 1.3)
+
+    def adaptive_summary(self, text, target_tokens=None, quality_preset="balanced"):
+        """自适应摘要"""
+        current_tokens = self.estimate_tokens(text)
+
+        if target_tokens and current_tokens <= target_tokens:
+            return text
+
+        # 根据质量预设调整参数
+        if quality_preset == "high":
+            sentences_ratio = 0.4
+            min_sentences = 8
+        elif quality_preset == "balanced":
+            sentences_ratio = 0.3
+            min_sentences = 5
+        else:  # fast
+            sentences_ratio = 0.2
+            min_sentences = 3
+
+        # 计算目标句子数
+        sentences = nltk.sent_tokenize(text)
+        target_sentences = max(min_sentences, int(len(sentences) * sentences_ratio))
+
+        # 选择摘要方法
+        if len(sentences) > 50:
+            method = 'text_rank'  # 长文档用TextRank
+        else:
+            method = 'lsa'        # 短文档用LSA
+
+        summary = self.extractive_summary(text, target_sentences, method)
+
+        return summary
+
+    def extractive_summary(self, text, sentences_count=5, method='lsa'):
+        """提取式摘要"""
+        if len(text.split()) < 300:
+            return text  # 短内容无需摘要
+
+        parser = PlaintextParser.from_string(text, Tokenizer("chinese"))
+        summarizer = self.summarizers.get(method, self.summarizers['lsa'])
+
+        summary_sentences = summarizer(parser.document, sentences_count)
+        return " ".join(str(sentence) for sentence in summary_sentences)
+
+class SimplifiedJinaProcessor:
+    def __init__(self):
+        self.cleaner = ContentCleaner()
+        self.summarizer = SmartSummarizer()
+        self.processed_cache = {}
+
+    def process_retrieved_content(self, jina_results, max_total_tokens=120000):
+        """直接处理Jina返回的内容"""
+        processed_results = []
+        current_total_tokens = 0
+
+        content = jina_results.get('content', '')
+        #content = result['content']
+        url = jina_results.get('url', 'unknown')
+        #url = result['url']
+
+        # 内容清洗
+        cleaned_content = self.cleaner.clean_jina_content(content)
+
+        # 估算token并决定是否压缩
+        token_count = self.summarizer.estimate_tokens(cleaned_content)
+
+        if token_count > 3000:  # 确保有足够内容进行摘要
+            compressed_content = self.summarizer.adaptive_summary(
+                cleaned_content,
+                target_tokens=3000,
+                quality_preset="balanced"
+            )
+            token_count = self.summarizer.estimate_tokens(compressed_content)
+            cleaned_content = compressed_content
+
+        result_data = {
+            "success": True,
+            "content": cleaned_content,
+            "token_count": token_count,
+            "metadata": {
+                "url": url,
+                "cleaned": True,
+                "compressed": token_count < self.summarizer.estimate_tokens(cleaned_content),
+                "original_length": len(content),
+                "cleaned_length": len(cleaned_content)
+            }
+        }
+
+        processed_results.append(result_data)
+        current_total_tokens += token_count
+
+        return {
+            "processed_results": processed_results,
+            "total_tokens": current_total_tokens,
+            "within_limit": current_total_tokens <= max_total_tokens
+        }
+
+    def build_analysis_context(self, processed_results):
+        """构建分析上下文"""
+        context_parts = []
+
+        for i, result in enumerate(processed_results, 1):
+            context_parts.append(f"【来源 {i} - {result['metadata']['url']}】")
+
+            if result['metadata']['compressed']:
+                context_parts.append(
+                    f"*(内容已从 {result['metadata']['original_length']} 字符压缩至 {result['metadata']['cleaned_length']} 字符)*"
+                )
+
+            context_parts.append(result['content'])
+            context_parts.append("---")
+
+        return "\n".join(context_parts)
 
 def parse_date_to_standard(date_str: str) -> str:
     """
@@ -235,6 +451,7 @@ def get_information(query: str) -> str:
         print(datetime.now())
         tool = WebScrapingJinaTool()
         results = tool(query)
+        processor = SimplifiedJinaProcessor()
 
         # Check if results are empty
         if not results:
@@ -246,13 +463,15 @@ def get_information(query: str) -> str:
             if "error" in result:
                 formatted_results.append(f"Error: {result['error']}")
             else:
+                processed_batch = processor.process_retrieved_content(result)
                 formatted_results.append(
                     f"""
 URL: {result['url']}
 Title: {result['title']}
 Description: {result['description']}
 Publish Time: {result['publish_time']}
-Content: {result['content']}...
+Content: {processed_batch['processed_results']}
+Tokens: {processed_batch['total_tokens']}
 """
                 )
 
@@ -273,7 +492,6 @@ Content: {result['content']}...
 
     except Exception as e:
         return f"❌ Search tool execution failed: {str(e)}"
-
 
 if __name__ == "__main__":
     # Run with streamable-http, support configuring host and port through environment variables to avoid conflicts
