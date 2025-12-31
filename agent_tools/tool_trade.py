@@ -242,7 +242,7 @@ def _get_today_buy_amount(symbol: str, today_date: str, signature: str) -> int:
                 continue
             try:
                 record = json.loads(line)
-                if record.get("date") == today_date:
+                if record.get("date").split(' ')[0] == today_date.split(' ')[0]:
                     this_action = record.get("this_action", {})
                     if this_action.get("action") == "buy" and this_action.get("symbol") == symbol:
                         total_bought_today += this_action.get("amount", 0)

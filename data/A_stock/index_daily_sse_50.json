@@ -2,11 +2,19 @@
     "Meta Data": {
         "1. Information": "Daily Prices (open, high, low, close) and Volumes",
         "2. Symbol": "000016.SH",
-        "3. Last Refreshed": "2025-12-30",
+        "3. Last Refreshed": "2025-12-31",
         "4. Output Size": "Compact",
         "5. Time Zone": "Asia/Shanghai"
     },
     "Time Series (Daily)": {
+        "2025-12-31": {
+            "1. open": "3038.6015",
+            "2. high": "3051.4304",
+            "3. low": "3026.4869",
+            "4. close": "3031.1258",
+            "5. volume": "37358980",
+            "6. pct_chg": "-0.1787"
+        },
         "2025-12-30": {
             "1. open": "3023.3211",
             "2. high": "3049.3229",
