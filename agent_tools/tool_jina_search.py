@@ -325,11 +325,11 @@ class WebScrapingJinaTool:
         all_urls = self._jina_search(query)
         return_content = []
         print(f"Found {len(all_urls)} URLs")
-        if len(all_urls) > 1:
+        if len(all_urls) > 3:
             # Randomly select three to form new all_urls
-            all_urls = random.sample(all_urls, 1)
+            all_urls = random.sample(all_urls, 3)
         for url in all_urls:
-            print(f"Scraping {url}")
+            #print(f"Scraping {url}")
             return_content.append(self._jina_scrape(url))
             print(f"Scraped {url}")
 
