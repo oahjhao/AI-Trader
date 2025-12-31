@@ -600,8 +600,9 @@ class DataLoader {
 
             if (agentNames.length > 0) {
                 const firstAgent = this.agentData[agentNames[0]];
-                if (firstAgent && firstAgent.assetHistory.length > 0) {
-                    initialValue = firstAgent.assetHistory[0].value;
+		//if (firstAgent && firstAgent.assetHistory.length > 0) {
+                if (firstAgent && firstAgent.positions[0]) {
+                    initialValue = firstAgent.positions[0]?.positions["CASH"];
                 }
             }
 

@@ -154,7 +154,9 @@ class TransactionLoader {
 
         for (const [agentName, data] of Object.entries(allAgentsData)) {
             const assetHistory = data.assetHistory || [];
-            const initialValue = assetHistory[0]?.value || 10000;
+            const positions = data.positions || [];
+	    //const initialValue = assetHistory[0]?.value || 10000;
+            const initialValue = positions[0]?.positions["CASH"] || 1000000;
             const finalValue = assetHistory[assetHistory.length - 1]?.value || initialValue;
             const gain = finalValue - initialValue;
             const gainPercent = ((finalValue - initialValue) / initialValue) * 100;
