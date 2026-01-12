@@ -18,7 +18,7 @@ PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
 
 cd "$PROJECT_ROOT"
 
-JSON_FILE="config/astock_config_hourly.json"
+JSON_FILE="configs/astock_config_hourly.json"
 YAML_FILE="docs/config.yaml"
 
 TODAY=$(date +%Y-%m-%d' '%H:%M:%S)

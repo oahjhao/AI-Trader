@@ -2,32 +2,32 @@
   "agent_type": "BaseAgentAStockHourly",
   "market": "cn",
   "date_range": {
-    "init_date": "2025-12-29 10:00:00",
-    "end_date": "2025-12-31 17:37:30"
+    "init_date": "2026-01-12 09:34:43",
+    "end_date": "2026-01-12 10:04:43"
   },
   "models": [
     {
-      "name": "DS_pick_nuts_251229",
+      "name": "DS_pick_nuts_260112",
       "basemodel": "deepseek-chat",
-      "signature": "DS_pick_nuts_251229",
+      "signature": "DS_pick_nuts_260112",
       "enabled": true
     },
     {
-      "name": "DS_pick_normal_251229",
+      "name": "DS_pick_normal_260112",
       "basemodel": "deepseek-chat",
-      "signature": "DS_pick_normal_251229",
+      "signature": "DS_pick_normal_260112",
       "enabled": true
     },
     {
-      "name": "DS_pick_monk_251229",
+      "name": "DS_pick_monk_260112",
       "basemodel": "deepseek-chat",
-      "signature": "DS_pick_monk_251229",
+      "signature": "DS_pick_monk_260112",
       "enabled": true
     },
     {
-      "name": "DS_pick_tech_251229",
+      "name": "DS_pick_tech_260112",
       "basemodel": "deepseek-chat",
-      "signature": "DS_pick_tech_251229",
+      "signature": "DS_pick_tech_260112",
       "enabled": true
     }
   ],
