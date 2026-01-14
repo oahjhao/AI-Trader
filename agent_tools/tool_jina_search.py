@@ -29,60 +29,21 @@ import nltk
 
 class ContentCleaner:
     def __init__(self):
-        # 增强的噪声模式
+        # 优化后的精简噪声模式 - 优先性能
         self.noise_patterns = [
-            # HTML标签噪音
+            # 关键HTML标签噪音 (保留最重要的)
             r'<script[^>]*>.*?</script>',
             r'<style[^>]*>.*?</style>',
             r'<!--.*?-->',
-            r'<nav[^>]*>.*?</nav>',
-            r'<header[^>]*>.*?</header>',
-            r'<footer[^>]*>.*?</footer>',
-            r'<aside[^>]*>.*?</aside>',
-            r'<noscript[^>]*>.*?</noscript>',
             
-            # 广告和推广相关
-            r'class="[^"]*(ad|advertisement|banner|promo|sponsor|widget)[^"]*"',
-            r'id="[^"]*(ad|advertisement|banner|promo|sponsor)[^"]*"',
-            
-            # 导航和菜单
-            r'class="[^"]*(menu|navigation|breadcrumb|pagination|toolbar)[^"]*"',
-            r'id="[^"]*(menu|navigation|breadcrumb|pagination)[^"]*"',
-            
-            # 侧边栏和无关内容
-            r'class="[^"]*(sidebar|widget|related|comment|share)[^"]*"',
-            r'id="[^"]*(sidebar|widget|related|comment)[^"]*"',
+            # 常见垃圾内容标识 (合并相似模式)
+            r'(免责声明|Disclaimer|本文不代表|This article does not represent).*?(?:[。\.\n]|$)',
+            r'(编辑|Editor|作者|Author|来源|Source)\s*[:：].*?(?:[。\.\n]|$)',
+            r'(关注|Follow|扫码|Scan|查看详情|Details|了解更多|Learn more).*?(?:[。\.\n]|$)',
             
             # 技术噪音
-            r'\[\d+\]\s*',  # 引用标记如 [1]
-            r'\*\s*[A-Za-z]+\s*\*\s*\|\s*[A-Za-z]+\s*\|\s*[A-Za-z]+',  # 表格头部
-            r'\|[-\s\|]+\|',  # 表格分隔线
-        ]
-        
-        # 中文垃圾内容模式
-        self.chinese_noise_patterns = [
-            r'免责声明.*?(?:。|$)',
-            r'本文不代表.*?(?:。|$)',
-            r'转载请注明出处.*?(?:。|$)',
-            r'编辑\s*[:：].*?(?:。|$)',
-            r'作者\s*[:：].*?(?:。|$)',
-            r'来源\s*[:：].*?(?:。|$)',
-            r'关注微信公众号.*?(?:。|$)',
-            r'扫码关注.*?(?:。|$)',
-            r'点击查看详情.*?(?:。|$)',
-            r'了解更多.*?(?:。|$)',
-        ]
-        
-        # 英文垃圾内容模式
-        self.english_noise_patterns = [
-            r'Disclaimer.*?(?:\.|$)',
-            r'This article does not represent.*?(?:\.|$)',
-            r'Reprinted with permission.*?(?:\.|$)',
-            r'Editor\s*[:].*?(?:\.|$)',
-            r'Author\s*[:].*?(?:\.|$)',
-            r'Source\s*[:].*?(?:\.|$)',
-            r'Follow us on.*?(?:\.|$)',
-            r'Scan to follow.*?(?:\.|$)',
+            r'\[\d+\]\s*',  # 引用标记
+            r'http[s]?://\S+',  # URL链接
         ]
 
     def clean_jina_content(self, content, content_type="auto"):
@@ -142,44 +103,54 @@ class ContentCleaner:
         return self._post_process_text(text_content)
 
     def _post_process_text(self, text):
-        """增强的文本后处理"""
+        """优化性能的文本后处理 - 精简版"""
         if not text or not text.strip():
             return ""
             
-        # 移除过多的空格和换行
+        # 快速预检：如果文本很短，直接返回
+        if len(text) < 50:
+            return re.sub(r'\s+', ' ', text).strip()
+            
+        # 一次性批量处理空格和换行
         text = re.sub(r'\s+', ' ', text)
         
-        # 应用通用噪声模式
-        for pattern in self.noise_patterns:
-            text = re.sub(pattern, '', text, flags=re.IGNORECASE | re.DOTALL)
+        # 批量应用噪声模式 (减少循环次数)
+        # 合并多个正则为一个，提高效率
+        combined_pattern = '|'.join(f'({pattern})' for pattern in self.noise_patterns)
+        try:
+            text = re.sub(combined_pattern, '', text, flags=re.IGNORECASE | re.DOTALL)
+        except:
+            # 如果合并失败，逐个应用（fallback）
+            for pattern in self.noise_patterns:
+                text = re.sub(pattern, '', text, flags=re.IGNORECASE | re.DOTALL)
         
-        # 根据文本特征应用对应的语言模式
-        if self._is_chinese_text(text):
-            for pattern in self.chinese_noise_patterns:
-                text = re.sub(pattern, '', text)
-        else:
-            for pattern in self.english_noise_patterns:
-                text = re.sub(pattern, '', text, flags=re.IGNORECASE)
+        # 快速清理常见标点问题
+        text = re.sub(r'[\.!?]{4,}', '... ', text)  # 极端标点
+        text = re.sub(r'\s*([\.!?])\s*', r'\1 ', text)  # 标点标准化
         
-        # 移除URL但保留域名信息
-        text = re.sub(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+(?!\S)', '', text)
-        
-        # 清理多余的标点符号
-        text = re.sub(r'[\.!?]{3,}', '... ', text)  # 多个标点合并
-        text = re.sub(r'\s+[\.!?]\s+', '. ', text)  # 句子间多余空格
-        
-        # 移除开头和结尾的无意义字符
+        # 简化首尾清理
         text = text.strip(' \t\n\r\xa0·•–—')
         
+        # 长度保护：避免过度清洗
+        if len(text) < 20:
+            return ""
+            
         return text
     
     def _is_chinese_text(self, text):
-        """简单判断是否为中文文本"""
-        if not text:
+        """高性能中文文本判断 - 简化版"""
+        if not text or len(text) < 10:
             return False
-        chinese_chars = len(re.findall(r'[\u4e00-\u9fff]', text))
-        total_chars = len(re.findall(r'[\w\u4e00-\u9fff]', text))
-        return chinese_chars / max(total_chars, 1) > 0.3  # 中文字符占比超过30%
+        
+        # 使用更简单快速的方法
+        chinese_count = 0
+        total_count = min(len(text), 100)  # 只检查前100个字符
+        
+        for char in text[:total_count]:
+            if '\u4e00' <= char <= '\u9fff':
+                chinese_count += 1
+                
+        return chinese_count / max(total_count, 1) > 0.2  # 降低阈值提高性能
 
 
 class SmartSummarizer:
@@ -193,71 +164,143 @@ class SmartSummarizer:
         }
     
     def _ensure_nltk_resources(self):
-        """确保NLTK所需资源都已下载"""
+        """确保NLTK所需资源都已下载 - 增强版本"""
         required_resources = [
             'punkt',      # 基础分词模型
             'punkt_tab'   # 新版NLTK需要的tabular punkt数据
         ]
+        
+        # 设置NLTK数据目录
+        nltk_data_dirs = [
+            '/home/ec2-user/nltk_data',  # 默认用户目录
+            '/usr/local/share/nltk_data', # 系统目录
+            '/usr/share/nltk_data',       # 系统目录
+            os.path.expanduser('~/.nltk_data'), # 用户家目录
+            os.path.join(os.getcwd(), 'nltk_data')  # 当前目录
+        ]
+        
+        # 添加额外的数据目录
+        for data_dir in nltk_data_dirs:
+            if os.path.exists(data_dir) and data_dir not in nltk.data.path:
+                nltk.data.path.append(data_dir)
         
         for resource in required_resources:
             try:
                 nltk.data.find(f'tokenizers/{resource}')
                 logger.debug(f"✅ NLTK resource '{resource}' already available")
             except LookupError:
-                logger.warning(f"🔄 Downloading NLTK resource: {resource}")
-                try:
-                    nltk.download(resource, quiet=True)
-                    logger.info(f"✅ Successfully downloaded NLTK resource: {resource}")
-                except Exception as e:
-                    logger.error(f"❌ Failed to download NLTK resource '{resource}': {e}")
-                    raise RuntimeError(f"NLTK resource '{resource}' is required but cannot be downloaded")
+                logger.warning(f"🔄 Attempting to download NLTK resource: {resource}")
+                download_success = False
+                
+                # 尝试多种下载方式
+                download_methods = [
+                    lambda: nltk.download(resource, quiet=True),
+                    lambda: nltk.download(resource, download_dir='/tmp/nltk_data', quiet=True),
+                    lambda: self._manual_download_resource(resource)
+                ]
+                
+                for i, method in enumerate(download_methods):
+                    try:
+                        method()
+                        # 验证下载是否成功
+                        nltk.data.find(f'tokenizers/{resource}')
+                        logger.info(f"✅ Successfully downloaded NLTK resource: {resource} (method {i+1})")
+                        download_success = True
+                        break
+                    except Exception as e:
+                        logger.debug(f"Method {i+1} failed for {resource}: {e}")
+                        continue
+                
+                if not download_success:
+                    logger.error(f"❌ All download methods failed for NLTK resource '{resource}'")
+                    # 使用备用方案
+                    self._use_fallback_tokenization()
+                    return
+    
+    def _manual_download_resource(self, resource):
+        """手动下载资源的方法"""
+        import urllib.request
+        import zipfile
+        import tempfile
+        
+        urls = {
+            'punkt': 'https://github.com/nltk/nltk_data/raw/gh-pages/packages/tokenizers/punkt.zip',
+            'punkt_tab': 'https://github.com/nltk/nltk_data/raw/gh-pages/packages/tokenizers/punkt_tab.zip'
+        }
+        
+        if resource not in urls:
+            raise Exception(f"No download URL for resource: {resource}")
+            
+        url = urls[resource]
+        temp_dir = tempfile.mkdtemp()
+        zip_path = os.path.join(temp_dir, f"{resource}.zip")
+        
+        # 下载ZIP文件
+        urllib.request.urlretrieve(url, zip_path)
+        
+        # 解压到NLTK数据目录
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            zip_ref.extractall(nltk.data.path[0])
+            
+        os.remove(zip_path)
+        os.rmdir(temp_dir)
+    
+    def _use_fallback_tokenization(self):
+        """当NLTK资源不可用时的备用分词方案"""
+        logger.warning("⚠️ Using fallback tokenization method")
+        
+        # 创建简单的分词函数替代NLTK
+        def simple_sent_tokenize(text):
+            import re
+            # 简单的句子分割：以句号、感叹号、问号分割
+            sentences = re.split(r'[。！？.!?]+', text)
+            # 过滤空句子
+            return [s.strip() for s in sentences if s.strip()]
+        
+        # 替换NLTK的sent_tokenize
+        nltk.sent_tokenize = simple_sent_tokenize
+        logger.info("✅ Fallback tokenization activated")
 
     def estimate_tokens(self, text):
         """估算token数量"""
         return int(len(text.split()) * 1.3)
 
-    def adaptive_summary(self, text, target_tokens=None, quality_preset="balanced"):
-        """增强的自适应摘要"""
+    def adaptive_summary(self, text, target_tokens=None, quality_preset="fast"):
+        """高性能自适应摘要 - 精简版"""
         if not text or len(text.strip()) < 100:
             return text
             
+        # 快速token估算
         current_tokens = self.estimate_tokens(text)
-
         if target_tokens and current_tokens <= target_tokens:
             return text
 
-        # 更精细的质量预设
+        # 简化质量预设 - 优先速度
         preset_configs = {
-            "high": {"ratio": 0.4, "min_sentences": 8, "max_sentences": 20},
-            "balanced": {"ratio": 0.3, "min_sentences": 5, "max_sentences": 15},
-            "fast": {"ratio": 0.2, "min_sentences": 3, "max_sentences": 10},
-            "ultra_fast": {"ratio": 0.15, "min_sentences": 2, "max_sentences": 8}
+            "high": {"ratio": 0.35, "min_sentences": 6, "max_sentences": 15},
+            "balanced": {"ratio": 0.25, "min_sentences": 4, "max_sentences": 10},
+            "fast": {"ratio": 0.15, "min_sentences": 2, "max_sentences": 6},  # 默认快速模式
+            "ultra_fast": {"ratio": 0.1, "min_sentences": 1, "max_sentences": 4}
         }
         
-        config = preset_configs.get(quality_preset, preset_configs["balanced"])
+        config = preset_configs.get(quality_preset, preset_configs["fast"])
         
-        # 分析文本特征
+        # 简化文本分析 - 只分析前几句话提高性能
         sentences = nltk.sent_tokenize(text)
-        avg_sentence_length = sum(len(s.split()) for s in sentences) / len(sentences)
-        
-        # 根据文本特征动态调整
-        if len(sentences) < 5:
+        if len(sentences) < 3:
             return text  # 太短无需摘要
         
-        # 计算目标句子数
+        # 快速计算目标句子数
         target_sentences = max(
             config["min_sentences"], 
             min(config["max_sentences"], int(len(sentences) * config["ratio"]))
         )
         
-        # 智能选择摘要方法
-        method = self._select_best_method(sentences, avg_sentence_length)
+        # 简化方法选择 - 直接使用快速方法
+        method = "simple" if len(sentences) < 20 else "lsa"
         
         # 执行摘要
         summary = self.extractive_summary(text, target_sentences, method)
-        
-        # 后处理：确保摘要质量和连贯性
-        summary = self._post_process_summary(summary, sentences)
         
         return summary
     
@@ -299,31 +342,34 @@ class SmartSummarizer:
         
         return summary
 
-    def extractive_summary(self, text, sentences_count=5, method='lsa'):
-        """增强的提取式摘要，支持多种方法"""
-        if len(text.split()) < 300:
+    def extractive_summary(self, text, sentences_count=5, method='simple'):
+        """高性能提取式摘要 - 简化版"""
+        # 提高阈值，减少不必要的摘要处理
+        if len(text.split()) < 500:
             return text  # 短内容无需摘要
 
         sentences = nltk.sent_tokenize(text)
-        if len(sentences) <= sentences_count:
+        if len(sentences) <= sentences_count + 2:  # 容忍度更高
             return text  # 句子数不够摘要
         
-        # 简单截取模式
-        if method == 'simple':
+        # 默认使用简单截取 - 最快的方法
+        if method == 'simple' or len(sentences) < 30:
             return " ".join(sentences[:sentences_count])
         
-        # 使用sumy库进行智能摘要
+        # 仅在长文本时使用智能摘要
         try:
-            # 自动检测语言
-            language = "chinese" if self._is_chinese_text(text) else "english"
+            # 简化语言检测
+            language = "chinese" if any('\u4e00' <= c <= '\u9fff' for c in text[:200]) else "english"
             parser = PlaintextParser.from_string(text, Tokenizer(language))
             summarizer = self.summarizers.get(method, self.summarizers['lsa'])
             
-            summary_sentences = summarizer(parser.document, sentences_count)
+            # 限制摘要句子数避免过度处理
+            actual_sentences = min(sentences_count, 10)
+            summary_sentences = summarizer(parser.document, actual_sentences)
             return " ".join(str(sentence) for sentence in summary_sentences)
         except Exception as e:
-            logger.warning(f"智能摘要失败，回退到简单截取: {e}")
-            return " ".join(sentences[:sentences_count])
+            # 快速回退
+            return " ".join(sentences[:min(sentences_count, 5)])
 
 class ContentQualityController:
     def __init__(self):
@@ -532,8 +578,7 @@ class SimplifiedJinaProcessor:
         if quality_assessment["quality"] == "poor":
             self.stats["failed_count"] += 1
             self.stats["quality_distribution"]["poor"] += 1
-            logger.warning(f"跳过低质量内容: {url}, 问题: {quality_assessment['issues']}
-")
+            logger.warning(f"跳过低质量内容: {url}, 问题: {quality_assessment['issues']}")
             return {
                 "processed_results": [],
                 "total_tokens": 0,

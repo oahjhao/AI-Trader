@@ -222,20 +222,20 @@ class PositionReporter:
         # 提取持仓股票（非零持仓）
         holdings = {k: v for k, v in positions.items() if k != "CASH" and v > 0}
         
-        # 格式化消息
+        # 格式化消息 - 使用钉钉Markdown换行语法
         message_lines = [
-            f"📈 **{signature} 仓位报告**",
-            f"📅 时间: {date}",
-            f"💰 现金余额: ¥{cash_balance:,.2f}",
-            ""
+            f"📈 **{signature} 仓位报告**  \n\n",
+            f"📅 时间: {date}  \n\n",
+            f"💰 现金余额: ¥{cash_balance:,.2f}  \n\n",
+            "  \n\n"
         ]
         
         if holdings:
-            message_lines.append("📊 持仓详情:")
+            message_lines.append("📊 持仓详情:  \n\n")
             for symbol, amount in sorted(holdings.items()):
                 display_name = self._get_stock_display_name(symbol)
                 # 每支股票后换行，使格式更美观
-                message_lines.append(f"  • {display_name}: {amount:,} 股  ")
+                message_lines.append(f"  • {display_name}: {amount:,} 股  \n\n")
         else:
             message_lines.append("📊 当前无持仓")
         
@@ -247,8 +247,9 @@ class PositionReporter:
             if action and symbol:
                 action_text = "买入" if action == "buy" else "卖出" if action == "sell" else action
                 display_name = self._get_stock_display_name(symbol)
-                message_lines.append("")
-                message_lines.append(f"📝 最新操作: {action_text} {display_name} {amount:,} 股")
+                message_lines.append("  \n\n")
+                message_lines.append(f"📝 最新操作:   \n\n")
+                message_lines.append(f"  • {action_text} {display_name} {amount:,} 股  \n\n")
         
         return "\n".join(message_lines)
     
