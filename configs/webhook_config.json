@@ -1,0 +1,14 @@
+{
+  "dingtalk": {
+    "webhook_url": "https://oapi.dingtalk.com/robot/send?access_token=YOUR_ACCESS_TOKEN",
+    "secret": "YOUR_SECRET_KEY"
+  },
+  "schedule": {
+    "type": "weekdays", 
+    "time": "15:00"
+  },
+  "report": {
+    "config_path": "./configs/astock_config_hourly.json",
+    "base_data_path": "./data/agent_data_astock"
+  }
+}
