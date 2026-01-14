@@ -18,6 +18,16 @@ from tools.price_tools import (get_latest_position, get_open_prices,
                                get_yesterday_open_and_close_price,
                                get_yesterday_profit)
 
+# 导入推送功能
+try:
+    import sys
+    sys.path.append(os.path.join(project_root, "webhook"))
+    from dingtalk_webhook import DingTalkWebhook, PositionReporter
+    PUSH_NOTIFICATIONS_AVAILABLE = True
+except ImportError:
+    PUSH_NOTIFICATIONS_AVAILABLE = False
+    print("⚠️ 推送通知模块不可用，将跳过交易推送功能")
+
 mcp = FastMCP("TradeTools")
 
 def _position_lock(signature: str):
@@ -209,10 +219,88 @@ def buy(symbol: str, amount: int) -> Dict[str, Any]:
                 )
                 + "\n"
             )
-        # Step 7: Return updated position
+        # Step 7: 发送交易推送通知
+        position_record = {
+            "date": today_date,
+            "id": current_action_id + 1,
+            "this_action": {"action": "buy", "symbol": symbol, "amount": amount},
+            "positions": new_position,
+        }
+        _send_trade_notification(signature, "buy", symbol, amount, position_record)
+        
+        # Step 8: Return updated position
         write_config_value("IF_TRADE", True)
         print("IF_TRADE", get_config_value("IF_TRADE"))
         return new_position
+
+
+def _send_trade_notification(signature: str, action: str, symbol: str, amount: int, position_data: Dict[str, Any]):
+    """
+    发送交易操作推送通知
+    
+    Args:
+        signature: 模型签名
+        action: 操作类型 ("buy" 或 "sell")
+        symbol: 股票代码
+        amount: 数量
+        position_data: 仓位数据
+    """
+    if not PUSH_NOTIFICATIONS_AVAILABLE:
+        return
+    
+    try:
+        # 从环境变量获取推送配置
+        webhook_url = os.getenv("DINGTALK_WEBHOOK_URL") or os.getenv("WEBHOOK_URL")
+        secret = os.getenv("DINGTALK_SECRET")
+        
+        if not webhook_url:
+            print("⚠️ 未配置 Webhook URL，跳过推送")
+            return
+        
+        # 创建推送器
+        dingtalk = DingTalkWebhook(webhook_url, secret)
+        reporter = PositionReporter()
+        
+        # 格式化交易操作消息
+        action_text = "买入" if action == "buy" else "卖出" if action == "sell" else action
+        display_name = reporter._get_stock_display_name(symbol)
+        
+        # 提取现金余额和持仓信息
+        positions = position_data.get("positions", {})
+        cash_balance = positions.get("CASH", 0)
+        holdings = {k: v for k, v in positions.items() if k != "CASH" and v > 0}
+        
+        # 构建消息
+        message_lines = [
+            f"📈 **{signature} position变化交易通知**  \n\n",
+            f"📅 时间: {position_data.get('date', '未知时间')}  \n\n",
+            f"💰 现金余额: ¥{cash_balance:,.2f}  \n\n",
+            "  \n\n",
+            f"📝 交易操作:  \n\n",
+            f"  • {action_text} {display_name} {amount:,} 股  \n\n",
+            "  \n\n"
+        ]
+        
+        # 添加持仓详情
+        if holdings:
+            message_lines.append("📊 当前持仓:  \n\n")
+            for hold_symbol, hold_amount in sorted(holdings.items()):
+                hold_display_name = reporter._get_stock_display_name(hold_symbol)
+                message_lines.append(f"  • {hold_display_name}: {hold_amount:,} 股  \n\n")
+        else:
+            message_lines.append("📊 当前无持仓  \n\n")
+        
+        message_content = "".join(message_lines)
+        
+        # 发送推送
+        success = dingtalk.send_message(message_content, msg_type="markdown")
+        if success:
+            print(f"✅ 交易推送成功: {action_text} {symbol} {amount}股")
+        else:
+            print(f"❌ 交易推送失败: {action_text} {symbol} {amount}股")
+            
+    except Exception as e:
+        print(f"❌ 发送交易推送时出错: {e}")
 
 
 def _get_today_buy_amount(symbol: str, today_date: str, signature: str) -> int:
@@ -418,7 +506,16 @@ def sell(symbol: str, amount: int) -> Dict[str, Any]:
             + "\n"
         )
 
-    # Step 7: Return updated position
+    # Step 7: 发送交易推送通知
+    position_record = {
+        "date": today_date,
+        "id": current_action_id + 1,
+        "this_action": {"action": "sell", "symbol": symbol, "amount": amount},
+        "positions": new_position,
+    }
+    _send_trade_notification(signature, "sell", symbol, amount, position_record)
+    
+    # Step 8: Return updated position
     write_config_value("IF_TRADE", True)
     return new_position
 

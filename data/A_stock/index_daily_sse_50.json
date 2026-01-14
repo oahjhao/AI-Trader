@@ -2,11 +2,19 @@
     "Meta Data": {
         "1. Information": "Daily Prices (open, high, low, close) and Volumes",
         "2. Symbol": "000016.SH",
-        "3. Last Refreshed": "2026-01-13",
+        "3. Last Refreshed": "2026-01-14",
         "4. Output Size": "Compact",
         "5. Time Zone": "Asia/Shanghai"
     },
     "Time Series (Daily)": {
+        "2026-01-14": {
+            "1. open": "3136.8446",
+            "2. high": "3169.7527",
+            "3. low": "3106.1343",
+            "4. close": "3112.0745",
+            "5. volume": "71957426",
+            "6. pct_chg": "-0.6658"
+        },
         "2026-01-13": {
             "1. open": "3150.7331",
             "2. high": "3177.7353",

@@ -9,15 +9,15 @@ import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))
 
-from webhook.dingtalk_webhook import WebhookScheduler, PositionReporter
+from webhook.dingtalk_webhook import ImmediatePusher, PositionReporter
 
 
 def send_immediate_report(webhook_url: str, secret: str = None, config_path: str = "./configs/astock_config_hourly.json"):
     """立即发送仓位报告"""
     print("📤 立即发送仓位报告...")
     
-    scheduler = WebhookScheduler(webhook_url, secret, config_path)
-    scheduler.send_report()
+    pusher = ImmediatePusher(webhook_url, secret, config_path)
+    return pusher.send_report()
 
 
 def show_report(config_path: str = "./configs/astock_config_hourly.json"):
@@ -38,16 +38,12 @@ def show_report(config_path: str = "./configs/astock_config_hourly.json"):
 
 def main():
     parser = argparse.ArgumentParser(description="Webhook 推送工具")
-    parser.add_argument("action", choices=["send", "show", "schedule"], 
-                       help="执行动作: send(立即发送), show(显示预览), schedule(启动定时服务)")
+    parser.add_argument("action", choices=["send", "show"], 
+                       help="执行动作: send(立即发送), show(显示预览)")
     parser.add_argument("--webhook-url", help="钉钉 Webhook URL")
     parser.add_argument("--secret", help="钉钉加签密钥")
     parser.add_argument("--config", default="./configs/astock_config_hourly.json",
                        help="配置文件路径")
-    parser.add_argument("--time", default="15:00",
-                       help="定时发送时间 (HH:MM)")
-    parser.add_argument("--type", choices=["daily", "weekdays"], default="weekdays",
-                       help="定时类型: daily(每日) 或 weekdays(工作日)")
     
     args = parser.parse_args()
     
@@ -55,33 +51,11 @@ def main():
         if not args.webhook_url:
             print("❌ 发送报告需要提供 --webhook-url 参数")
             sys.exit(1)
-        send_immediate_report(args.webhook_url, args.secret, args.config)
+        success = send_immediate_report(args.webhook_url, args.secret, args.config)
+        sys.exit(0 if success else 1)
     
     elif args.action == "show":
         show_report(args.config)
-    
-    elif args.action == "schedule":
-        if not args.webhook_url:
-            print("❌ 启动定时服务需要提供 --webhook-url 参数")
-            sys.exit(1)
-        
-        print(f"⏰ 启动定时推送服务...")
-        print(f"   时间: {args.time}")
-        print(f"   类型: {args.type}")
-        
-        scheduler = WebhookScheduler(args.webhook_url, args.secret, args.config)
-        
-        if args.type == "daily":
-            scheduler.schedule_daily(args.time)
-        else:
-            scheduler.schedule_weekdays(args.time)
-        
-        # 立即发送一次
-        print("📤 发送首次报告...")
-        scheduler.send_report()
-        
-        # 启动调度器
-        scheduler.run_scheduler()
 
 
 if __name__ == "__main__":

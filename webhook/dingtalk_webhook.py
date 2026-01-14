@@ -284,12 +284,12 @@ class PositionReporter:
             return [f"❌ 报告生成失败: {str(e)}"]
 
 
-class WebhookScheduler:
-    """Webhook 定时调度器"""
+class ImmediatePusher:
+    """立即推送器 - 仅支持即时推送"""
     
     def __init__(self, webhook_url: str, secret: Optional[str] = None, config_path: str = "./configs/astock_config_hourly.json"):
         """
-        初始化调度器
+        初始化推送器
         
         Args:
             webhook_url: 钉钉 Webhook URL
@@ -298,16 +298,15 @@ class WebhookScheduler:
         """
         self.dingtalk = DingTalkWebhook(webhook_url, secret)
         self.reporter = PositionReporter(config_path)
-        self.is_running = False
     
     def send_report(self):
-        """发送仓位报告"""
+        """立即发送仓位报告"""
         print(f"[{datetime.now()}] 开始发送仓位报告...")
         messages = self.reporter.generate_report()
         
         if not messages:
             print("⚠️ 没有可发送的报告")
-            return
+            return False
         
         # 合并所有消息并在开头添加 position 关键字
         full_message = "position\n\n" + "\n\n---\n\n".join(messages)
@@ -319,75 +318,26 @@ class WebhookScheduler:
             print("✅ 仓位报告发送完成")
         else:
             print("❌ 仓位报告发送失败")
-    
-    def schedule_daily(self, time_str: str = "15:00"):
-        """
-        设置每日定时任务
         
-        Args:
-            time_str: 执行时间，格式 "HH:MM"
-        """
-        schedule.every().day.at(time_str).do(self.send_report)
-        print(f"✅ 已设置每日 {time_str} 发送仓位报告")
-    
-    def schedule_weekdays(self, time_str: str = "15:00"):
-        """
-        设置工作日定时任务
-        
-        Args:
-            time_str: 执行时间，格式 "HH:MM"
-        """
-        schedule.every().monday.at(time_str).do(self.send_report)
-        schedule.every().tuesday.at(time_str).do(self.send_report)
-        schedule.every().wednesday.at(time_str).do(self.send_report)
-        schedule.every().thursday.at(time_str).do(self.send_report)
-        schedule.every().friday.at(time_str).do(self.send_report)
-        print(f"✅ 已设置工作日 {time_str} 发送仓位报告")
-    
-    def run_scheduler(self):
-        """运行调度器"""
-        print("🚀 启动 Webhook 调度器...")
-        self.is_running = True
-        
-        try:
-            while self.is_running:
-                schedule.run_pending()
-                time.sleep(1)
-        except KeyboardInterrupt:
-            print("\n🛑 正在停止调度器...")
-            self.is_running = False
-        except Exception as e:
-            print(f"❌ 调度器运行异常: {e}")
-            self.is_running = False
+        return success
 
 
 def main():
-    """主函数 - 示例用法"""
+    """主函数 - 立即推送示例"""
     # 从环境变量读取配置
     webhook_url = os.getenv("DINGTALK_WEBHOOK_URL") or os.getenv("WEBHOOK_URL")
     secret = os.getenv("DINGTALK_SECRET")
-    schedule_time = os.getenv("REPORT_SCHEDULE_TIME", "15:00")
-    schedule_type = os.getenv("REPORT_SCHEDULE_TYPE", "weekdays")  # daily 或 weekdays
     
     if not webhook_url:
         print("❌ 请设置环境变量 DINGTALK_WEBHOOK_URL 或 WEBHOOK_URL")
         return
     
-    # 创建调度器
-    scheduler = WebhookScheduler(webhook_url, secret)
+    # 创建推送器
+    pusher = ImmediatePusher(webhook_url, secret)
     
-    # 设置定时任务
-    if schedule_type == "daily":
-        scheduler.schedule_daily(schedule_time)
-    else:
-        scheduler.schedule_weekdays(schedule_time)
-    
-    # 立即发送一次测试报告
-    print("📤 发送测试报告...")
-    scheduler.send_report()
-    
-    # 运行调度器
-    scheduler.run_scheduler()
+    # 立即发送报告
+    print("📤 发送即时报告...")
+    pusher.send_report()
 
 
 if __name__ == "__main__":

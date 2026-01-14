@@ -24,9 +24,9 @@ jq --arg date "$TODAY" '.date_range.end_date = $date' "$JSON_FILE" > "${JSON_FIL
 echo "$(date): Updated end_date to $TODAY in $JSON_FILE"
 
 TODAY_LOG=$(date +%Y-%m-%d'-'%H:%M:%S)
-LOGFILE_STEP1="logs/step1_${TODAY_LOG}.log"
-LOGFILE_STEP2="logs/step2_${TODAY_LOG}.log"
-LOGFILE_STEP3="logs/step3_${TODAY_LOG}.log"
+LOGFILE_STEP1="logs/step1.log"
+LOGFILE_STEP2="logs/step2.log"
+LOGFILE_STEP3="logs/step3.log"
 
 echo 'step1 starting...'
 sh scripts/main_a_stock_step1.sh 2>&1 | tee "$LOGFILE_STEP1"
