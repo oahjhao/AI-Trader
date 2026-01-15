@@ -97,7 +97,7 @@ class AStockIntradayDataFetcher:
         
         return stock_list
     
-    def get_date_range(self, default_start_date: str = "20251001") -> Tuple[str, str]:
+    def get_date_range(self, default_start_date: str = "20241201") -> Tuple[str, str]:
         """获取数据日期范围
         
         如果输出文件已存在，则从文件中最后一天的下一天开始；
@@ -328,7 +328,8 @@ class AStockIntradayDataFetcher:
     
     def run(
         self,
-        default_start_date: str = "20251001",
+        default_start_date: str = "20241201",
+        default_end_date: str = None,
         auto_date_range: bool = True
     ) -> Optional[pd.DataFrame]:
         """执行完整的数据获取流程
@@ -336,10 +337,11 @@ class AStockIntradayDataFetcher:
         支持自动日期范围检测：
         - 如果已有数据文件，从最后日期的下一天开始获取
         - 如果没有数据文件，从default_start_date开始获取
-        - 结束日期始终为今天
+        - 结束日期始终为今天（实盘模式）或指定日期（回测模式）
         
         Args:
-            default_start_date: 默认开始日期，格式 'YYYYMMDD'（仅在没有已有数据时使用）
+            default_start_date: 默认开始日期，格式 'YYYYMMDD' 或 'YYYYMMDD HH:MM:SS'
+            default_end_date: 默认结束日期，格式 'YYYYMMDD' 或 'YYYYMMDD HH:MM:SS'，如果为None则使用当前日期
             auto_date_range: 是否自动检测日期范围，默认True
             
         Returns:
@@ -364,7 +366,11 @@ class AStockIntradayDataFetcher:
                 is_incremental = self.output_path.exists()
             else:
                 begin_date = default_start_date
-                end_date = datetime.now().strftime("%Y%m%d")
+                # 回测模式：使用指定的结束日期，如果没有指定则使用当前日期
+                if default_end_date is not None:
+                    end_date = default_end_date
+                else:
+                    end_date = datetime.now().strftime("%Y%m%d")
                 is_incremental = False
             
             # 3. 获取盘中数据
@@ -387,19 +393,62 @@ def main():
     执行A股盘中数据获取，支持增量更新：
     - 首次运行：从default_start_date开始获取所有数据
     - 后续运行：自动从上次最后日期的下一天开始获取
+    - 回测模式：接收命令行参数指定时间范围
     """
-    # 创建数据获取器实例
-    fetcher = AStockIntradayDataFetcher(
-        frequency=60,  # 60分钟K线
-        stock_list_file="sse_pick.csv",  # 上证50权重文件
-        output_file="A_stock_hourly.csv"
-    )
+    import sys
     
-    # 执行数据获取（自动检测日期范围）
-    df = fetcher.run(
-        default_start_date="20251201",  # 仅在首次运行时使用
-        auto_date_range=True  # 启用自动日期范围检测
-    )
+    # 解析命令行参数
+    if len(sys.argv) >= 3:
+        # 回测模式: 接收起始日期和结束日期
+        start_date_input = sys.argv[1]  # YYYY-MM-DD
+        end_date_input = sys.argv[2]    # YYYY-MM-DD
+        
+        # 转换为 datetime 对象
+        start_dt = datetime.strptime(start_date_input, "%Y-%m-%d")
+        end_dt = datetime.strptime(end_date_input, "%Y-%m-%d")
+        
+        # 计算实际数据范围：起始日期-60天 到 结束日期
+        actual_start_dt = start_dt - timedelta(days=60)
+        actual_end_dt = end_dt
+        
+        # 转换为 YYYYMMDD 格式（不带时间）
+        begin_date = actual_start_dt.strftime("%Y%m%d")
+        end_date = actual_end_dt.strftime("%Y%m%d")
+        
+        logger.info(f"📊 回测模式")
+        logger.info(f"输入时间范围: {start_date_input} 到 {end_date_input}")
+        logger.info(f"实际获取数据范围: {begin_date} 到 {end_date} (包含60天历史数据)")
+        
+        # 创建数据获取器实例
+        fetcher = AStockIntradayDataFetcher(
+            frequency=60,  # 60分钟K线
+            stock_list_file="sse_pick.csv",
+            output_file="A_stock_hourly.csv"
+        )
+        
+        # 执行数据获取（使用指定的时间范围）
+        df = fetcher.run(
+            default_start_date=begin_date,
+            default_end_date=end_date,
+            auto_date_range=False  # 禁用自动日期范围检测
+        )
+        
+    else:
+        # 实盘模式：使用默认时间范围
+        logger.info(f"📊 实盘模式")
+        
+        # 创建数据获取器实例
+        fetcher = AStockIntradayDataFetcher(
+            frequency=60,  # 60分钟K线
+            stock_list_file="sse_pick.csv",  # 上证50权重文件
+            output_file="A_stock_hourly.csv"
+        )
+        
+        # 执行数据获取（自动检测日期范围）
+        df = fetcher.run(
+            default_start_date="20241201",  # 仅在首次运行时使用
+            auto_date_range=True  # 启用自动日期范围检测
+        )
     
     # 显示数据概览
     if df is not None and not df.empty:

@@ -265,39 +265,32 @@ def _send_trade_notification(signature: str, action: str, symbol: str, amount: i
         action_text = "买入" if action == "buy" else "卖出" if action == "sell" else action
         display_name = reporter._get_stock_display_name(symbol)
         
-        # 提取现金余额和持仓信息
+        # 提取交易信息
+        trade_id = position_data.get("id", "未知")
+        trade_date = position_data.get("date", "未知时间")
         positions = position_data.get("positions", {})
         cash_balance = positions.get("CASH", 0)
-        holdings = {k: v for k, v in positions.items() if k != "CASH" and v > 0}
         
         # 构建消息
         message_lines = [
-            f"📈 **{signature} position变化交易通知**  \n\n",
-            f"📅 时间: {position_data.get('date', '未知时间')}  \n\n",
-            f"💰 现金余额: ¥{cash_balance:,.2f}  \n\n",
+            f"📈 **{signature} 交易通知**  \n\n",
+            f"📅 时间: {trade_date}  \n\n",
+            f"🆔 交易ID: {trade_id}  \n\n",
             "  \n\n",
             f"📝 交易操作:  \n\n",
             f"  • {action_text} {display_name} {amount:,} 股  \n\n",
-            "  \n\n"
+            "  \n\n",
+            f"💰 剩余现金: ¥{cash_balance:,.2f}  \n\n"
         ]
-        
-        # 添加持仓详情
-        if holdings:
-            message_lines.append("📊 当前持仓:  \n\n")
-            for hold_symbol, hold_amount in sorted(holdings.items()):
-                hold_display_name = reporter._get_stock_display_name(hold_symbol)
-                message_lines.append(f"  • {hold_display_name}: {hold_amount:,} 股  \n\n")
-        else:
-            message_lines.append("📊 当前无持仓  \n\n")
         
         message_content = "".join(message_lines)
         
         # 发送推送
         success = dingtalk.send_message(message_content, msg_type="markdown")
         if success:
-            print(f"✅ 交易推送成功: {action_text} {symbol} {amount}股")
+            print(f"✅ 交易推送成功: {action_text} {display_name} {amount}股")
         else:
-            print(f"❌ 交易推送失败: {action_text} {symbol} {amount}股")
+            print(f"❌ 交易推送失败: {action_text} {display_name} {amount}股")
             
     except Exception as e:
         print(f"❌ 发送交易推送时出错: {e}")

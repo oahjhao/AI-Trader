@@ -20,6 +20,9 @@ import schedule
 import asyncio
 import pandas as pd
 
+# 获取项目根目录
+PROJECT_ROOT = Path(__file__).parent.parent
+
 
 class DingTalkWebhook:
     """钉钉机器人 Webhook 客户端"""
@@ -118,7 +121,7 @@ class PositionReporter:
             config_path: A股小时级配置文件路径
         """
         self.config_path = Path(config_path)
-        self.base_data_path = Path("./data/agent_data_astock")
+        self.base_data_path = PROJECT_ROOT / "data" / "agent_data_astock"
         self.stock_name_map = self._load_stock_name_mapping()
     
     def _load_stock_name_mapping(self) -> Dict[str, str]:
@@ -129,7 +132,7 @@ class PositionReporter:
             股票代码到名称的字典映射
         """
         mapping = {}
-        csv_path = Path("./data/A_stock/sse_pick.csv")
+        csv_path = PROJECT_ROOT / "data" / "A_stock" / "sse_pick.csv"
         
         if not csv_path.exists():
             print(f"⚠️ 股票名称映射文件不存在: {csv_path}")
@@ -148,16 +151,16 @@ class PositionReporter:
     
     def _get_stock_display_name(self, stock_code: str) -> str:
         """
-        获取股票的显示名称（代码+中文名）
+        获取股票的显示名称（中文名+代码）
         
         Args:
             stock_code: 股票代码
             
         Returns:
-            显示名称，格式为 "代码(中文名)" 或 "代码"
+            显示名称，格式为 "中文名(代码)" 或 "代码"
         """
         if stock_code in self.stock_name_map:
-            return f"{stock_code}({self.stock_name_map[stock_code]})"
+            return f"{self.stock_name_map[stock_code]}({stock_code})"
         return stock_code
     
     def load_config(self) -> Dict[str, Any]:
@@ -201,6 +204,42 @@ class PositionReporter:
         
         return latest_record
     
+    def _count_trade_operations(self, signature: str) -> Dict[str, int]:
+        """
+        统计指定模型的买卖操作次数
+        
+        Args:
+            signature: 模型签名
+            
+        Returns:
+            包含买入和卖出次数的字典 {"buy": count, "sell": count}
+        """
+        position_file = self.base_data_path / signature / "position" / "position.jsonl"
+        
+        if not position_file.exists():
+            return {"buy": 0, "sell": 0}
+        
+        buy_count = 0
+        sell_count = 0
+        
+        try:
+            with open(position_file, "r", encoding="utf-8") as f:
+                for line in f:
+                    if line.strip():
+                        try:
+                            record = json.loads(line)
+                            action = record.get("this_action", {}).get("action", "")
+                            if action == "buy":
+                                buy_count += 1
+                            elif action == "sell":
+                                sell_count += 1
+                        except json.JSONDecodeError:
+                            continue
+        except Exception as e:
+            print(f"❌ 统计交易操作失败 {position_file}: {e}")
+        
+        return {"buy": buy_count, "sell": sell_count}
+    
     def format_position_message(self, signature: str, position_data: Dict[str, Any]) -> str:
         """
         格式化仓位信息为推送消息
@@ -214,7 +253,6 @@ class PositionReporter:
         """
         date = position_data.get("date", "未知日期")
         positions = position_data.get("positions", {})
-        this_action = position_data.get("this_action", {})
         
         # 提取现金余额
         cash_balance = positions.get("CASH", 0)
@@ -222,36 +260,28 @@ class PositionReporter:
         # 提取持仓股票（非零持仓）
         holdings = {k: v for k, v in positions.items() if k != "CASH" and v > 0}
         
+        # 统计买卖操作次数
+        trade_stats = self._count_trade_operations(signature)
+        
         # 格式化消息 - 使用钉钉Markdown换行语法
         message_lines = [
             f"📈 **{signature} 仓位报告**  \n\n",
             f"📅 时间: {date}  \n\n",
             f"💰 现金余额: ¥{cash_balance:,.2f}  \n\n",
+            f"📊 交易统计: 买入{trade_stats['buy']}次, 卖出{trade_stats['sell']}次  \n\n",
             "  \n\n"
         ]
         
         if holdings:
-            message_lines.append("📊 持仓详情:  \n\n")
+            message_lines.append("📦 持仓详情:  \n\n")
             for symbol, amount in sorted(holdings.items()):
                 display_name = self._get_stock_display_name(symbol)
                 # 每支股票后换行，使格式更美观
                 message_lines.append(f"  • {display_name}: {amount:,} 股  \n\n")
         else:
-            message_lines.append("📊 当前无持仓")
+            message_lines.append("📦 当前无持仓  \n\n")
         
-        # 添加操作信息
-        if this_action:
-            action = this_action.get("action", "")
-            symbol = this_action.get("symbol", "")
-            amount = this_action.get("amount", 0)
-            if action and symbol:
-                action_text = "买入" if action == "buy" else "卖出" if action == "sell" else action
-                display_name = self._get_stock_display_name(symbol)
-                message_lines.append("  \n\n")
-                message_lines.append(f"📝 最新操作:   \n\n")
-                message_lines.append(f"  • {action_text} {display_name} {amount:,} 股  \n\n")
-        
-        return "\n".join(message_lines)
+        return "".join(message_lines)
     
     def generate_report(self) -> List[str]:
         """

@@ -3,7 +3,7 @@
   "market": "cn",
   "date_range": {
     "init_date": "2026-01-12 09:34:43",
-    "end_date": "2026-01-14 17:27:57"
+    "end_date": "2026-01-15 15:05:09"
   },
   "models": [
     {
@@ -28,6 +28,12 @@
       "name": "DS_pick_tech_260112",
       "basemodel": "deepseek-chat",
       "signature": "DS_pick_tech_260112",
+      "enabled": true
+    },
+    {
+      "name": "DS_pick_balanced_260112",
+      "basemodel": "deepseek-chat",
+      "signature": "DS_pick_balanced_260112",
       "enabled": true
     }
   ],

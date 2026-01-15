@@ -18,6 +18,16 @@ PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
 
 cd "$PROJECT_ROOT"
 
+# Restore sse_pick.csv from sse_pick_real.csv before starting
+echo 'Restoring sse_pick.csv from sse_pick_real.csv...'
+if [ -f "data/A_stock/sse_pick_real.csv" ]; then
+    cp data/A_stock/sse_pick_real.csv data/A_stock/sse_pick.csv
+    echo "sse_pick.csv restored successfully"
+else
+    echo "Warning: sse_pick_real.csv not found, using existing sse_pick.csv"
+fi
+echo ''
+
 JSON_FILE="configs/astock_config_hourly.json"
 TODAY=$(date +%Y-%m-%d' '%H:%M:%S)
 jq --arg date "$TODAY" '.date_range.end_date = $date' "$JSON_FILE" > "${JSON_FILE}.tmp" && mv "${JSON_FILE}.tmp" "$JSON_FILE"
@@ -35,5 +45,5 @@ echo 'step2 starting...'
 nohup sh scripts/main_a_stock_step2.sh 2>&1 | tee "$LOGFILE_STEP2" &
 sleep 5
 echo 'step3 starting...'
-nohup sh scripts/main_a_stock_step3.sh 2>&1 | tee "$LOGFILE_STEP3" &
+nohup sh scripts/main_a_stock_step3.sh "$JSON_FILE" 2>&1 | tee "$LOGFILE_STEP3" &
 echo 'done.'

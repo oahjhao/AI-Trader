@@ -167,7 +167,8 @@ def calc_factor(df):
 def get_daily_price_a_stock(
     index_code: str = "000016.SH",
     output_dir: Optional[Path] = None,
-    daily_start_date: str = "20250101",
+    daily_start_date: str = "20241201",
+    daily_end_date: Optional[str] = None,
     fallback_csv: Optional[Path] = None,
 ) -> Optional[pd.DataFrame]:
     """Get daily price data for A-share index constituents.
@@ -176,6 +177,7 @@ def get_daily_price_a_stock(
         index_code: Index code, default is SSE 50 (000016.SH)
         output_dir: Output directory, defaults to './data/A_stock' if None
         daily_start_date: Start date for daily price data in 'YYYYMMDD' format
+        daily_end_date: End date for daily price data in 'YYYYMMDD' format, defaults to today if None
         fallback_csv: Fallback CSV file path for index constituents
 
     Returns:
@@ -196,8 +198,9 @@ def get_daily_price_a_stock(
     # Get index constituents from last month
     index_start_date, index_end_date = get_last_month_dates()
 
-    # Daily price data from daily_start_date to today
-    daily_end_date = datetime.now().strftime("%Y%m%d")
+    # Daily price data from daily_start_date to specified end date or today
+    if daily_end_date is None:
+        daily_end_date = datetime.now().strftime("%Y%m%d")
 
     try:
         print(f"正在获取指数成分股数据: {index_code} ({index_start_date} - {index_end_date})")
@@ -360,7 +363,7 @@ def convert_index_daily_to_json(
 
 def get_index_daily_data(
     index_code: str = "000016.SH",
-    start_date: str = "20250101",
+    start_date: str = "20241201",
     end_date: Optional[str] = None,
     output_dir: Optional[Path] = None,
 ) -> Optional[pd.DataFrame]:
@@ -426,13 +429,53 @@ def get_index_daily_data(
 
 
 if __name__ == "__main__":
-    # fallback_path = Path(__file__).parent / "sse_50_weight.csv"
+    import sys
+    
+    # 解析命令行参数
+    if len(sys.argv) >= 3:
+        # 回测模式: 接收起始日期和结束日期
+        start_date_input = sys.argv[1]  # YYYY-MM-DD
+        end_date_input = sys.argv[2]    # YYYY-MM-DD
+        
+        # 转换为 datetime 对象
+        start_dt = datetime.strptime(start_date_input, "%Y-%m-%d")
+        end_dt = datetime.strptime(end_date_input, "%Y-%m-%d")
+        
+        # 计算实际数据范围：起始日期-60天 到 结束日期
+        actual_start_dt = start_dt - timedelta(days=60)
+        actual_end_dt = end_dt
+        
+        # 转换为 YYYYMMDD 格式
+        daily_start_date = actual_start_dt.strftime("%Y%m%d")
+        daily_end_date = actual_end_dt.strftime("%Y%m%d")
+        
+        print(f"📊 回测模式")
+        print(f"输入时间范围: {start_date_input} 到 {end_date_input}")
+        print(f"实际获取数据范围: {daily_start_date} 到 {daily_end_date} (包含60天历史数据)")
+        
+    else:
+        # 实盘模式：使用默认时间范围
+        daily_start_date = "20241201"
+        daily_end_date = datetime.now().strftime("%Y%m%d")
+        print(f"📊 实盘模式")
+        print(f"数据范围: {daily_start_date} 到 {daily_end_date}")
+    
+    fallback_path = Path(__file__).parent / "sse_50_weight.csv"
 
-    # # Get constituent stocks daily prices
-    # df = get_daily_price_a_stock(index_code="000016.SH", daily_start_date="20240911", fallback_csv=fallback_path)
+    # Get constituent stocks daily prices
+    df = get_daily_price_a_stock(
+        index_code="000016.SH", 
+        daily_start_date=daily_start_date,
+        daily_end_date=daily_end_date,
+        fallback_csv=fallback_path
+    )
 
-    # # Get index daily data and convert to JSON
-    # print("\n" + "=" * 50)
-    # print("Fetching index daily data...")
-    # print("=" * 50)
-    df_index = get_index_daily_data(index_code="000016.SH", start_date="20240911")
+    # Get index daily data and convert to JSON
+    print("\n" + "=" * 50)
+    print("Fetching index daily data...")
+    print("=" * 50)
+    df_index = get_index_daily_data(
+        index_code="000016.SH", 
+        start_date=daily_start_date,
+        end_date=daily_end_date
+    )

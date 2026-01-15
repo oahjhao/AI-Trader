@@ -18,6 +18,16 @@ PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
 
 cd "$PROJECT_ROOT"
 
+# Restore sse_pick.csv from sse_pick_real.csv before starting
+echo 'Restoring sse_pick.csv from sse_pick_real.csv...'
+if [ -f "data/A_stock/sse_pick_real.csv" ]; then
+    cp data/A_stock/sse_pick_real.csv data/A_stock/sse_pick.csv
+    echo "sse_pick.csv restored successfully"
+else
+    echo "Warning: sse_pick_real.csv not found, using existing sse_pick.csv"
+fi
+echo ''
+
 JSON_FILE="configs/astock_config_hourly.json"
 YAML_FILE="docs/config.yaml"
 
