@@ -551,7 +551,7 @@ class SimplifiedJinaProcessor:
         }
 
     def process_retrieved_content(self, jina_results, max_total_tokens=120000):
-        """增强的内容处理，包含质量控制"""
+        """增强的内容处理，包含质量控制 - 优化版:处理错误情况"""
         processed_results = []
         current_total_tokens = 0
 
@@ -560,6 +560,18 @@ class SimplifiedJinaProcessor:
         title = jina_results.get('title', '')
         description = jina_results.get('description', '')
         publish_time = jina_results.get('publish_time', 'unknown')
+        
+        # 检查是否有错误或预评估的质量
+        if jina_results.get('error') or jina_results.get('quality') == 'poor':
+            self.stats["failed_count"] += 1
+            self.stats["quality_distribution"]["poor"] += 1
+            logger.warning(f"跳过失败/低质量内容: {url}, 错误: {jina_results.get('error', 'N/A')}")
+            return {
+                "processed_results": [],
+                "total_tokens": 0,
+                "within_limit": True,
+                "skipped_reason": jina_results.get('error', 'Low quality')
+            }
 
         # 更新统计
         self.stats["processed_count"] += 1
@@ -745,38 +757,95 @@ class WebScrapingJinaTool:
             "errors": 0
         }
 
-    def __call__(self, query: str) -> List[Dict[str, Any]]:
+    def __call__(self, query: str, target_count: int = 3, min_quality_count: int = 1, max_attempts: int = 10) -> List[Dict[str, Any]]:
+        """
+        搜索并抓取内容,确保返回指定数量的高质量结果
+        
+        Args:
+            query: 搜索关键词
+            target_count: 目标返回数量(默认3个)
+            min_quality_count: 最少需要的高质量内容数(默认1个)
+            max_attempts: 最多尝试抓取的URL数量(默认10个)
+        
+        Returns:
+            包含结果的列表,如果没有足够高质量内容则返回空列表或警告信息
+        """
         print(f"Searching for {query}")
         all_urls = self._jina_search(query)
         return_content = []
+        high_quality_count = 0
+        
         print(f"Found {len(all_urls)} URLs")
-        if len(all_urls) > 3:
-            # Randomly select three to form new all_urls
-            all_urls = random.sample(all_urls, 3)
-        for url in all_urls:
+        
+        if not all_urls:
+            return [{"error": "No URLs found", "quality": "poor"}]
+        
+        # 最多尝试max_attempts个URL
+        urls_to_try = all_urls[:max_attempts]
+        attempted = 0
+        
+        for url in urls_to_try:
+            attempted += 1
+            
+            # 如果已经有足够的高质量内容,停止抓取
+            if len(return_content) >= target_count and high_quality_count >= min_quality_count:
+                print(f"✅ 已获取足够的高质量内容: {len(return_content)}个结果, {high_quality_count}个高质量")
+                break
+            
             # 检查缓存
             cached_result = self._get_from_cache(url)
             if cached_result:
                 print(f"Cache hit for {url}")
                 self.stats["cache_hits"] += 1
+                # 检查缓存内容质量
+                if self._is_high_quality_result(cached_result):
+                    high_quality_count += 1
                 return_content.append(cached_result)
                 continue
             
-            #print(f"Scraping {url}")
+            print(f"[{attempted}/{len(urls_to_try)}] Scraping {url}...")
             scraped_content = self._jina_scrape(url)
             
-            # 如果成功获取内容，加入缓存
+            # 评估内容质量
+            quality_level = self._assess_scrape_quality(scraped_content)
+            scraped_content["quality"] = quality_level
+            
+            # 如果成功获取内容,加入缓存
             if scraped_content.get("content") and not scraped_content.get("error"):
                 self._add_to_cache(url, scraped_content)
-                print(f"Scraped and cached {url}")
+                print(f"✅ Scraped and cached {url} [Quality: {quality_level}]")
+                
+                # 只有质量合格的才计入返回结果
+                if quality_level in ["excellent", "good"]:
+                    high_quality_count += 1
+                    return_content.append(scraped_content)
+                elif quality_level == "fair" and len(return_content) < target_count:
+                    # 如果质量一般,但还没达到目标数量,也可以加入
+                    return_content.append(scraped_content)
+                else:
+                    print(f"⚠️ 跳过低质量内容: {url}")
             else:
                 self.stats["errors"] += 1
-                print(f"Failed to scrape {url}: {scraped_content.get('error', 'Unknown error')}")
+                error_msg = scraped_content.get('error', 'Unknown error')
+                print(f"❌ Failed to scrape {url}: {error_msg}")
+                # 失败的不加入返回结果,直接尝试下一个
+                continue
                 
-            return_content.append(scraped_content)
             self.stats["requests_made"] += 1
-
-        return return_content
+        
+        # 检查结果质量
+        if not return_content:
+            print("⚠️ 未找到任何有效内容")
+            return [{"error": "No valid content found", "quality": "poor", "content": ""}]
+        
+        if high_quality_count < min_quality_count:
+            print(f"⚠️ 高质量内容不足: 仅{high_quality_count}个,需要至少{min_quality_count}个")
+            # 如果一个高质量内容都没有,返回警告
+            if high_quality_count == 0:
+                return [{"error": "No high-quality content found", "quality": "poor", "content": "搜索未找到高质量信息,建议基于现有知识进行分析"}]
+        
+        print(f"✅ 返回 {len(return_content)} 个结果 (其中 {high_quality_count} 个高质量)")
+        return return_content[:target_count]  # 最多返回target_count个
     
     def _get_from_cache(self, url):
         """从缓存获取内容"""
@@ -809,6 +878,51 @@ class WebScrapingJinaTool:
         # 使用URL的哈希值作为缓存键
         return str(hash(url))
     
+    def _assess_scrape_quality(self, scraped_content: Dict[str, Any]) -> str:
+        """
+        评估抓取内容的质量等级
+        
+        Returns:
+            "excellent", "good", "fair", "poor"
+        """
+        # 如果有错误,直接判定为poor
+        if scraped_content.get("error"):
+            error_msg = scraped_content.get("error", "").lower()
+            # 特定错误类型判定
+            if any(keyword in error_msg for keyword in ["login", "sign in", "authentication", "unauthorized", "403", "401"]):
+                return "poor"  # 需要登录的内容
+            if any(keyword in error_msg for keyword in ["timeout", "connection", "failed"]):
+                return "poor"  # 网络问题
+            return "poor"  # 其他错误
+        
+        content = scraped_content.get("content", "")
+        
+        # 内容为空或太短
+        if not content or len(content.strip()) < 100:
+            return "poor"
+        
+        # 检查是否需要登录的标志
+        login_indicators = ["please sign in", "login required", "请登录", "需要登录", "access denied", "subscription required"]
+        if any(indicator in content.lower() for indicator in login_indicators):
+            return "fair"  # 需要登录,但可能有部分内容
+        
+        # 根据内容长度和质量判断
+        content_length = len(content)
+        
+        if content_length > 2000:  # 长内容通常质量较好
+            return "excellent"
+        elif content_length > 500:
+            return "good"
+        elif content_length > 200:
+            return "fair"
+        else:
+            return "poor"
+    
+    def _is_high_quality_result(self, result: Dict[str, Any]) -> bool:
+        """判断是否为高质量结果"""
+        quality = result.get("quality", "poor")
+        return quality in ["excellent", "good"]
+    
     def get_stats(self):
         """获取工具统计信息"""
         total_requests = self.stats["requests_made"] + self.stats["cache_hits"]
@@ -824,9 +938,9 @@ class WebScrapingJinaTool:
         }
 
     def _jina_scrape(self, url: str) -> Dict[str, Any]:
-        """带重试机制的Jina内容抓取"""
-        max_retries = 3
-        base_delay = 1  # 基础延迟秒数
+        """带重试机制的Jina内容抓取 - 优化版:快速失败,避免阻塞"""
+        max_retries = 2  # 减少重试次数,避免阻塞
+        base_delay = 0.5  # 减少延迟时间
         
         for attempt in range(max_retries):
             try:
@@ -834,7 +948,7 @@ class WebScrapingJinaTool:
                 headers = {
                     "Accept": "application/json",
                     "Authorization": self.api_key,
-                    "X-Timeout": "15",  # 增加超时时间
+                    "X-Timeout": "10",  # 减少超时时间,避免长时间等待
                     "X-With-Generated-Alt": "true",
                     "User-Agent": "Mozilla/5.0 (compatible; AI-News-Bot/1.0)",
                 }
@@ -845,7 +959,7 @@ class WebScrapingJinaTool:
                 
                 response = session.get(
                     jina_url, 
-                    timeout=(5, 20)  # (连接超时, 读取超时)
+                    timeout=(3, 10)  # 减少超时时间: (连接超时3s, 读取超时10s)
                 )
                 
                 # 处理不同的HTTP状态码
@@ -859,45 +973,40 @@ class WebScrapingJinaTool:
                         "publish_time": response_dict["data"].get("publishedTime", "unknown"),
                         "attempts": attempt + 1
                     }
+                elif response.status_code in [401, 403]:
+                    # 认证/权限错误,不重试
+                    logger.warning(f"🔒 Jina API认证失败 {response.status_code} for {url}")
+                    return {"url": url, "content": "", "error": f"Authentication failed: {response.status_code}", "quality": "poor"}
                 elif response.status_code in [503, 524, 502, 504]:
-                    # 服务器临时错误，可以重试
+                    # 服务器临时错误,只重试一次
                     if attempt < max_retries - 1:
-                        delay = base_delay * (2 ** attempt) + random.uniform(0, 1)
-                        logger.warning(f"🔄 Jina API returned {response.status_code} for {url}, retrying in {delay:.1f}s (attempt {attempt + 1}/{max_retries})")
+                        delay = base_delay + random.uniform(0, 0.5)
+                        logger.warning(f"🔄 Jina API {response.status_code} for {url}, retry in {delay:.1f}s")
                         time.sleep(delay)
                         continue
                     else:
-                        raise Exception(f"Jina API持续返回错误状态码 {response.status_code}，已达到最大重试次数")
+                        # 快速放弃,尝试下一个URL
+                        return {"url": url, "content": "", "error": f"Server error {response.status_code}", "quality": "poor"}
                 else:
-                    # 其他错误状态码
-                    raise Exception(f"Jina API返回意外状态码 {response.status_code} for {url}")
+                    # 其他错误状态码,直接放弃
+                    return {"url": url, "content": "", "error": f"HTTP {response.status_code}", "quality": "poor"}
                     
             except requests.exceptions.Timeout:
-                if attempt < max_retries - 1:
-                    delay = base_delay * (2 ** attempt) + random.uniform(0, 1)
-                    logger.warning(f"⏰ Jina API请求超时，重试中... (attempt {attempt + 1}/{max_retries})")
-                    time.sleep(delay)
-                    continue
-                else:
-                    logger.error(f"❌ Jina API请求多次超时，放弃重试: {url}")
-                    return {"url": url, "content": "", "error": "Request timeout after retries"}
+                # 超时直接放弃,不重试
+                logger.warning(f"⏰ Jina API timeout for {url}, skipping")
+                return {"url": url, "content": "", "error": "Request timeout", "quality": "poor"}
                     
             except requests.exceptions.ConnectionError as e:
-                if attempt < max_retries - 1:
-                    delay = base_delay * (2 ** attempt) + random.uniform(0, 1)
-                    logger.warning(f"🔌 Jina API连接错误，重试中... (attempt {attempt + 1}/{max_retries})")
-                    time.sleep(delay)
-                    continue
-                else:
-                    logger.error(f"❌ Jina API连接失败: {str(e)}")
-                    return {"url": url, "content": "", "error": f"Connection failed: {str(e)}"}
+                # 连接错误,快速放弃
+                logger.warning(f"🔌 Jina API connection error for {url}, skipping")
+                return {"url": url, "content": "", "error": f"Connection failed", "quality": "poor"}
                     
             except Exception as e:
-                logger.error(f"❌ Jina API请求失败: {str(e)}")
-                return {"url": url, "content": "", "error": str(e)}
+                logger.error(f"❌ Jina API error for {url}: {str(e)}")
+                return {"url": url, "content": "", "error": str(e), "quality": "poor"}
         
-        # 如果所有重试都失败
-        return {"url": url, "content": "", "error": "All retry attempts failed"}
+        # 如果所有重试都失败,快速返回
+        return {"url": url, "content": "", "error": "Failed after retries", "quality": "poor"}
 
     def _jina_search(self, query: str) -> List[str]:
         url = f"https://s.jina.ai/?q={query}&n=1"

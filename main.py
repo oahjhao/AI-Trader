@@ -251,6 +251,9 @@ async def main(config_path=None):
             stock_symbols = load_stock_list() 
         else:
             stock_symbols = all_nasdaq_100_symbols
+        
+        # Check for backtest_mode flag in config
+        backtest_mode = config.get("backtest_mode", False)
 
         try:
             # Dynamically create Agent instance
@@ -269,19 +272,27 @@ async def main(config_path=None):
                     openai_api_key=openai_api_key
                 )
             else:
-                agent = AgentClass(
-                    signature=signature,
-                    basemodel=basemodel,
-                    stock_symbols=stock_symbols,
-                    log_path=log_path,
-                    max_steps=max_steps,
-                    max_retries=max_retries,
-                    base_delay=base_delay,
-                    initial_cash=initial_cash,
-                    init_date=INIT_DATE,
-                    openai_base_url=openai_base_url,
-                    openai_api_key=openai_api_key
-                )
+                # Prepare agent parameters
+                agent_params = {
+                    "signature": signature,
+                    "basemodel": basemodel,
+                    "stock_symbols": stock_symbols,
+                    "log_path": log_path,
+                    "max_steps": max_steps,
+                    "max_retries": max_retries,
+                    "base_delay": base_delay,
+                    "initial_cash": initial_cash,
+                    "init_date": INIT_DATE,
+                    "openai_base_url": openai_base_url,
+                    "openai_api_key": openai_api_key
+                }
+                
+                # Add backtest_mode only for BaseAgentAStock
+                if agent_type == "BaseAgentAStock" and backtest_mode:
+                    agent_params["backtest_mode"] = True
+                    print(f"ℹ️  Running in backtest mode (search disabled)")
+                
+                agent = AgentClass(**agent_params)
 
             print(f"✅ {agent_type} instance created successfully: {agent}")
 

@@ -173,7 +173,8 @@ class BaseAgentAStock:
         openai_api_key: Optional[str] = None,
         initial_cash: float = 100000.0,  # 默认10万人民币
         init_date: str = "2025-10-09",
-        market: str = "cn",  # 接受但忽略此参数，始终使用"cn"
+        market: str = "cn",  # 接受但忽略此参数,始终使用"cn"
+        backtest_mode: bool = False,  # 回测模式标志,禁用search
     ):
         """
         Initialize BaseAgentAStock
@@ -192,10 +193,12 @@ class BaseAgentAStock:
             initial_cash: Initial cash amount (default: 100000.0 RMB)
             init_date: Initialization date
             market: Market type (accepted for compatibility, but always uses "cn")
+            backtest_mode: If True, disable search capability for historical replay
         """
         self.signature = signature
         self.basemodel = basemodel
         self.market = "cn"  # 硬编码为A股市场
+        self.backtest_mode = backtest_mode  # 保存回测模式标志
 
         # 默认使用上证50成分股
         if stock_symbols is None:
@@ -236,8 +239,8 @@ class BaseAgentAStock:
         self.position_file = os.path.join(self.data_path, "position", "position.jsonl")
 
     def _get_default_mcp_config(self) -> Dict[str, Dict[str, Any]]:
-        """Get default MCP configuration"""
-        return {
+        """Get default MCP configuration, exclude search in backtest mode"""
+        config = {
             "math": {
                 "transport": "streamable_http",
                 "url": f"http://localhost:{os.getenv('MATH_HTTP_PORT', '8000')}/mcp",
@@ -246,15 +249,22 @@ class BaseAgentAStock:
                 "transport": "streamable_http",
                 "url": f"http://localhost:{os.getenv('GETPRICE_HTTP_PORT', '8003')}/mcp",
             },
-            "search": {
-                "transport": "streamable_http",
-                "url": f"http://localhost:{os.getenv('SEARCH_HTTP_PORT', '8004')}/mcp",
-            },
             "trade": {
                 "transport": "streamable_http",
                 "url": f"http://localhost:{os.getenv('TRADE_HTTP_PORT', '8002')}/mcp",
             },
         }
+        
+        # 只在非回测模式下添加search工具
+        if not self.backtest_mode:
+            config["search"] = {
+                "transport": "streamable_http",
+                "url": f"http://localhost:{os.getenv('SEARCH_HTTP_PORT', '8004')}/mcp",
+            }
+        else:
+            print("ℹ️  Backtest mode: search tool disabled")
+        
+        return config
 
     async def initialize(self) -> None:
         """Initialize MCP client and AI model"""

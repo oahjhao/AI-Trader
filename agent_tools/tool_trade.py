@@ -273,7 +273,7 @@ def _send_trade_notification(signature: str, action: str, symbol: str, amount: i
         
         # 构建消息
         message_lines = [
-            f"📈 **{signature} 交易通知**  \n\n",
+            f"📈 **{signature} position 交易通知**  \n\n",
             f"📅 时间: {trade_date}  \n\n",
             f"🆔 交易ID: {trade_id}  \n\n",
             "  \n\n",
