@@ -954,7 +954,7 @@ def get_latest_position(today_date: str, signature: str) -> Tuple[Dict[str, floa
         return latest_positions_today, max_id_today
     
     # Step 2: 当天没有记录，则回退到上一个交易日
-    prev_dateposition_file = get_yesterday_date(today_date, market=market)
+    prev_date = get_yesterday_date(today_date, market=market)
     
     max_id_prev = -1
     latest_positions_prev: Dict[str, float] = {}

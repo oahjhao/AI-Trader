@@ -34,7 +34,13 @@ def _position_lock(signature: str):
     """Context manager for file-based lock to serialize position updates per signature."""
     class _Lock:
         def __init__(self, name: str):
-            base_dir = Path(project_root) / "data" / "agent_data" / name
+            log_path = get_config_value("LOG_PATH", "./data/agent_data")
+            if os.path.isabs(log_path):
+                base_dir = Path(log_path) / name
+            else:
+                if log_path.startswith("./data/"):
+                    log_path = log_path[7:]
+                base_dir = Path(project_root) / "data" / log_path / name
             base_dir.mkdir(parents=True, exist_ok=True)
             self.lock_path = base_dir / ".position.lock"
             # Ensure lock file exists
@@ -206,14 +212,14 @@ def buy(symbol: str, amount: int) -> Dict[str, Any]:
         with open(position_file_path, "a") as f:
             # Write JSON format transaction record, containing date, operation ID, transaction details and updated position
             print(
-                f"Writing to position.jsonl: {json.dumps({'date': today_date, 'id': current_action_id + 1, 'this_action':{'action':'buy','symbol':symbol,'amount':amount},'positions': new_position})}"
+                f"Writing to position.jsonl: {json.dumps({'date': today_date, 'id': current_action_id + 1, 'this_action':{'action':'buy','symbol':symbol,'amount':amount,'price':this_symbol_price},'positions': new_position})}"
             )
             f.write(
                 json.dumps(
                     {
                         "date": today_date,
                         "id": current_action_id + 1,
-                        "this_action": {"action": "buy", "symbol": symbol, "amount": amount},
+                        "this_action": {"action": "buy", "symbol": symbol, "amount": amount, "price": this_symbol_price},
                         "positions": new_position,
                     }
                 )
@@ -223,7 +229,7 @@ def buy(symbol: str, amount: int) -> Dict[str, Any]:
         position_record = {
             "date": today_date,
             "id": current_action_id + 1,
-            "this_action": {"action": "buy", "symbol": symbol, "amount": amount},
+            "this_action": {"action": "buy", "symbol": symbol, "amount": amount, "price": this_symbol_price},
             "positions": new_position,
         }
         _send_trade_notification(signature, "buy", symbol, amount, position_record)
@@ -270,6 +276,14 @@ def _send_trade_notification(signature: str, action: str, symbol: str, amount: i
         trade_date = position_data.get("date", "未知时间")
         positions = position_data.get("positions", {})
         cash_balance = positions.get("CASH", 0)
+        this_action = position_data.get("this_action", {})
+        trade_price = this_action.get("price")
+        
+        # 构建交易操作行，附带价格信息（如有）
+        if trade_price is not None:
+            action_line = f"  • {action_text} {display_name} {amount:,} 股 @ ¥{trade_price:,.2f}  \n\n"
+        else:
+            action_line = f"  • {action_text} {display_name} {amount:,} 股  \n\n"
         
         # 构建消息
         message_lines = [
@@ -278,7 +292,7 @@ def _send_trade_notification(signature: str, action: str, symbol: str, amount: i
             f"🆔 交易ID: {trade_id}  \n\n",
             "  \n\n",
             f"📝 交易操作:  \n\n",
-            f"  • {action_text} {display_name} {amount:,} 股  \n\n",
+            action_line,
             "  \n\n",
             f"💰 剩余现金: ¥{cash_balance:,.2f}  \n\n"
         ]
@@ -503,7 +517,7 @@ def sell(symbol: str, amount: int) -> Dict[str, Any]:
     position_record = {
         "date": today_date,
         "id": current_action_id + 1,
-        "this_action": {"action": "sell", "symbol": symbol, "amount": amount},
+        "this_action": {"action": "sell", "symbol": symbol, "amount": amount, "price": this_symbol_price},
         "positions": new_position,
     }
     _send_trade_notification(signature, "sell", symbol, amount, position_record)

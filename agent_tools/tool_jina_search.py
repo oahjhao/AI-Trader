@@ -1117,6 +1117,10 @@ def get_information(query: str) -> str:
                 processed_batch = processor.process_retrieved_content(result)
                 if processed_batch.get("processed_results"):
                     processed_result = processed_batch["processed_results"][0]
+                    quality = processed_result.get("quality_score", {}).get("quality", "unknown")
+                    # 只接收 Excellent 级别的内容，其它等级全部丢弃
+                    if quality != "excellent":
+                        continue
                     all_processed_results.append({
                         "url": result['url'],
                         "title": result['title'],
@@ -1124,7 +1128,7 @@ def get_information(query: str) -> str:
                         "publish_time": result['publish_time'],
                         "content": processed_result["content"],
                         "tokens": processed_result["token_count"],
-                        "quality": processed_result.get("quality_score", {}).get("quality", "unknown")
+                        "quality": quality,
                     })
                     total_tokens += processed_result["token_count"]
 
@@ -1167,15 +1171,25 @@ def get_information(query: str) -> str:
         
         formatted_results.extend(stats_info)
         
-
-        # log_file = get_config_value("LOG_FILE")     
-        # signature = get_config_value("SIGNATURE")
-        # log_entry = {
-        #     "signature": signature,
-        #     "new_messages": [{"role": "tool:jinasearch", "content": "\n".join(formatted_results)}]
-        # }
-        # with open(log_file, "a", encoding="utf-8") as f:
-        #     f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+        # 将检索关键信息写入交易日志，便于事后复盘
+        log_file = get_config_value("LOG_FILE")
+        signature = get_config_value("SIGNATURE")
+        if log_file:
+            try:
+                log_entry = {
+                    "signature": signature,
+                    "new_messages": [
+                        {
+                            "role": "tool:jinasearch",
+                            "content": "[Search query] " + query + "\n" + "\n".join(formatted_results),
+                        }
+                    ],
+                }
+                with open(log_file, "a", encoding="utf-8") as f:
+                    f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+            except Exception as log_err:
+                # 不影响主流程，打印告警即可
+                print(f"⚠️ Failed to write search log: {log_err}")
 
         return "\n".join(formatted_results)
 

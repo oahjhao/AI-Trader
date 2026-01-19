@@ -43,8 +43,14 @@ class MCPServiceManager:
         }
 
         # Create logs directory
-        self.log_dir = Path("../logs")
-        self.log_dir.mkdir(exist_ok=True)
+        # Default to logs/<signature> for better isolation across multiple agents
+        log_dir_env = os.getenv("MCP_LOG_DIR")
+        if log_dir_env:
+            self.log_dir = Path(log_dir_env)
+        else:
+            signature = os.getenv("SIGNATURE", "default")
+            self.log_dir = Path(f"logs/{signature}")
+        self.log_dir.mkdir(parents=True, exist_ok=True)
 
         # Set signal handlers
         signal.signal(signal.SIGINT, self.signal_handler)
@@ -188,21 +194,15 @@ class MCPServiceManager:
             return
 
         # Wait for services to start
-        print("\n⏳ Waiting for services to start...")
-        time.sleep(3)
-
-        # Check service status
-        print("\n🔍 Checking service status...")
-        healthy_count = self.check_all_services()
-
-        if healthy_count > 0:
-            print(f"\n🎉 {healthy_count}/{len(self.services)} MCP services running!")
-            self.print_service_info()
-            # Keep running
-            self.keep_alive()
-        else:
-            print("\n❌ All services failed to start properly")
-            self.stop_all_services()
+        print("\n⌛ Waiting for services to start...")
+        time.sleep(8)  # Increased wait time for services to fully initialize
+        
+        # In container/background mode, skip health check and keep services running
+        # The entrypoint script will handle health checks via port probing
+        print(f"\n🎉 {len(self.services)} MCP services started!")
+        self.print_service_info()
+        # Keep running
+        self.keep_alive()
 
     def check_all_services(self):
         """Check all service status and return count of healthy services"""

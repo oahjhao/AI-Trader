@@ -1,0 +1,43 @@
+# Python virtual environment
+venv/
+env/
+.venv/
+
+# Git repository
+.git/
+.gitignore
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Project specific
+tags
+logs/
+*.log
+data/agent_data*/
+data/.runtime_env.json
+arms_cache/
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Documentation
+*.md
+docs/
+
+# Test files
+*_test.py
+test_*.py

@@ -24,7 +24,13 @@ def _position_lock(signature: str):
     """Context manager for file-based lock to serialize position updates per signature."""
     class _Lock:
         def __init__(self, name: str):
-            base_dir = Path(project_root) / "data" / "agent_data" / name
+            log_path = get_config_value("LOG_PATH", "./data/agent_data")
+            if os.path.isabs(log_path):
+                base_dir = Path(log_path) / name
+            else:
+                if log_path.startswith("./data/"):
+                    log_path = log_path[7:]
+                base_dir = Path(project_root) / "data" / log_path / name
             base_dir.mkdir(parents=True, exist_ok=True)
             self.lock_path = base_dir / ".position.lock"
             # Ensure lock file exists

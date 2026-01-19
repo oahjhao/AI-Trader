@@ -1,0 +1,72 @@
+# AI-Trader Docker Compose for Parallel Execution
+# This allows running multiple agent signatures in parallel, each in its own container.
+# 
+# Usage:
+# 1. Ensure .env file has OPENAI_API_KEY and OPENAI_API_BASE
+# 2. Run: docker-compose up --build
+
+services:
+  # Data preparation service - runs first to fetch and merge price data
+  agent-base:
+    build: .
+    image: ai-trader:latest
+    container_name: trader-data-prep
+    volumes:
+      - ./data:/home/ec2-user/AI-Trader/data
+      - ./logs:/home/ec2-user/AI-Trader/logs
+    entrypoint: ["bash", "scripts/data_preparation_entrypoint.sh"]
+    environment:
+      - START_DATE=${START_DATE:-}
+      - END_DATE=${END_DATE:-}
+
+  # Base template for trading agent services
+  agent-template: &agent-template
+    build: .
+    image: ai-trader:latest
+    volumes:
+      - ./data:/home/ec2-user/AI-Trader/data
+      - ./logs:/home/ec2-user/AI-Trader/logs
+    entrypoint: ["bash", "scripts/container_entrypoint.sh"]
+    depends_on:
+      agent-base:
+        condition: service_completed_successfully
+
+  # Instance 1: Balanced Strategy
+  agent-balanced:
+    <<: *agent-template
+    container_name: trader-balanced
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_API_BASE=${OPENAI_API_BASE}
+      - RUNTIME_ENV_PATH=/tmp/runtime_env.json
+    command: ["configs/astock_config_hourly.json", "--signature", "DS_pick_balanced_260119"]
+
+  # Instance 2: Nuts Strategy (Aggressive)
+  agent-nuts:
+    <<: *agent-template
+    container_name: trader-nuts
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_API_BASE=${OPENAI_API_BASE}
+      - RUNTIME_ENV_PATH=/tmp/runtime_env.json
+    command: ["configs/astock_config_hourly.json", "--signature", "DS_pick_nuts_260119"]
+
+  # Instance 3: Tech Strategy
+  agent-tech:
+    <<: *agent-template
+    container_name: trader-tech
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_API_BASE=${OPENAI_API_BASE}
+      - RUNTIME_ENV_PATH=/tmp/runtime_env.json
+    command: ["configs/astock_config_hourly.json", "--signature", "DS_pick_tech_260119"]
+
+  # Instance 4: Monk Strategy
+  agent-monk:
+    <<: *agent-template
+    container_name: trader-monk
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_API_BASE=${OPENAI_API_BASE}
+      - RUNTIME_ENV_PATH=/tmp/runtime_env.json
+    command: ["configs/astock_config_hourly.json", "--signature", "DS_pick_monk_260119"]

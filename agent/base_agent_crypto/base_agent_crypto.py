@@ -26,43 +26,53 @@ sys.path.insert(0, project_root)
 class DeepSeekChatOpenAI(ChatOpenAI):
     """
     Custom ChatOpenAI wrapper for DeepSeek API compatibility.
-    Handles the case where DeepSeek returns tool_calls.args as JSON strings instead of dicts.
+    Handles the case where DeepSeek returns tool_calls.args as JSON strings instead of dicts,
+    and ensures message content is always a string.
     """
 
-    def _create_message_dicts(self, messages: list, stop: Optional[list] = None) -> list:
-        """Override to handle response parsing"""
-        message_dicts = super()._create_message_dicts(messages, stop)
-        return message_dicts
+    def _convert_list_content_to_string(self, content: list) -> str:
+        text_content = ""
+        for part in content:
+            if isinstance(part, dict) and part.get("type") == "text":
+                text_content += part.get("text", "")
+            elif isinstance(part, str):
+                text_content += part
+        return text_content
 
     def _generate(self, messages: list, stop: Optional[list] = None, **kwargs):
-        """Override generation to fix tool_calls format in responses"""
+        """Override generation to sanitize messages and fix tool_calls format in responses"""
+        # Sanitize messages content
+        for msg in messages:
+            if hasattr(msg, "content") and isinstance(msg.content, list):
+                msg.content = self._convert_list_content_to_string(msg.content)
+            elif hasattr(msg, "content") and msg.content is None:
+                msg.content = ""
+
         # Call parent's generate method
         result = super()._generate(messages, stop, **kwargs)
 
         # Fix tool_calls format in the generated messages
-        for generation in result.generations:
-            for gen in generation:
-                if hasattr(gen, "message") and hasattr(gen.message, "additional_kwargs"):
-                    tool_calls = gen.message.additional_kwargs.get("tool_calls")
-                    if tool_calls:
-                        for tool_call in tool_calls:
-                            if "function" in tool_call and "arguments" in tool_call["function"]:
-                                args = tool_call["function"]["arguments"]
-                                # If arguments is a string, parse it
-                                if isinstance(args, str):
-                                    try:
-                                        tool_call["function"]["arguments"] = json.loads(args)
-                                    except json.JSONDecodeError:
-                                        pass  # Keep as string if parsing fails
-
+        self._fix_tool_calls(result)
         return result
 
     async def _agenerate(self, messages: list, stop: Optional[list] = None, **kwargs):
-        """Override async generation to fix tool_calls format in responses"""
+        """Override async generation to sanitize messages and fix tool_calls format in responses"""
+        # Sanitize messages content
+        for msg in messages:
+            if hasattr(msg, "content") and isinstance(msg.content, list):
+                msg.content = self._convert_list_content_to_string(msg.content)
+            elif hasattr(msg, "content") and msg.content is None:
+                msg.content = ""
+
         # Call parent's async generate method
         result = await super()._agenerate(messages, stop, **kwargs)
 
         # Fix tool_calls format in the generated messages
+        self._fix_tool_calls(result)
+        return result
+
+    def _fix_tool_calls(self, result):
+        """Fix tool_calls format in the generated messages"""
         for generation in result.generations:
             for gen in generation:
                 if hasattr(gen, "message") and hasattr(gen.message, "additional_kwargs"):
@@ -77,7 +87,6 @@ class DeepSeekChatOpenAI(ChatOpenAI):
                                         tool_call["function"]["arguments"] = json.loads(args)
                                     except json.JSONDecodeError:
                                         pass  # Keep as string if parsing fails
-
         return result
 
 
