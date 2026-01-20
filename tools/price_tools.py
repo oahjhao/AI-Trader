@@ -1036,6 +1036,20 @@ def add_no_trade_record(today_date: str, signature: str):
 
     with position_file.open("a", encoding="utf-8") as f:
         f.write(json.dumps(save_item) + "\n")
+    
+    # 发送无交易推送
+    try:
+        # 避免循环引用，在函数内部导入
+        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        webhook_path = os.path.join(project_root, "webhook")
+        if webhook_path not in sys.path:
+            sys.path.append(webhook_path)
+            
+        from dingtalk_webhook import send_no_trade_notification
+        send_no_trade_notification(signature, today_date, current_position)
+    except Exception as e:
+        print(f"⚠️ 发送无交易自动推送失败: {e}")
+        
     return
 
 

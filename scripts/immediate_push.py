@@ -21,19 +21,25 @@ from dotenv import load_dotenv
 load_dotenv(dotenv_path=project_root / '.env')
 
 def get_python_executable():
-    """获取虚拟环境中的Python可执行文件路径"""
+    """获取Python可执行文件路径（支持虚拟环境和容器环境）"""
+    # 优先使用当前运行的 Python 解释器
+    if sys.executable:
+        return sys.executable
+        
+    # 回退逻辑
     venv_path = project_root / 'venv'
     if os.name == 'nt':  # Windows
         python_exe = venv_path / 'Scripts' / 'python.exe'
     else:  # Linux/Mac
         python_exe = venv_path / 'bin' / 'python3'
     
-    if not python_exe.exists():
-        raise FileNotFoundError(f"找不到Python可执行文件: {python_exe}")
-    
-    return str(python_exe)
+    if python_exe.exists():
+        return str(python_exe)
+        
+    # 最后尝试直接使用 python3 或 python
+    return "python3" if os.name != 'nt' else "python"
 
-def send_push_notification():
+def send_push_notification(config_path=None, signature=None):
     """发送即时推送通知"""
     print(f"[{datetime.now()}] 开始执行即时推送...")
     
@@ -57,6 +63,12 @@ def send_push_notification():
         
         if secret:
             cmd.extend(["--secret", secret])
+        
+        if config_path:
+            cmd.extend(["--config", config_path])
+            
+        if signature:
+            cmd.extend(["--signature", signature])
         
         # 执行推送
         print(f"📤 执行命令: {' '.join(cmd)}")
@@ -97,6 +109,12 @@ def prepare_push_content():
 
 def main():
     """主函数 - 立即执行推送"""
+    import argparse
+    parser = argparse.ArgumentParser(description="即时推送脚本")
+    parser.add_argument("--config", help="配置文件路径")
+    parser.add_argument("--signature", help="仅推送指定 signature 的持仓")
+    args = parser.parse_args()
+
     print("🚀 执行即时推送服务")
     print(f"📅 当前时间: {datetime.now()}")
     
@@ -107,7 +125,7 @@ def main():
     
     # 立即发送推送
     print("\n📤 发送即时推送...")
-    success = send_push_notification()
+    success = send_push_notification(config_path=args.config, signature=args.signature)
     
     if success:
         print("\n✅ 即时推送执行完成")

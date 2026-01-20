@@ -12,20 +12,20 @@ sys.path.append(str(Path(__file__).parent.parent))
 from webhook.dingtalk_webhook import ImmediatePusher, PositionReporter
 
 
-def send_immediate_report(webhook_url: str, secret: str = None, config_path: str = "./configs/astock_config_hourly.json"):
+def send_immediate_report(webhook_url: str, secret: str = None, config_path: str = "./configs/astock_config_hourly.json", signature: str = None):
     """立即发送仓位报告"""
     print("📤 立即发送仓位报告...")
     
     pusher = ImmediatePusher(webhook_url, secret, config_path)
-    return pusher.send_report()
+    return pusher.send_report(signature=signature)
 
 
-def show_report(config_path: str = "./configs/astock_config_hourly.json"):
+def show_report(config_path: str = "./configs/astock_config_hourly.json", signature: str = None):
     """显示仓位报告内容（不发送）"""
     print("📄 显示仓位报告预览...")
     
     reporter = PositionReporter(config_path)
-    messages = reporter.generate_report()
+    messages = reporter.generate_report(filter_signature=signature)
     
     print("\n" + "="*50)
     print("仓位报告预览")
@@ -44,6 +44,7 @@ def main():
     parser.add_argument("--secret", help="钉钉加签密钥")
     parser.add_argument("--config", default="./configs/astock_config_hourly.json",
                        help="配置文件路径")
+    parser.add_argument("--signature", help="仅推送指定 signature 的持仓")
     
     args = parser.parse_args()
     
@@ -51,11 +52,11 @@ def main():
         if not args.webhook_url:
             print("❌ 发送报告需要提供 --webhook-url 参数")
             sys.exit(1)
-        success = send_immediate_report(args.webhook_url, args.secret, args.config)
+        success = send_immediate_report(args.webhook_url, args.secret, args.config, args.signature)
         sys.exit(0 if success else 1)
     
     elif args.action == "show":
-        show_report(args.config)
+        show_report(args.config, args.signature)
 
 
 if __name__ == "__main__":

@@ -1,7 +1,9 @@
 import argparse
 import asyncio
 import os
+import sys
 from datetime import datetime
+from pathlib import Path
 from typing import Optional
 
 from trader.agents import get_agent_class
@@ -86,6 +88,31 @@ async def _run(
         )
 
     print("🎉 Runner completed all models")
+
+    # 交易完成，容器退出前推送最终持仓信息
+    try:
+        print("\n📤 推送最终持仓信息...")
+        project_root = Path(__file__).parent.parent
+        push_script = project_root / "scripts" / "immediate_push.py"
+        if push_script.exists():
+            cmd = [sys.executable, str(push_script)]
+            if config_path:
+                cmd.extend(["--config", config_path])
+            
+            # 如果指定了 signature 或只有一个模型，则增加 --signature 限制
+            if only_signature:
+                cmd.extend(["--signature", only_signature])
+            elif len(enabled_models) == 1:
+                signature = enabled_models[0].get("signature")
+                if signature:
+                    cmd.extend(["--signature", signature])
+            
+            import subprocess
+            subprocess.run(cmd, check=False)
+        else:
+            print(f"⚠️ 找不到推送脚本: {push_script}")
+    except Exception as e:
+        print(f"❌ 推送最终持仓信息失败: {e}")
 
 
 def main() -> None:

@@ -3,7 +3,8 @@ FROM python:3.11-slim
 
 ENV PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
-    PYTHONDONTWRITEBYTECODE=1
+    PYTHONDONTWRITEBYTECODE=1 \
+    TZ=Asia/Shanghai
 
 # Set work directory inside container to match current layout
 WORKDIR /home/ec2-user/AI-Trader
@@ -16,6 +17,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         git \
         procps \
         netcat-openbsd \
+        tzdata \
+    && ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies first (leverages Docker layer cache)

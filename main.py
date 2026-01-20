@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+import sys
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from pathlib import Path as _Path
@@ -99,6 +100,28 @@ async def main(config_path=None):
         )
 
     print("🎉 All models processing completed!")
+
+    # 交易完成，容器退出前推送最终持仓信息
+    try:
+        print("\n📤 推送最终持仓信息...")
+        push_script = Path(__file__).parent / "scripts" / "immediate_push.py"
+        if push_script.exists():
+            cmd = [sys.executable, str(push_script)]
+            if config_path:
+                cmd.extend(["--config", config_path])
+            
+            # 如果只有一个模型，也可以指定 signature
+            if len(enabled_models) == 1:
+                signature = enabled_models[0].get("signature")
+                if signature:
+                    cmd.extend(["--signature", signature])
+            
+            import subprocess
+            subprocess.run(cmd, check=False)
+        else:
+            print(f"⚠️ 找不到推送脚本: {push_script}")
+    except Exception as e:
+        print(f"❌ 推送最终持仓信息失败: {e}")
 
 
 if __name__ == "__main__":

@@ -16,7 +16,6 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 import requests
-import schedule
 import asyncio
 import pandas as pd
 
@@ -118,10 +117,27 @@ class PositionReporter:
         初始化仓位报告器
         
         Args:
-            config_path: A股小时级配置文件路径
+            config_path: 配置文件路径
         """
         self.config_path = Path(config_path)
+        
+        # 根据配置文件确定数据路径
         self.base_data_path = PROJECT_ROOT / "data" / "agent_data_astock"
+        try:
+            with open(self.config_path, "r", encoding="utf-8") as f:
+                config = json.load(f)
+                market = config.get("market", "cn")
+                agent_type = config.get("agent_type", "")
+                
+                if market == "crypto" or agent_type == "BaseAgentCrypto":
+                    self.base_data_path = PROJECT_ROOT / "data" / "agent_data_crypto"
+                elif market == "us":
+                    self.base_data_path = PROJECT_ROOT / "data" / "agent_data"
+                else:
+                    self.base_data_path = PROJECT_ROOT / "data" / "agent_data_astock"
+        except Exception as e:
+            print(f"⚠️ 读取配置文件以确定数据路径失败: {e}，将使用默认路径")
+            
         self.stock_name_map = self._load_stock_name_mapping()
     
     def _load_stock_name_mapping(self) -> Dict[str, str]:
@@ -283,16 +299,25 @@ class PositionReporter:
         
         return "".join(message_lines)
     
-    def generate_report(self) -> List[str]:
+    def generate_report(self, filter_signature: Optional[str] = None) -> List[str]:
         """
         生成所有启用模型的仓位报告
         
+        Args:
+            filter_signature: 可选，仅为指定的 signature 生成报告
+            
         Returns:
             格式化后的消息列表
         """
         try:
             config = self.load_config()
             enabled_models = [model for model in config.get("models", []) if model.get("enabled", True)]
+            
+            # 如果指定了 signature，则只保留匹配的
+            if filter_signature:
+                enabled_models = [model for model in enabled_models if model.get("signature") == filter_signature]
+                if not enabled_models:
+                    print(f"⚠️ 未在配置中找到启用的 signature: {filter_signature}")
             
             messages = []
             for model in enabled_models:
@@ -329,10 +354,15 @@ class ImmediatePusher:
         self.dingtalk = DingTalkWebhook(webhook_url, secret)
         self.reporter = PositionReporter(config_path)
     
-    def send_report(self):
-        """立即发送仓位报告"""
+    def send_report(self, signature: Optional[str] = None):
+        """
+        立即发送仓位报告
+        
+        Args:
+            signature: 可选，仅发送指定 signature 的报告
+        """
         print(f"[{datetime.now()}] 开始发送仓位报告...")
-        messages = self.reporter.generate_report()
+        messages = self.reporter.generate_report(filter_signature=signature)
         
         if not messages:
             print("⚠️ 没有可发送的报告")
@@ -350,6 +380,64 @@ class ImmediatePusher:
             print("❌ 仓位报告发送失败")
         
         return success
+
+
+def send_no_trade_notification(signature: str, today_date: str, positions: Dict[str, Any]):
+    """
+    发送无交易操作推送通知
+    
+    Args:
+        signature: 模型签名
+        today_date: 当前日期
+        positions: 仓位数据
+    """
+    try:
+        # 从环境变量获取推送配置
+        webhook_url = os.getenv("DINGTALK_WEBHOOK_URL") or os.getenv("WEBHOOK_URL")
+        secret = os.getenv("DINGTALK_SECRET")
+        
+        if not webhook_url:
+            print("⚠️ 未配置 Webhook URL，跳过推送")
+            return
+        
+        # 创建推送器
+        dingtalk = DingTalkWebhook(webhook_url, secret)
+        reporter = PositionReporter()
+        
+        cash_balance = positions.get("CASH", 0)
+        
+        # 提取持仓股票（非零持仓）
+        holdings = {k: v for k, v in positions.items() if k != "CASH" and v > 0}
+        
+        # 构建消息
+        message_lines = [
+            f"📈 **{signature} position 无交易通知**  \n\n",
+            f"📅 时间: {today_date}  \n\n",
+            "  \n\n",
+            f"📝 决策建议: 维持当前仓位，无交易操作  \n\n",
+            "  \n\n",
+            f"💰 当前现金: ¥{cash_balance:,.2f}  \n\n"
+        ]
+        
+        if holdings:
+            message_lines.append("📦 当前持仓:  \n\n")
+            for symbol, amount in sorted(holdings.items()):
+                display_name = reporter._get_stock_display_name(symbol)
+                message_lines.append(f"  • {display_name}: {amount:,} 股  \n\n")
+        else:
+            message_lines.append("📦 当前无持仓  \n\n")
+        
+        message_content = "".join(message_lines)
+        
+        # 发送推送
+        success = dingtalk.send_message(message_content, msg_type="markdown")
+        if success:
+            print(f"✅ 无交易推送成功: {signature}")
+        else:
+            print(f"❌ 无交易推送失败: {signature}")
+            
+    except Exception as e:
+        print(f"❌ 发送无交易推送时出错: {e}")
 
 
 def main():

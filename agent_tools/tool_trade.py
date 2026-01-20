@@ -24,9 +24,9 @@ try:
     sys.path.append(os.path.join(project_root, "webhook"))
     from dingtalk_webhook import DingTalkWebhook, PositionReporter
     PUSH_NOTIFICATIONS_AVAILABLE = True
-except ImportError:
+except ImportError as e:
     PUSH_NOTIFICATIONS_AVAILABLE = False
-    print("⚠️ 推送通知模块不可用，将跳过交易推送功能")
+    print(f"⚠️ 推送通知模块不可用，将跳过交易推送功能 (错误: {e})")
 
 mcp = FastMCP("TradeTools")
 
@@ -308,6 +308,57 @@ def _send_trade_notification(signature: str, action: str, symbol: str, amount: i
             
     except Exception as e:
         print(f"❌ 发送交易推送时出错: {e}")
+
+
+def _send_no_trade_notification(signature: str, today_date: str):
+    """
+    发送无交易操作推送通知
+    
+    Args:
+        signature: 模型签名
+        today_date: 当前日期
+    """
+    try:
+        # 获取最新仓位
+        position_data = get_latest_position(today_date, signature)[0]
+        if not position_data:
+            print("⚠️ 无法获取最新仓位信息，跳过无交易推送")
+            return
+            
+        from dingtalk_webhook import send_no_trade_notification
+        send_no_trade_notification(signature, today_date, position_data.get("positions", {}))
+            
+    except Exception as e:
+        print(f"❌ 发送无交易推送时出错: {e}")
+
+
+@mcp.tool()
+def no_trade(reason: str = "维持当前仓位") -> Dict[str, Any]:
+    """
+    Explicitly notify that no trade will be performed for the current session.
+    Use this when you have analyzed the market and decided to maintain current positions.
+    
+    Args:
+        reason: Optional reason for not trading.
+        
+    Returns:
+        Dict[str, Any]: Status of the notification.
+    """
+    signature = get_config_value("SIGNATURE")
+    today_date = get_config_value("TODAY_DATE")
+    
+    if signature is None:
+        return {"error": "SIGNATURE environment variable is not set"}
+        
+    print(f"📊 Agent decided no trade: {reason}")
+    
+    # 发送推送
+    _send_no_trade_notification(signature, today_date)
+    
+    # 标记已进行操作（虽然是no trade，但作为显式操作记录）
+    write_config_value("IF_TRADE", True)
+    
+    return {"status": "success", "message": f"No-trade notification sent: {reason}"}
 
 
 def _get_today_buy_amount(symbol: str, today_date: str, signature: str) -> int:
