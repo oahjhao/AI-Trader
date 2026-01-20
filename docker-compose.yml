@@ -10,6 +10,8 @@ x-agent-template: &agent-template
   volumes:
     - ./data:/home/ec2-user/AI-Trader/data
     - ./logs:/home/ec2-user/AI-Trader/logs
+    - ./configs:/home/ec2-user/AI-Trader/configs
+    - ./docs:/home/ec2-user/AI-Trader/docs
   entrypoint: ["bash", "scripts/container_entrypoint.sh"]
   depends_on:
     agent-base:
@@ -24,6 +26,7 @@ services:
       - ./data:/home/ec2-user/AI-Trader/data
       - ./logs:/home/ec2-user/AI-Trader/logs
       - ./configs:/home/ec2-user/AI-Trader/configs
+      - ./docs:/home/ec2-user/AI-Trader/docs
     entrypoint: ["bash", "scripts/data_preparation_entrypoint.sh", "configs/astock_config_hourly.json"]
     environment:
       - TZ=Asia/Shanghai
@@ -89,6 +92,7 @@ services:
     ports:
       - "8888:8888"
     volumes:
+      - ./docs:/usr/share/nginx/html:ro
       - ./data:/usr/share/nginx/html/data:ro
     depends_on:
       - agent-base
