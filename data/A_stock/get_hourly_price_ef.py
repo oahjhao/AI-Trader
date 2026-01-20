@@ -397,27 +397,26 @@ def main():
     """
     import sys
     
+    def parse_date_only(d_str):
+        # Handle both YYYY-MM-DD and YYYY-MM-DD HH:MM:SS
+        return datetime.strptime(d_str.split(' ')[0], "%Y-%m-%d")
+
     # 解析命令行参数
     if len(sys.argv) >= 3:
-        # 回测模式: 接收起始日期和结束日期
-        start_date_input = sys.argv[1]  # YYYY-MM-DD
-        end_date_input = sys.argv[2]    # YYYY-MM-DD
+        # Range provided (Manual Sync - Note: Backtest typically skips hourly)
+        init_date_input = sys.argv[1]
+        end_date_input = sys.argv[2]
         
-        # 转换为 datetime 对象
-        start_dt = datetime.strptime(start_date_input, "%Y-%m-%d")
-        end_dt = datetime.strptime(end_date_input, "%Y-%m-%d")
+        anchor_dt = parse_date_only(init_date_input)
+        end_dt = parse_date_only(end_date_input)
         
-        # 计算实际数据范围：起始日期-60天 到 结束日期
-        actual_start_dt = start_dt - timedelta(days=60)
-        actual_end_dt = end_dt
+        # Range: anchor_dt - 60 days to end_dt
+        begin_date = (anchor_dt - timedelta(days=60)).strftime("%Y%m%d")
+        end_date = end_dt.strftime("%Y%m%d")
         
-        # 转换为 YYYYMMDD 格式（不带时间）
-        begin_date = actual_start_dt.strftime("%Y%m%d")
-        end_date = actual_end_dt.strftime("%Y%m%d")
-        
-        logger.info(f"📊 回测模式")
-        logger.info(f"输入时间范围: {start_date_input} 到 {end_date_input}")
-        logger.info(f"实际获取数据范围: {begin_date} 到 {end_date} (包含60天历史数据)")
+        logger.info(f"📊 Manual Sync mode (Hourly)")
+        logger.info(f"Input init_date: {init_date_input}, end_date: {end_date_input}")
+        logger.info(f"Actual fetching range: {begin_date} 到 {end_date} (60 days history)")
         
         # 创建数据获取器实例
         fetcher = AStockIntradayDataFetcher(
@@ -434,19 +433,25 @@ def main():
         )
         
     else:
-        # 实盘模式：使用默认时间范围
-        logger.info(f"📊 实盘模式")
+        # Live mode
+        end_dt = datetime.now()
+        begin_date = (end_dt - timedelta(days=60)).strftime("%Y%m%d")
+        end_date = end_dt.strftime("%Y%m%d")
+        
+        logger.info(f"📊 Live mode (Hourly)")
+        logger.info(f"Fetching Hourly data from {begin_date} to {end_date} (60 days history)")
         
         # 创建数据获取器实例
         fetcher = AStockIntradayDataFetcher(
             frequency=60,  # 60分钟K线
-            stock_list_file="sse_pick.csv",  # 上证50权重文件
+            stock_list_file="sse_pick.csv",
             output_file="A_stock_hourly.csv"
         )
         
         # 执行数据获取（自动检测日期范围）
         df = fetcher.run(
-            default_start_date="20241201",  # 仅在首次运行时使用
+            default_start_date=begin_date,
+            default_end_date=end_date,
             auto_date_range=True  # 启用自动日期范围检测
         )
     

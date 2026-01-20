@@ -36,7 +36,7 @@ docker-compose.yml
 
 # Documentation
 *.md
-docs/
+# docs/
 
 # Test files
 *_test.py

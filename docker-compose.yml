@@ -6,8 +6,7 @@
 # 2. Run: docker-compose up --build
 
 x-agent-template: &agent-template
-  build: .
-  image: ai-trader:latest
+  image: trader-app
   volumes:
     - ./data:/home/ec2-user/AI-Trader/data
     - ./logs:/home/ec2-user/AI-Trader/logs
@@ -19,13 +18,13 @@ x-agent-template: &agent-template
 services:
   # Data preparation service - runs first to fetch and merge price data
   agent-base:
-    build: .
-    image: ai-trader:latest
+    image: trader-app
     container_name: trader-data-prep
     volumes:
       - ./data:/home/ec2-user/AI-Trader/data
       - ./logs:/home/ec2-user/AI-Trader/logs
-    entrypoint: ["bash", "scripts/data_preparation_entrypoint.sh"]
+      - ./configs:/home/ec2-user/AI-Trader/configs
+    entrypoint: ["bash", "scripts/data_preparation_entrypoint.sh", "configs/astock_config_hourly.json"]
     environment:
       - TZ=Asia/Shanghai
       - START_DATE=${START_DATE:-}
@@ -85,13 +84,11 @@ services:
 
   # Frontend UI service (Nginx)
   frontend:
-    image: nginx:stable-alpine
+    image: trader-frontend
     container_name: trader-frontend
     ports:
       - "8888:8888"
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
-      - ./docs:/usr/share/nginx/html:ro
       - ./data:/usr/share/nginx/html/data:ro
     depends_on:
       - agent-base

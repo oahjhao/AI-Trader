@@ -431,34 +431,35 @@ def get_index_daily_data(
 if __name__ == "__main__":
     import sys
     
-    # 解析命令行参数
+    def parse_date_only(d_str):
+        # Handle both YYYY-MM-DD and YYYY-MM-DD HH:MM:SS
+        return datetime.strptime(d_str.split(' ')[0], "%Y-%m-%d")
+
     if len(sys.argv) >= 3:
-        # 回测模式: 接收起始日期和结束日期
-        start_date_input = sys.argv[1]  # YYYY-MM-DD
-        end_date_input = sys.argv[2]    # YYYY-MM-DD
+        # Range provided (Backtest or Manual Sync)
+        # Use first arg as init_date (the "anchor" for 365-day history)
+        # Use second arg as end_date
+        init_date_input = sys.argv[1]
+        end_date_input = sys.argv[2]
         
-        # 转换为 datetime 对象
-        start_dt = datetime.strptime(start_date_input, "%Y-%m-%d")
-        end_dt = datetime.strptime(end_date_input, "%Y-%m-%d")
+        anchor_dt = parse_date_only(init_date_input)
+        end_dt = parse_date_only(end_date_input)
         
-        # 计算实际数据范围：起始日期-60天 到 结束日期
-        actual_start_dt = start_dt - timedelta(days=60)
-        actual_end_dt = end_dt
+        # Range: anchor_dt - 365 days to end_dt
+        daily_start_date = (anchor_dt - timedelta(days=365)).strftime("%Y%m%d")
+        daily_end_date = end_dt.strftime("%Y%m%d")
         
-        # 转换为 YYYYMMDD 格式
-        daily_start_date = actual_start_dt.strftime("%Y%m%d")
-        daily_end_date = actual_end_dt.strftime("%Y%m%d")
-        
-        print(f"📊 回测模式")
-        print(f"输入时间范围: {start_date_input} 到 {end_date_input}")
-        print(f"实际获取数据范围: {daily_start_date} 到 {daily_end_date} (包含60天历史数据)")
-        
+        print(f"📊 Manual/Backtest mode")
+        print(f"Input init_date: {init_date_input}, end_date: {end_date_input}")
     else:
-        # 实盘模式：使用默认时间范围
-        daily_start_date = "20241201"
-        daily_end_date = datetime.now().strftime("%Y%m%d")
-        print(f"📊 实盘模式")
-        print(f"数据范围: {daily_start_date} 到 {daily_end_date}")
+        # Live mode
+        end_dt = datetime.now()
+        # Range: now - 365 days to now
+        daily_start_date = (end_dt - timedelta(days=365)).strftime("%Y%m%d")
+        daily_end_date = end_dt.strftime("%Y%m%d")
+        print(f"📊 Live mode")
+    
+    print(f"Fetching Daily/Index data from {daily_start_date} to {daily_end_date}")
     
     fallback_path = Path(__file__).parent / "sse_50_weight.csv"
 

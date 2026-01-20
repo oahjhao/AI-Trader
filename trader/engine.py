@@ -26,17 +26,23 @@ class SignatureLock:
 
     def acquire(self) -> None:
         self.lock_path.parent.mkdir(parents=True, exist_ok=True)
-        if self.lock_path.exists():
+        info = {
+            "pid": os.getpid(),
+            "created_at": datetime.utcnow().isoformat(),
+        }
+        data = json.dumps(info).encode("utf-8")
+        try:
+            fd = os.open(self.lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            try:
+                os.write(fd, data)
+            finally:
+                os.close(fd)
+        except FileExistsError:
             print(
                 f"❌ Another run is already in progress for {self.lock_path.parent.name}. "
                 "Refusing to start to avoid concurrent position writes."
             )
             raise SystemExit(1)
-        info = {
-            "pid": os.getpid(),
-            "created_at": datetime.utcnow().isoformat(),
-        }
-        self.lock_path.write_text(json.dumps(info))
         self.acquired = True
 
     def release(self) -> None:
