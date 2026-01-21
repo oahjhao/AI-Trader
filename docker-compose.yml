@@ -8,10 +8,9 @@
 x-agent-template: &agent-template
   image: trader-app
   volumes:
+    - ./configs:/home/ec2-user/AI-Trader/configs
     - ./data:/home/ec2-user/AI-Trader/data
     - ./logs:/home/ec2-user/AI-Trader/logs
-    - ./configs:/home/ec2-user/AI-Trader/configs
-    - ./docs:/home/ec2-user/AI-Trader/docs
   entrypoint: ["bash", "scripts/container_entrypoint.sh"]
   depends_on:
     agent-base:
@@ -23,10 +22,10 @@ services:
     image: trader-app
     container_name: trader-data-prep
     volumes:
+      - ./configs:/home/ec2-user/AI-Trader/configs
       - ./data:/home/ec2-user/AI-Trader/data
       - ./logs:/home/ec2-user/AI-Trader/logs
-      - ./configs:/home/ec2-user/AI-Trader/configs
-      - ./docs:/home/ec2-user/AI-Trader/docs
+      - ./docs/config.yaml:/home/ec2-user/AI-Trader/docs/config.yaml
     entrypoint: ["bash", "scripts/data_preparation_entrypoint.sh", "configs/astock_config_hourly.json"]
     environment:
       - TZ=Asia/Shanghai
@@ -92,7 +91,8 @@ services:
     ports:
       - "8888:8888"
     volumes:
-      - ./docs:/usr/share/nginx/html:ro
+      # Mount only dynamic data, static assets are in the image
       - ./data:/usr/share/nginx/html/data:ro
+      - ./docs/config.yaml:/usr/share/nginx/html/config.yaml:ro
     depends_on:
       - agent-base

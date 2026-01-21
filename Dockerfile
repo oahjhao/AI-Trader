@@ -35,11 +35,8 @@ RUN if [ -f scripts/install_nltk_resources.py ]; then \
       python scripts/install_nltk_resources.py || true; \
     fi
 
-# Make front-end "docs" see the trading data under ./data
-# The JS frontend expects ./data relative to docs/, so we expose the
-# project-level data/ directory via a symlink.
-RUN mkdir -p docs \
-    && if [ ! -e docs/data ]; then ln -s ../data docs/data; fi
+# Note: docs/data symlink removed - frontend container uses direct volume mount
+# The frontend expects data at /usr/share/nginx/html/data via EFS mount
 
 # Expose default port for Web UI (scripts/start_ui.sh uses 8888)
 EXPOSE 8888
