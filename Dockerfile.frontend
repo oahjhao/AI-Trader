@@ -2,16 +2,18 @@
 # Builds a lightweight Nginx image serving the static docs.
 # Dynamic trading data is expected to be mounted at /usr/share/nginx/html/data via EFS.
 # Also includes AWS CLI and jq for running ECS task orchestration scripts.
+# Includes crond for scheduled ECS task execution.
 
 FROM nginx:stable-alpine
 
-# Install AWS CLI, jq, bash, and other required tools
+# Install AWS CLI, jq, bash, crond, and other required tools
 RUN apk add --no-cache \
     aws-cli \
     jq \
     bash \
     curl \
-    tzdata
+    tzdata \
+    dcron
 
 # Set timezone to Asia/Shanghai
 ENV TZ=Asia/Shanghai
@@ -25,13 +27,34 @@ COPY docs/ /usr/share/nginx/html/
 
 # Copy orchestration scripts
 COPY scripts/aws_ecs_run_all.sh /usr/local/bin/aws_ecs_run_all.sh
+COPY scripts/test_ecs_task_trigger.sh /usr/local/bin/test_ecs_task_trigger.sh
 COPY scripts/test_efs_mounts.sh /usr/local/bin/test_efs_mounts.sh
 COPY scripts/verify_env.sh /usr/local/bin/verify_env.sh
-RUN chmod +x /usr/local/bin/aws_ecs_run_all.sh /usr/local/bin/test_efs_mounts.sh /usr/local/bin/verify_env.sh
+RUN chmod +x /usr/local/bin/aws_ecs_run_all.sh \
+    /usr/local/bin/test_ecs_task_trigger.sh \
+    /usr/local/bin/test_efs_mounts.sh \
+    /usr/local/bin/verify_env.sh
 
 # Copy .env file for environment variables
 COPY .env /.env
 
+# Create cron job for trading schedule (Mon-Fri at 10:32, 11:32, 14:02, 15:02 CST)
+# Note: crond uses the container's timezone (Asia/Shanghai)
+RUN echo '# AI-Trader Scheduled Execution' > /etc/crontabs/root && \
+    echo '# Run data-prep + all agents at market opening and key trading times' >> /etc/crontabs/root && \
+    echo '32 10 * * 1-5 /usr/local/bin/aws_ecs_run_all.sh /mnt/efs/configs/astock_config_hourly.json >> /var/log/cron-trader.log 2>&1' >> /etc/crontabs/root && \
+    echo '32 11 * * 1-5 /usr/local/bin/aws_ecs_run_all.sh /mnt/efs/configs/astock_config_hourly.json >> /var/log/cron-trader.log 2>&1' >> /etc/crontabs/root && \
+    echo '2 14 * * 1-5 /usr/local/bin/aws_ecs_run_all.sh /mnt/efs/configs/astock_config_hourly.json >> /var/log/cron-trader.log 2>&1' >> /etc/crontabs/root && \
+    echo '2 15 * * 1-5 /usr/local/bin/aws_ecs_run_all.sh /mnt/efs/configs/astock_config_hourly.json >> /var/log/cron-trader.log 2>&1' >> /etc/crontabs/root && \
+    touch /var/log/cron-trader.log
+
+# Create startup script to run both nginx and crond
+RUN echo '#!/bin/sh' > /docker-entrypoint.d/99-start-cron.sh && \
+    echo 'echo "[$(date)] Starting crond for scheduled trading tasks..."' >> /docker-entrypoint.d/99-start-cron.sh && \
+    echo 'crond -b -l 2' >> /docker-entrypoint.d/99-start-cron.sh && \
+    echo 'echo "[$(date)] Crond started. Scheduled times: Mon-Fri 10:32, 11:32, 14:02, 15:02 (CST)"' >> /docker-entrypoint.d/99-start-cron.sh && \
+    chmod +x /docker-entrypoint.d/99-start-cron.sh
+
 EXPOSE 80 8888
 
-# Use default nginx entrypoint/cmd
+# Use default nginx entrypoint/cmd (will also execute our cron startup script)

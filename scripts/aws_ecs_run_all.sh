@@ -259,13 +259,22 @@ run_agent_tasks() {
   for SIGNATURE in "${SIGNATURES[@]}"; do
     echo_info "启动 Agent: $SIGNATURE"
     
+    # 提取配置文件的相对路径（去掉 /mnt/efs/ 前缀）
+    local AGENT_CONFIG_FILE="${CONFIG_FILE#/mnt/efs/}"
+    # 如果配置文件没有 configs/ 前缀，添加它
+    if [[ "$AGENT_CONFIG_FILE" != configs/* ]]; then
+      AGENT_CONFIG_FILE="configs/${AGENT_CONFIG_FILE##*/}"
+    fi
+    
+    echo_info "  配置文件: $AGENT_CONFIG_FILE"
+    
     local TASK_ARN=$(aws ecs run-task \
       --cluster "$CLUSTER" \
       --task-definition "$AGENT_TASK_DEF" \
       --launch-type FARGATE \
       --region "$REGION" \
       --network-configuration "awsvpcConfiguration={subnets=[$SUBNET],securityGroups=[$SECURITY_GROUP],assignPublicIp=ENABLED}" \
-      --overrides "{\"containerOverrides\":[{\"name\":\"$AGENT_CONTAINER_NAME\",\"command\":[\"$CONFIG_FILE\",\"--signature\",\"$SIGNATURE\"]}]}" \
+      --overrides "{\"containerOverrides\":[{\"name\":\"$AGENT_CONTAINER_NAME\",\"command\":[\"$AGENT_CONFIG_FILE\",\"--signature\",\"$SIGNATURE\"]}]}" \
       --query 'tasks[0].taskArn' \
       --output text)
     
