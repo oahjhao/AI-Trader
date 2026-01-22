@@ -1,0 +1,256 @@
+{
+  "Comment": "AI-Trader ECS 任务编排工作流 - 替代 aws_ecs_run_all.sh",
+  "StartAt": "DataPreparation",
+  "States": {
+    "DataPreparation": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::ecs:runTask.sync",
+      "Parameters": {
+        "LaunchType": "FARGATE",
+        "Cluster": "${ECSCluster}",
+        "TaskDefinition": "${DataPrepTaskDefinition}",
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "Subnets.$": "$.subnets",
+            "SecurityGroups.$": "$.securityGroups",
+            "AssignPublicIp": "ENABLED"
+          }
+        },
+        "Overrides": {
+          "ContainerOverrides": [
+            {
+              "Name": "data-prep",
+              "Command.$": "$.dataPrepCommand"
+            }
+          ]
+        }
+      },
+      "ResultPath": "$.dataPrepResult",
+      "Next": "ParallelAgentExecution",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error",
+          "Next": "DataPrepFailed"
+        }
+      ]
+    },
+    "ParallelAgentExecution": {
+      "Type": "Parallel",
+      "Branches": [
+        {
+          "StartAt": "RunBalancedAgent",
+          "States": {
+            "RunBalancedAgent": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::ecs:runTask.sync",
+              "Parameters": {
+                "LaunchType": "FARGATE",
+                "Cluster": "${ECSCluster}",
+                "TaskDefinition": "${AgentTaskDefinition}",
+                "NetworkConfiguration": {
+                  "AwsvpcConfiguration": {
+                    "Subnets.$": "$.subnets",
+                    "SecurityGroups.$": "$.securityGroups",
+                    "AssignPublicIp": "ENABLED"
+                  }
+                },
+                "Overrides": {
+                  "ContainerOverrides": [
+                    {
+                      "Name": "agent",
+                      "Command": [
+                        "configs/astock_config_hourly.json",
+                        "--signature",
+                        "DS_pick_balanced_260119"
+                      ]
+                    }
+                  ]
+                }
+              },
+              "End": true,
+              "Retry": [
+                {
+                  "ErrorEquals": ["States.TaskFailed"],
+                  "IntervalSeconds": 60,
+                  "MaxAttempts": 2,
+                  "BackoffRate": 2.0
+                }
+              ]
+            }
+          }
+        },
+        {
+          "StartAt": "RunNutsAgent",
+          "States": {
+            "RunNutsAgent": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::ecs:runTask.sync",
+              "Parameters": {
+                "LaunchType": "FARGATE",
+                "Cluster": "${ECSCluster}",
+                "TaskDefinition": "${AgentTaskDefinition}",
+                "NetworkConfiguration": {
+                  "AwsvpcConfiguration": {
+                    "Subnets.$": "$.subnets",
+                    "SecurityGroups.$": "$.securityGroups",
+                    "AssignPublicIp": "ENABLED"
+                  }
+                },
+                "Overrides": {
+                  "ContainerOverrides": [
+                    {
+                      "Name": "agent",
+                      "Command": [
+                        "configs/astock_config_hourly.json",
+                        "--signature",
+                        "DS_pick_nuts_260119"
+                      ]
+                    }
+                  ]
+                }
+              },
+              "End": true,
+              "Retry": [
+                {
+                  "ErrorEquals": ["States.TaskFailed"],
+                  "IntervalSeconds": 60,
+                  "MaxAttempts": 2,
+                  "BackoffRate": 2.0
+                }
+              ]
+            }
+          }
+        },
+        {
+          "StartAt": "RunTechAgent",
+          "States": {
+            "RunTechAgent": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::ecs:runTask.sync",
+              "Parameters": {
+                "LaunchType": "FARGATE",
+                "Cluster": "${ECSCluster}",
+                "TaskDefinition": "${AgentTaskDefinition}",
+                "NetworkConfiguration": {
+                  "AwsvpcConfiguration": {
+                    "Subnets.$": "$.subnets",
+                    "SecurityGroups.$": "$.securityGroups",
+                    "AssignPublicIp": "ENABLED"
+                  }
+                },
+                "Overrides": {
+                  "ContainerOverrides": [
+                    {
+                      "Name": "agent",
+                      "Command": [
+                        "configs/astock_config_hourly.json",
+                        "--signature",
+                        "DS_pick_tech_260119"
+                      ]
+                    }
+                  ]
+                }
+              },
+              "End": true,
+              "Retry": [
+                {
+                  "ErrorEquals": ["States.TaskFailed"],
+                  "IntervalSeconds": 60,
+                  "MaxAttempts": 2,
+                  "BackoffRate": 2.0
+                }
+              ]
+            }
+          }
+        },
+        {
+          "StartAt": "RunMonkAgent",
+          "States": {
+            "RunMonkAgent": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::ecs:runTask.sync",
+              "Parameters": {
+                "LaunchType": "FARGATE",
+                "Cluster": "${ECSCluster}",
+                "TaskDefinition": "${AgentTaskDefinition}",
+                "NetworkConfiguration": {
+                  "AwsvpcConfiguration": {
+                    "Subnets.$": "$.subnets",
+                    "SecurityGroups.$": "$.securityGroups",
+                    "AssignPublicIp": "ENABLED"
+                  }
+                },
+                "Overrides": {
+                  "ContainerOverrides": [
+                    {
+                      "Name": "agent",
+                      "Command": [
+                        "configs/astock_config_hourly.json",
+                        "--signature",
+                        "DS_pick_monk_260119"
+                      ]
+                    }
+                  ]
+                }
+              },
+              "End": true,
+              "Retry": [
+                {
+                  "ErrorEquals": ["States.TaskFailed"],
+                  "IntervalSeconds": 60,
+                  "MaxAttempts": 2,
+                  "BackoffRate": 2.0
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "ResultPath": "$.agentResults",
+      "Next": "SendSuccessNotification",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "ResultPath": "$.error",
+          "Next": "SendFailureNotification"
+        }
+      ]
+    },
+    "SendSuccessNotification": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "${SNSTopicArn}",
+        "Subject": "✅ AI-Trader 执行成功",
+        "Message.$": "States.Format('所有交易 Agent 执行完成！\\n执行时间: {}', $$.Execution.StartTime)"
+      },
+      "End": true
+    },
+    "DataPrepFailed": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "${SNSTopicArn}",
+        "Subject": "❌ AI-Trader 数据准备失败",
+        "Message.$": "States.Format('数据准备任务失败\\n错误: {}', $.error)"
+      },
+      "Next": "Fail"
+    },
+    "SendFailureNotification": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "${SNSTopicArn}",
+        "Subject": "⚠️ AI-Trader 部分任务失败",
+        "Message.$": "States.Format('部分 Agent 执行失败\\n错误: {}', $.error)"
+      },
+      "Next": "Fail"
+    },
+    "Fail": {
+      "Type": "Fail",
+      "Error": "WorkflowFailed",
+      "Cause": "AI-Trader execution failed"
+    }
+  }
+}
