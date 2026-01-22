@@ -3,7 +3,7 @@
     "containerDefinitions": [
         {
             "name": "trader-frontend",
-            "image": "648104168728.dkr.ecr.us-west-2.amazonaws.com/shanavasa/trader-frontend@sha256:19a11d6051ab02fb1c350a2243fb7a681828be455ae1aee4e18fbd40b4f7c4b4",
+            "image": "648104168728.dkr.ecr.us-west-2.amazonaws.com/shanavasa/trader-frontend:latest",
             "cpu": 0,
             "portMappings": [
                 {
