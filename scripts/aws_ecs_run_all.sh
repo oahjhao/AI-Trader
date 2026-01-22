@@ -32,13 +32,17 @@ load_env_file
 # 配置参数 - 请根据实际环境修改
 # ============================================
 CLUSTER="${ECS_CLUSTER:-trader-cluster}"
-SUBNET="${ECS_SUBNET:-subnet-xxx}"
-SECURITY_GROUP="${ECS_SECURITY_GROUP:-sg-xxx}"
-REGION="${AWS_REGION:-us-east-1}"
+SUBNET="${ECS_SUBNET:-subnet-0307b527137ee17d9}"
+SECURITY_GROUP="${ECS_SECURITY_GROUP:-sg-097cc7fbe296ee446}"
+REGION="${AWS_REGION:-us-west-2}"
 
 # 任务定义名称（支持环境变量覆盖）
 DATA_PREP_TASK_DEF="${DATA_PREP_TASK_DEF:-trader-data-prep}"
 AGENT_TASK_DEF="${AGENT_TASK_DEF:-trader-agent}"
+
+# 容器名称（必须与任务定义中的containerDefinitions[].name一致）
+DATA_PREP_CONTAINER_NAME="trader-data-prep"
+AGENT_CONTAINER_NAME="trader-agent"
 
 # 配置文件和日期参数
 # 根据 ECS 任务定义，配置文件挂载在 /mnt/efs/configs
@@ -183,13 +187,13 @@ run_data_preparation() {
   echo_info "配置文件: $CONFIG_FILE"
   echo_info "任务定义: $DATA_PREP_TASK_DEF"
   
-  # 构建 command 参数
-  local COMMAND_JSON="[\"$CONFIG_FILE\"]"
+  # 构建环境变量覆盖（data-prep使用entryPoint，通过环境变量传递日期）
+  local ENV_OVERRIDES="[]"
   
   if [ -n "$INIT_DATE" ] && [ -n "$END_DATE" ]; then
     echo_info "运行模式: MANUAL (回测/手动同步)"
     echo_info "日期范围: $INIT_DATE 到 $END_DATE"
-    COMMAND_JSON="[\"$CONFIG_FILE\",\"$INIT_DATE\",\"$END_DATE\"]"
+    ENV_OVERRIDES="[{\"name\":\"START_DATE\",\"value\":\"$INIT_DATE\"},{\"name\":\"END_DATE\",\"value\":\"$END_DATE\"}]"
   else
     echo_info "运行模式: LIVE (实时交易)"
     echo_info "将自动获取历史数据"
@@ -202,7 +206,7 @@ run_data_preparation() {
     --launch-type FARGATE \
     --region "$REGION" \
     --network-configuration "awsvpcConfiguration={subnets=[$SUBNET],securityGroups=[$SECURITY_GROUP],assignPublicIp=ENABLED}" \
-    --overrides "{\"containerOverrides\":[{\"name\":\"data-prep\",\"command\":$COMMAND_JSON}]}" \
+    --overrides "{\"containerOverrides\":[{\"name\":\"$DATA_PREP_CONTAINER_NAME\",\"environment\":$ENV_OVERRIDES}]}" \
     --query 'tasks[0].taskArn' \
     --output text)
   
@@ -261,7 +265,7 @@ run_agent_tasks() {
       --launch-type FARGATE \
       --region "$REGION" \
       --network-configuration "awsvpcConfiguration={subnets=[$SUBNET],securityGroups=[$SECURITY_GROUP],assignPublicIp=ENABLED}" \
-      --overrides "{\"containerOverrides\":[{\"name\":\"agent\",\"command\":[\"$CONFIG_FILE\",\"--signature\",\"$SIGNATURE\"]}]}" \
+      --overrides "{\"containerOverrides\":[{\"name\":\"$AGENT_CONTAINER_NAME\",\"command\":[\"$CONFIG_FILE\",\"--signature\",\"$SIGNATURE\"]}]}" \
       --query 'tasks[0].taskArn' \
       --output text)
     
@@ -376,10 +380,10 @@ show_usage() {
 
 环境变量:
   ECS_CLUSTER            ECS 集群名称（默认: trader-cluster）
-  ECS_SUBNET             子网 ID（默认: subnet-xxx）
-  ECS_SECURITY_GROUP     安全组 ID（默认: sg-xxx）
-  AWS_REGION             AWS 区域（默认: us-east-1）
-  DATA_PREP_TASK_DEF     数据准备任务定义（默认: trader-data-preparation）
+  ECS_SUBNET             子网 ID（默认: subnet-0307b527137ee17d9）
+  ECS_SECURITY_GROUP     安全组 ID（默认: sg-097cc7fbe296ee446）
+  AWS_REGION             AWS 区域（默认: us-west-2）
+  DATA_PREP_TASK_DEF     数据准备任务定义（默认: trader-data-prep）
   AGENT_TASK_DEF         Agent 任务定义（默认: trader-agent）
 
 注意:
