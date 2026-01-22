@@ -25,6 +25,10 @@ class SignatureLock:
         self.acquired = False
 
     def acquire(self) -> None:
+        """Acquire the lock file (atomic file creation).
+        If the lock already exists, check if it's stale (older than 2 hours).
+        If stale, force remove it and try again.
+        """
         self.lock_path.parent.mkdir(parents=True, exist_ok=True)
         info = {
             "pid": os.getpid(),
@@ -38,11 +42,40 @@ class SignatureLock:
             finally:
                 os.close(fd)
         except FileExistsError:
-            print(
-                f"❌ Another run is already in progress for {self.lock_path.parent.name}. "
-                "Refusing to start to avoid concurrent position writes."
-            )
-            raise SystemExit(1)
+            # Lock file exists, check if it's stale
+            try:
+                import time
+                lock_age_seconds = time.time() - self.lock_path.stat().st_mtime
+                lock_age_hours = lock_age_seconds / 3600
+                
+                if lock_age_hours > 2:  # Stale lock older than 2 hours
+                    print(f"⚠️  Found stale lock file (age: {lock_age_hours:.1f} hours), removing...")
+                    self.lock_path.unlink()
+                    print("✅ Stale lock removed, retrying...")
+                    # Retry acquiring the lock
+                    fd = os.open(self.lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+                    try:
+                        os.write(fd, data)
+                    finally:
+                        os.close(fd)
+                else:
+                    print(
+                        f"❌ Another run is already in progress for {self.lock_path.parent.name}. "
+                        f"Lock age: {lock_age_hours:.1f} hours. "
+                        "Refusing to start to avoid concurrent position writes."
+                    )
+                    # 使用RuntimeError而不是SystemExit，让调用者能够在finally中清理
+                    raise RuntimeError(
+                        f"Lock file already exists for {self.lock_path.parent.name}"
+                    )
+            except FileNotFoundError:
+                # Lock was removed between check and stat, retry
+                print("♻️  Lock file disappeared, retrying...")
+                fd = os.open(self.lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+                try:
+                    os.write(fd, data)
+                finally:
+                    os.close(fd)
         self.acquired = True
 
     def release(self) -> None:
