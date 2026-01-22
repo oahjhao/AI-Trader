@@ -4,6 +4,18 @@
 
 set -e
 
+# Load environment variables from .env file if it exists
+if [ -f ".env" ]; then
+    echo "📦 Loading environment variables from .env file..."
+    # Export variables from .env, ignoring comments and empty lines
+    set -a
+    source .env
+    set +a
+    echo "✅ Environment variables loaded from .env file"
+else
+    echo "⚠️  .env file not found, using existing environment variables"
+fi
+
 # Extract signature from command line arguments
 # Typically the command is: configs/xxx.json --signature YOUR_SIGNATURE
 for i in "$@"; do
