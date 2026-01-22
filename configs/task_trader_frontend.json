@@ -32,7 +32,7 @@
                 {
                     "sourceVolume": "efs-configs",
                     "containerPath": "/mnt/efs/configs",
-                    "readOnly": true
+                    "readOnly": false
                 },
                 {
                     "sourceVolume": "efs-logs",
