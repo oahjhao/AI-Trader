@@ -1,0 +1,173 @@
+{
+    "taskDefinition": {
+        "taskDefinitionArn": "arn:aws:ecs:us-west-2:648104168728:task-definition/trader-data-prep:1",
+        "containerDefinitions": [
+            {
+                "name": "trader-data-prep",
+                "image": "648104168728.dkr.ecr.us-west-2.amazonaws.com/shanavasa/trader-app:latest",
+                "cpu": 0,
+                "portMappings": [
+                    {
+                        "containerPort": 80,
+                        "hostPort": 80,
+                        "protocol": "tcp",
+                        "name": "agent-base-80-tcp",
+                        "appProtocol": "http"
+                    }
+                ],
+                "essential": true,
+                "entryPoint": [
+                    "bash",
+                    "scripts/data_preparation_entrypoint.sh",
+                    "configs/astock_config_hourly.json"
+                ],
+                "environment": [
+                    {
+                        "name": "TZ",
+                        "value": "Asia/Shanghai"
+                    },
+                    {
+                        "name": "START_DATE",
+                        "value": ""
+                    },
+                    {
+                        "name": "END_DATE",
+                        "value": ""
+                    }
+                ],
+                "environmentFiles": [],
+                "mountPoints": [
+                    {
+                        "sourceVolume": "efs-configs",
+                        "containerPath": "/home/ec2-user/AI-Trader/configs",
+                        "readOnly": false
+                    },
+                    {
+                        "sourceVolume": "efs-data",
+                        "containerPath": "/home/ec2-user/AI-Trader/data",
+                        "readOnly": false
+                    },
+                    {
+                        "sourceVolume": "efs-logs",
+                        "containerPath": "/home/ec2-user/AI-Trader/logs",
+                        "readOnly": false
+                    },
+                    {
+                        "sourceVolume": "efs-docs",
+                        "containerPath": "/home/ec2-user/AI-Trader/docs",
+                        "readOnly": false
+                    }
+                ],
+                "volumesFrom": [],
+                "ulimits": [],
+                "logConfiguration": {
+                    "logDriver": "awslogs",
+                    "options": {
+                        "awslogs-group": "/ecs/trader-app",
+                        "awslogs-create-group": "true",
+                        "awslogs-region": "us-west-2",
+                        "awslogs-stream-prefix": "ecs"
+                    },
+                    "secretOptions": []
+                },
+                "systemControls": []
+            }
+        ],
+        "family": "trader-data-prep",
+        "taskRoleArn": "arn:aws:iam::648104168728:role/ecsTaskExecutionRole",
+        "executionRoleArn": "arn:aws:iam::648104168728:role/ecsTaskExecutionRole",
+        "networkMode": "awsvpc",
+        "revision": 1,
+        "volumes": [
+            {
+                "name": "efs-configs",
+                "efsVolumeConfiguration": {
+                    "fileSystemId": "fs-0b84c5c74e468c34b",
+                    "rootDirectory": "/ai-trader/configs"
+                }
+            },
+            {
+                "name": "efs-data",
+                "efsVolumeConfiguration": {
+                    "fileSystemId": "fs-0b84c5c74e468c34b",
+                    "rootDirectory": "/ai-trader/data"
+                }
+            },
+            {
+                "name": "efs-logs",
+                "efsVolumeConfiguration": {
+                    "fileSystemId": "fs-0b84c5c74e468c34b",
+                    "rootDirectory": "/ai-trader/logs"
+                }
+            },
+            {
+                "name": "efs-docs",
+                "efsVolumeConfiguration": {
+                    "fileSystemId": "fs-0b84c5c74e468c34b",
+                    "rootDirectory": "/ai-trader/docs"
+                }
+            }
+        ],
+        "status": "ACTIVE",
+        "requiresAttributes": [
+            {
+                "name": "ecs.capability.execution-role-awslogs"
+            },
+            {
+                "name": "com.amazonaws.ecs.capability.ecr-auth"
+            },
+            {
+                "name": "com.amazonaws.ecs.capability.docker-remote-api.1.21"
+            },
+            {
+                "name": "com.amazonaws.ecs.capability.task-iam-role"
+            },
+            {
+                "name": "ecs.capability.execution-role-ecr-pull"
+            },
+            {
+                "name": "com.amazonaws.ecs.capability.docker-remote-api.1.18"
+            },
+            {
+                "name": "ecs.capability.task-eni"
+            },
+            {
+                "name": "com.amazonaws.ecs.capability.docker-remote-api.1.29"
+            },
+            {
+                "name": "com.amazonaws.ecs.capability.logging-driver.awslogs"
+            },
+            {
+                "name": "ecs.capability.efsAuth"
+            },
+            {
+                "name": "com.amazonaws.ecs.capability.docker-remote-api.1.19"
+            },
+            {
+                "name": "ecs.capability.efs"
+            },
+            {
+                "name": "com.amazonaws.ecs.capability.docker-remote-api.1.25"
+            }
+        ],
+        "placementConstraints": [],
+        "compatibilities": [
+            "EC2",
+            "MANAGED_INSTANCES",
+            "FARGATE"
+        ],
+        "runtimePlatform": {
+            "cpuArchitecture": "X86_64",
+            "operatingSystemFamily": "LINUX"
+        },
+        "requiresCompatibilities": [
+            "FARGATE"
+        ],
+        "cpu": "1024",
+        "memory": "2048",
+        "registeredAt": "2026-01-22T14:06:10.611000+08:00",
+        "registeredBy": "arn:aws:iam::648104168728:root",
+        "enableFaultInjection": false
+    },
+    "tags": []
+}

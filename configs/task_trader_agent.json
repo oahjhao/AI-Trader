@@ -1,0 +1,163 @@
+{
+    "taskDefinition": {
+        "taskDefinitionArn": "arn:aws:ecs:us-west-2:648104168728:task-definition/trader-agent:1",
+        "containerDefinitions": [
+            {
+                "name": "trader-agent",
+                "image": "648104168728.dkr.ecr.us-west-2.amazonaws.com/shanavasa/trader-app:latest",
+                "cpu": 0,
+                "portMappings": [],
+                "essential": true,
+                "entryPoint": [
+                    "bash",
+                    "scripts/container_entrypoint.sh"
+                ],
+                "environment": [
+                    {
+                        "name": "TZ",
+                        "value": "Asia/Shanghai"
+                    },
+                    {
+                        "name": "OPENAI_API_KEY",
+                        "value": ""
+                    },
+                    {
+                        "name": "OPENAI_API_BASE",
+                        "value": ""
+                    },
+                    {
+                        "name": "DINGTALK_WEBHOOK_URL",
+                        "value": ""
+                    },
+                    {
+                        "name": "DINGTALK_SECRET",
+                        "value": ""
+                    },
+                    {
+                        "name": "RUNTIME_ENV_PATH",
+                        "value": "/home/ec2-user/AI-Trader/data/.runtime_env.json"
+                    }
+                ],
+                "environmentFiles": [],
+                "mountPoints": [
+                    {
+                        "sourceVolume": "efs-configs",
+                        "containerPath": "/home/ec2-user/AI-Trader/configs",
+                        "readOnly": false
+                    },
+                    {
+                        "sourceVolume": "efs-data",
+                        "containerPath": "/home/ec2-user/AI-Trader/data",
+                        "readOnly": false
+                    },
+                    {
+                        "sourceVolume": "efs-logs",
+                        "containerPath": "/home/ec2-user/AI-Trader/logs",
+                        "readOnly": false
+                    },
+                    {
+                        "sourceVolume": "efs-docs",
+                        "containerPath": "/home/ec2-user/AI-Trader/docs",
+                        "readOnly": false
+                    }
+                ],
+                "volumesFrom": [],
+                "logConfiguration": {
+                    "logDriver": "awslogs",
+                    "options": {
+                        "awslogs-group": "/ecs/trader-app",
+                        "awslogs-create-group": "true",
+                        "awslogs-region": "us-west-2",
+                        "awslogs-stream-prefix": "ecs"
+                    },
+                    "secretOptions": []
+                },
+                "systemControls": []
+            }
+        ],
+        "family": "trader-agent",
+        "taskRoleArn": "arn:aws:iam::648104168728:role/ecsTaskExecutionRole",
+        "executionRoleArn": "arn:aws:iam::648104168728:role/ecsTaskExecutionRole",
+        "networkMode": "awsvpc",
+        "revision": 1,
+        "volumes": [
+            {
+                "name": "efs-configs",
+                "efsVolumeConfiguration": {
+                    "fileSystemId": "fs-0b84c5c74e468c34b",
+                    "rootDirectory": "/ai-trader/configs"
+                }
+            },
+            {
+                "name": "efs-data",
+                "efsVolumeConfiguration": {
+                    "fileSystemId": "fs-0b84c5c74e468c34b",
+                    "rootDirectory": "/ai-trader/data"
+                }
+            },
+            {
+                "name": "efs-logs",
+                "efsVolumeConfiguration": {
+                    "fileSystemId": "fs-0b84c5c74e468c34b",
+                    "rootDirectory": "/ai-trader/logs"
+                }
+            },
+            {
+                "name": "efs-docs",
+                "efsVolumeConfiguration": {
+                    "fileSystemId": "fs-0b84c5c74e468c34b",
+                    "rootDirectory": "/ai-trader/docs"
+                }
+            }
+        ],
+        "status": "ACTIVE",
+        "requiresAttributes": [
+            {
+                "name": "ecs.capability.efsAuth"
+            },
+            {
+                "name": "com.amazonaws.ecs.capability.ecr-auth"
+            },
+            {
+                "name": "ecs.capability.efs"
+            },
+            {
+                "name": "com.amazonaws.ecs.capability.docker-remote-api.1.21"
+            },
+            {
+                "name": "com.amazonaws.ecs.capability.task-iam-role"
+            },
+            {
+                "name": "com.amazonaws.ecs.capability.docker-remote-api.1.25"
+            },
+            {
+                "name": "ecs.capability.execution-role-ecr-pull"
+            },
+            {
+                "name": "com.amazonaws.ecs.capability.docker-remote-api.1.18"
+            },
+            {
+                "name": "ecs.capability.task-eni"
+            }
+        ],
+        "placementConstraints": [],
+        "compatibilities": [
+            "EC2",
+            "FARGATE",
+            "MANAGED_INSTANCES"
+        ],
+        "runtimePlatform": {
+            "cpuArchitecture": "X86_64",
+            "operatingSystemFamily": "LINUX"
+        },
+        "requiresCompatibilities": [
+            "FARGATE"
+        ],
+        "cpu": "1024",
+        "memory": "2048",
+        "registeredAt": "2026-01-22T15:42:46.102000+08:00",
+        "registeredBy": "arn:aws:iam::648104168728:root",
+        "enableFaultInjection": false
+    },
+    "tags": []
+}
