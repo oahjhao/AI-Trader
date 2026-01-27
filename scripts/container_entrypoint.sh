@@ -64,6 +64,7 @@ while ! (exec 3<>/dev/tcp/localhost/8000) 2>/dev/null; do
     sleep 2
 done
 echo "✅ MCP services are up and running"
+sleep 10
 
 # 3. Execute the requested command (usually the runner)
 echo "🤖 Executing trader runner with arguments: $@"
