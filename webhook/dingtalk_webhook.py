@@ -491,7 +491,7 @@ def send_agent_start_notification(signature: str, market: str, init_date: str, e
             f"📊 股票数量: {stock_count}  \n\n",
             f"📅 回测日期: {init_date} ~ {end_date}  \n\n",
             "  \n\n",
-            "✅ Agent 已成功初始化，开始回测...  \n\n"
+            "✅ Agent 已成功初始化，开始交易...  \n\n"
         ])
         
         message_content = "".join(message_lines)

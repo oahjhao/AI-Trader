@@ -111,6 +111,34 @@ fi
 INIT_DATE=${ARGS[1]:-""}
 END_DATE=${ARGS[2]:-""}
 
+# 自动检测 backtest 模式：如果未提供日期参数，从配置文件读取
+# 当配置文件的 end_date 在过去时，自动使用配置中的日期（BACKTEST 模式）
+if [ -z "$INIT_DATE" ] && [ -z "$END_DATE" ]; then
+  # 尝试多个路径读取配置文件
+  _cfg_path="$CONFIG_FILE"
+  if [ ! -f "$_cfg_path" ]; then
+    _cfg_path="/mnt/efs/ai-trader/$CONFIG_FILE"
+  fi
+  
+  if [ -f "$_cfg_path" ] && command -v jq &> /dev/null; then
+    _cfg_init=$(jq -r '.date_range.init_date // empty' "$_cfg_path" 2>/dev/null)
+    _cfg_end=$(jq -r '.date_range.end_date // empty' "$_cfg_path" 2>/dev/null)
+    
+    if [ -n "$_cfg_init" ] && [ -n "$_cfg_end" ]; then
+      # 提取日期部分（去掉可能的时间后缀）用于比较
+      _end_date_only=$(echo "$_cfg_end" | cut -d' ' -f1)
+      _today=$(date +%Y-%m-%d)
+      
+      if [[ "$_end_date_only" < "$_today" ]]; then
+        INIT_DATE="$_cfg_init"
+        END_DATE="$_cfg_end"
+        echo "[INFO] 📅 自动检测到回测模式 (end_date=$_cfg_end 在过去)"
+        echo "[INFO] 📅 使用配置文件日期: $INIT_DATE ~ $END_DATE"
+      fi
+    fi
+  fi
+fi
+
 # Agent Signature 列表将从配置文件动态读取
 SIGNATURES=()
 

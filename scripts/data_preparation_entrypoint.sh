@@ -14,15 +14,8 @@ echo "📊 Starting A-stock data preparation (agent-base)..."
 CONFIG_FILE="$1"
 INIT_DATE_ARG="$2"
 END_DATE_ARG="$3"
+BASE_DIR="/home/ec2-user/AI-Trader"
 
-# 路径自适配：检测 EFS 挂载
-if [ -d "/mnt/efs/ai-trader/data" ]; then
-    BASE_DIR="/mnt/efs/ai-trader"
-    echo "📂 检测到 EFS 挂载，使用: $BASE_DIR"
-else
-    BASE_DIR="/home/ec2-user/AI-Trader"
-    echo "📂 未检测到 EFS，使用本地: $BASE_DIR"
-fi
 
 # 提取日期后缀（从 CONFIG_FILE 的 init_date 提取）
 DATE_SUFFIX=""
