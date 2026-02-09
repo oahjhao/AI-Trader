@@ -381,17 +381,34 @@ class BaseAgentCrypto:
     async def _handle_trading_result(self, today_date: str) -> None:
         """Handle trading results"""
         if_trade = get_config_value("IF_TRADE")
-        if if_trade:
-            write_config_value("IF_TRADE", False)
+        no_trade_called = get_config_value("NO_TRADE_CALLED")
+        
+        if if_trade and not no_trade_called:
+            # 有实际买卖交易
             print("✅ Crypto trading completed")
         else:
+            # 无实际交易（包括 AI 显式调用 no_trade 或未做任何操作）
             print("📊 No trading, maintaining positions")
             try:
                 add_no_trade_record(today_date, self.signature)
             except NameError as e:
                 print(f"❌ NameError: {e}")
                 raise
-            write_config_value("IF_TRADE", False)
+        
+        # 统一发送仓位报告（每个 trading session 结束时）
+        try:
+            from webhook.dingtalk_webhook import send_session_position_report
+            send_session_position_report(
+                signature=self.signature,
+                today_date=today_date,
+                market="crypto"
+            )
+        except Exception as e:
+            print(f"⚠️ 发送仓位报告失败: {e}")
+        
+        # 重置标志
+        write_config_value("IF_TRADE", False)
+        write_config_value("NO_TRADE_CALLED", False)
 
     def register_agent(self) -> None:
         """Register new agent, create initial positions"""

@@ -95,7 +95,7 @@ from prompts.agent_prompt_astock import (STOP_SIGNAL,
                                          get_agent_system_prompt_astock)
 from tools.general_tools import (extract_conversation, extract_tool_messages,
                                  get_config_value, write_config_value)
-from tools.price_tools import add_no_trade_record
+from tools.price_tools import add_no_trade_record, load_stock_list
 
 # Load environment variables
 load_dotenv()
@@ -208,10 +208,17 @@ class BaseAgentAStock:
         self.basemodel = basemodel
         self.market = "cn"  # 硬编码为A股市场
         self.backtest_mode = backtest_mode  # 保存回测模式标志
+        self.init_date = init_date  # 保存 init_date 用于加载带日期后缀的文件
 
-        # 默认使用上证50成分股
+        # 默认使用上证50成分股，根据 init_date 自动选择带日期后缀的股票列表
         if stock_symbols is None:
-            self.stock_symbols = self.DEFAULT_SSE50_SYMBOLS
+            try:
+                # 尝试从带日期后缀的文件加载
+                self.stock_symbols = load_stock_list(init_date=init_date)
+            except FileNotFoundError:
+                # 如果没有对应的文件，回退到默认列表
+                print("⚠️  无法加载股票列表，使用默认SSE50成分股")
+                self.stock_symbols = self.DEFAULT_SSE50_SYMBOLS
         else:
             self.stock_symbols = stock_symbols
 
@@ -438,17 +445,34 @@ class BaseAgentAStock:
     async def _handle_trading_result(self, today_date: str) -> None:
         """Handle trading results"""
         if_trade = get_config_value("IF_TRADE")
-        if if_trade:
-            write_config_value("IF_TRADE", False)
+        no_trade_called = get_config_value("NO_TRADE_CALLED")
+        
+        if if_trade and not no_trade_called:
+            # 有实际买卖交易
             print("✅ Trading completed")
         else:
+            # 无实际交易（包括 AI 显式调用 no_trade 或未做任何操作）
             print("📊 No trading, maintaining positions")
             try:
                 add_no_trade_record(today_date, self.signature)
             except NameError as e:
                 print(f"❌ NameError: {e}")
                 raise
-            write_config_value("IF_TRADE", False)
+        
+        # 统一发送仓位报告（每个 trading session 结束时）
+        try:
+            from webhook.dingtalk_webhook import send_session_position_report
+            send_session_position_report(
+                signature=self.signature,
+                today_date=today_date,
+                market=self.market
+            )
+        except Exception as e:
+            print(f"⚠️ 发送仓位报告失败: {e}")
+        
+        # 重置标志
+        write_config_value("IF_TRADE", False)
+        write_config_value("NO_TRADE_CALLED", False)
 
     def register_agent(self) -> None:
         """Register new agent, create initial positions"""

@@ -35,21 +35,48 @@ def _workspace_data_path(filename: str, symbol: Optional[str] = None) -> Path:
                 If symbol ends with -USDT, use crypto data path.
 
     Returns:
-        Path to the data file
+        Path to the data file (with date suffix if DATE_SUFFIX environment variable is set)
     """
+    import os
+    
+    # Try to get date suffix from environment
+    date_suffix = os.getenv("DATE_SUFFIX")
+    
+    # Add date suffix to filename if available
+    if date_suffix and filename.endswith('.jsonl'):
+        base_name = filename[:-6]  # Remove .jsonl
+        filename = f"{base_name}_{date_suffix}.jsonl"
+    
     base_dir = Path(__file__).resolve().parents[1]
 
     # Auto-detect market type from symbol
     if symbol and (symbol.endswith(".SH") or symbol.endswith(".SZ")):
         # Chinese A-shares
-        return base_dir / "data" / "A_stock" / filename
+        base_path = base_dir / "data" / "A_stock"
+        # Check for EFS mount
+        efs_path = Path("/mnt/efs/ai-trader/data/A_stock")
+        if efs_path.exists():
+            base_path = efs_path
+        return base_path / filename
     elif symbol and symbol.endswith("-USDT"):
         # Cryptocurrencies
+        base_path = base_dir / "data" / "crypto"
+        efs_path = Path("/mnt/efs/ai-trader/data/crypto")
+        if efs_path.exists():
+            base_path = efs_path
+        
         crypto_filename = "crypto_merged.jsonl" if filename == "merged.jsonl" else filename
-        return base_dir / "data" / "crypto" / crypto_filename
+        if date_suffix and crypto_filename.endswith('.jsonl'):
+            base_name = crypto_filename[:-6]
+            crypto_filename = f"{base_name}_{date_suffix}.jsonl"
+        return base_path / crypto_filename
     else:
         # US stocks (default)
-        return base_dir / "data" / filename
+        base_path = base_dir / "data"
+        efs_path = Path("/mnt/efs/ai-trader/data")
+        if efs_path.exists():
+            base_path = efs_path
+        return base_path / filename
 
 
 def _validate_date_daily(date_str: str) -> None:

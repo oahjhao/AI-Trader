@@ -28,6 +28,19 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy project code
 COPY . .
 
+# Copy .env from EFS mount directory (if exists)
+# Build argument for flexible .env path
+ARG ENV_FILE_PATH=/mnt/efs/ai-trader/.env
+RUN if [ -f "$ENV_FILE_PATH" ]; then \
+      echo "📁 Copying .env from $ENV_FILE_PATH"; \
+      cp "$ENV_FILE_PATH" /.env; \
+    elif [ -f ".env" ]; then \
+      echo "📁 Using local .env file"; \
+      cp .env /.env; \
+    else \
+      echo "⚠️ No .env file found, container will use environment variables"; \
+    fi
+
 # Optional: pre-download NLTK data used by Jina search summarizer
 # (if this step fails due to network limits, you can comment it out and
 #  run scripts/install_nltk_resources.py at container startup instead.)

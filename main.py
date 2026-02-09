@@ -62,6 +62,26 @@ async def main(config_path=None):
         END_DATE = os.getenv("END_DATE")
         print(f"⚠️  Using environment variable to override END_DATE: {END_DATE}")
 
+    # Extract date suffix from config file name or init_date
+    # Priority: config filename > init_date
+    date_suffix = None
+    if config_path:
+        # Extract from config filename (e.g., astock_config_daily_20250815.json -> 20250815)
+        config_filename = Path(config_path).stem
+        import re
+        match = re.search(r'_(\d{8})$', config_filename)
+        if match:
+            date_suffix = match.group(1)
+    
+    if not date_suffix:
+        # Extract from init_date (YYYY-MM-DD -> YYYYMMDD)
+        date_only = INIT_DATE.split()[0] if ' ' in INIT_DATE else INIT_DATE
+        date_suffix = date_only.replace('-', '').replace(':', '')[:8]
+    
+    if date_suffix:
+        os.environ["DATE_SUFFIX"] = date_suffix
+        print(f"📅 Using date suffix for data isolation: {date_suffix}")
+
     # Validate date range
     # Support both YYYY-MM-DD and YYYY-MM-DD HH:MM:SS formats
     if ' ' in INIT_DATE:

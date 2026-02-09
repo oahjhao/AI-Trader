@@ -440,6 +440,201 @@ def send_no_trade_notification(signature: str, today_date: str, positions: Dict[
         print(f"❌ 发送无交易推送时出错: {e}")
 
 
+def send_agent_start_notification(signature: str, market: str, init_date: str, end_date: str, stock_count: int, basemodel: str = None):
+    """
+    发送 Agent 启动通知
+    
+    Args:
+        signature: 模型签名
+        market: 市场类型 (cn/us/crypto)
+        init_date: 回测开始日期
+        end_date: 回测结束日期
+        stock_count: 股票数量
+        basemodel: 基础模型名称
+    """
+    try:
+        # 从环境变量获取推送配置
+        webhook_url = os.getenv("DINGTALK_WEBHOOK_URL") or os.getenv("WEBHOOK_URL")
+        secret = os.getenv("DINGTALK_SECRET")
+        
+        if not webhook_url:
+            print("⚠️ 未配置 Webhook URL，跳过推送")
+            return
+        
+        # 如果 secret 是占位符，忽略它
+        if secret and (secret == "YOUR_SECRET_KEY" or secret.startswith("YOUR_")):
+            secret = None
+            print("ℹ️ 检测到占位符密钥，使用无签名模式")
+        
+        # 创建推送器
+        dingtalk = DingTalkWebhook(webhook_url, secret)
+        
+        # 市场名称映射
+        market_names = {
+            "cn": "A股市场",
+            "us": "美股市场",
+            "crypto": "加密货币市场"
+        }
+        market_display = market_names.get(market, market)
+        
+        # 构建消息
+        message_lines = [
+            f"🚀 **Agent 启动通知**  \n\n",
+            f"📝 Agent: {signature}  \n\n",
+        ]
+        
+        if basemodel:
+            message_lines.append(f"🔧 模型: {basemodel}  \n\n")
+        
+        message_lines.extend([
+            f"🌍 市场: {market_display}  \n\n",
+            f"📊 股票数量: {stock_count}  \n\n",
+            f"📅 回测日期: {init_date} ~ {end_date}  \n\n",
+            "  \n\n",
+            "✅ Agent 已成功初始化，开始回测...  \n\n"
+        ])
+        
+        message_content = "".join(message_lines)
+        
+        # 发送推送
+        success = dingtalk.send_message(message_content, msg_type="markdown")
+        if success:
+            print(f"✅ Agent 启动通知发送成功: {signature}")
+        else:
+            print(f"❌ Agent 启动通知发送失败: {signature}")
+            
+    except Exception as e:
+        print(f"❌ 发送 Agent 启动通知时出错: {e}")
+
+
+def send_session_position_report(signature: str, today_date: str, market: str = "cn"):
+    """
+    发送 trading session 结束时的仓位报告（daily/hourly 统一格式）
+    
+    Args:
+        signature: 模型签名
+        today_date: 交易日期/时间
+        market: 市场类型 (cn/us/crypto)
+    """
+    try:
+        # 从环境变量获取推送配置
+        webhook_url = os.getenv("DINGTALK_WEBHOOK_URL") or os.getenv("WEBHOOK_URL")
+        secret = os.getenv("DINGTALK_SECRET")
+        
+        if not webhook_url:
+            return
+        
+        # 如果 secret 是占位符，忽略它
+        if secret and (secret == "YOUR_SECRET_KEY" or secret.startswith("YOUR_")):
+            secret = None
+        
+        # 创建推送器
+        dingtalk = DingTalkWebhook(webhook_url, secret)
+        
+        # 根据 market 确定数据路径
+        if market == "crypto":
+            base_data_path = Path("/home/ec2-user/AI-Trader/data/agent_data_crypto")
+        elif market == "us":
+            base_data_path = Path("/home/ec2-user/AI-Trader/data/agent_data")
+        else:
+            base_data_path = Path("/home/ec2-user/AI-Trader/data/agent_data_astock")
+        
+        position_file = base_data_path / signature / "position" / "position.jsonl"
+        
+        if not position_file.exists():
+            print(f"⚠️ 持仓文件不存在: {position_file}")
+            return
+        
+        # 读取最新持仓
+        latest_position = None
+        try:
+            with open(position_file, "r", encoding="utf-8") as f:
+                for line in f:
+                    if line.strip():
+                        try:
+                            latest_position = json.loads(line)
+                        except json.JSONDecodeError:
+                            continue
+        except Exception as e:
+            print(f"❌ 读取持仓文件失败: {e}")
+            return
+        
+        if not latest_position:
+            print("⚠️ 未找到持仓数据")
+            return
+        
+        positions = latest_position.get("positions", {})
+        cash_balance = positions.get("CASH", 0)
+        last_action = latest_position.get("this_action", {})
+        action_type = last_action.get("action", "init")
+        
+        # 市场名称和货币符号
+        market_names = {"cn": "A股", "us": "美股", "crypto": "加密货币"}
+        currency_symbols = {"cn": "¥", "us": "$", "crypto": "USDT"}
+        market_display = market_names.get(market, market)
+        currency = currency_symbols.get(market, "$")
+        
+        # 操作标记
+        action_icons = {"buy": "🟢买入", "sell": "🔴卖出", "no_trade": "⚪持仓", "init": "🟡初始"}
+        action_display = action_icons.get(action_type, "❓" + action_type)
+        
+        # 构建统一消息
+        message_lines = [
+            f"📊 **{signature} 仓位报告**  \n\n",
+            f"📅 时间: {today_date}  \n\n",
+            f"🌍 市场: {market_display}  \n\n",
+            f"🎯 操作: {action_display}  \n\n",
+        ]
+        
+        # 如果有买卖操作，显示详情
+        if action_type in ("buy", "sell") and last_action.get("symbol"):
+            symbol = last_action["symbol"]
+            amount = last_action.get("amount", 0)
+            # 尝试获取中文名
+            try:
+                reporter = PositionReporter()
+                display_name = reporter._get_stock_display_name(symbol) if market == "cn" else symbol
+            except:
+                display_name = symbol
+            message_lines.append(f"📌 {action_type.upper()}: {display_name} x {amount:,}  \n\n")
+        
+        message_lines.append(f"💰 现金: {currency}{cash_balance:,.2f}  \n\n")
+        
+        # 持仓信息（仅显示非零持仓）
+        holdings = {k: v for k, v in positions.items() if k != "CASH" and v > 0}
+        if holdings:
+            message_lines.append("📦 持仓:  \n\n")
+            try:
+                reporter = PositionReporter()
+            except:
+                reporter = None
+            for symbol, amount in sorted(holdings.items()):
+                if market == "cn" and reporter:
+                    display_name = reporter._get_stock_display_name(symbol)
+                else:
+                    display_name = symbol
+                message_lines.append(f"  • {display_name}: {amount:,}  \n\n")
+        else:
+            message_lines.append("📦 当前无持仓  \n\n")
+        
+        message_content = "".join(message_lines)
+        
+        # 发送推送
+        success = dingtalk.send_message(message_content, msg_type="markdown")
+        if success:
+            print(f"✅ 仓位报告发送成功: {signature} - {today_date}")
+        else:
+            print(f"❌ 仓位报告发送失败: {signature}")
+            
+    except Exception as e:
+        print(f"❌ 发送仓位报告时出错: {e}")
+
+
+def send_trading_complete_notification(signature: str, today_date: str, had_trade: bool, market: str = "cn"):
+    """已废弃，请使用 send_session_position_report"""
+    send_session_position_report(signature=signature, today_date=today_date, market=market)
+
+
 def main():
     """主函数 - 立即推送示例"""
     # 从环境变量读取配置

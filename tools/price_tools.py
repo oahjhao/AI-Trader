@@ -211,9 +211,54 @@ all_spif_symbols = [
     "300274.SZ",
 ]
 
-def load_stock_list() -> List[str]:
-    stock_list_path = Path("/home/ec2-user/AI-Trader/data/A_stock/sse_pick.csv")
-
+def load_stock_list(init_date: Optional[str] = None, base_dir: Optional[str] = None) -> List[str]:
+    """加载股票列表
+    
+    根据 init_date 自动选择带日期后缀的股票列表文件。
+    优先级：sse_pick_YYYYMMDD.csv > sse_pick.csv
+    
+    Args:
+        init_date: 初始日期（格式：YYYY-MM-DD 或 YYYY-MM-DD HH:MM:SS），
+                   用于生成日期后缀 YYYYMMDD
+        base_dir: 基础目录，默认自动检测 EFS 或本地路径
+    
+    Returns:
+        List[str]: 股票代码列表
+    """
+    import os
+    
+    # 路径自适配：检测 EFS 挂载或使用本地路径
+    if base_dir is None:
+        if Path("/mnt/efs/ai-trader/data/A_stock").exists():
+            base_dir = "/mnt/efs/ai-trader/data/A_stock"
+        else:
+            base_dir = "/home/ec2-user/AI-Trader/data/A_stock"
+    
+    base_path = Path(base_dir)
+    
+    # 构建文件路径
+    date_suffix = None
+    
+    # 优先从环境变量读取 DATE_SUFFIX
+    if os.getenv("DATE_SUFFIX"):
+        date_suffix = os.getenv("DATE_SUFFIX")
+        print(f"📅 从环境变量读取 DATE_SUFFIX: {date_suffix}")
+    elif init_date:
+        # 提取日期部分并转换为 YYYYMMDD 格式
+        date_only = init_date.split()[0] if ' ' in init_date else init_date
+        date_suffix = date_only.replace('-', '').replace(':', '')[:8]
+        print(f"📅 从 init_date 提取 DATE_SUFFIX: {date_suffix}")
+    
+    if date_suffix:
+        stock_list_path = base_path / f"sse_pick_{date_suffix}.csv"
+        
+        # 如果带后缀的文件不存在，回退到默认文件
+        if not stock_list_path.exists():
+            print(f"⚠️  文件 {stock_list_path} 不存在，回退到默认文件")
+            stock_list_path = base_path / "sse_pick.csv"
+    else:
+        stock_list_path = base_path / "sse_pick.csv"
+    
     if not stock_list_path.exists():
         raise FileNotFoundError(f"股票列表文件不存在: {stock_list_path}")
     
@@ -234,22 +279,70 @@ def load_stock_list() -> List[str]:
     
     return stock_list
 
-def get_merged_file_path(market: str = "us") -> Path:
+def _to_hourly_merged_path(merged_file: Path) -> Path:
+    """Convert daily merged file path to hourly merged file path.
+    
+    merged_20260202.jsonl -> merged_hourly_20260202.jsonl
+    merged.jsonl -> merged_hourly.jsonl
+    crypto_merged_20260202.jsonl -> crypto_merged_hourly_20260202.jsonl
+    """
+    hourly_name = merged_file.name.replace('merged', 'merged_hourly', 1)
+    return merged_file.with_name(hourly_name)
+
+
+def get_merged_file_path(market: str = "us", date_suffix: Optional[str] = None) -> Path:
     """Get merged.jsonl path based on market type.
 
     Args:
         market: Market type, "us" for US stocks, "cn" for A-shares, "crypto" for cryptocurrencies
+        date_suffix: Optional date suffix (YYYYMMDD format) for data isolation.
+                     If not provided, will try to read from DATE_SUFFIX environment variable.
 
     Returns:
-        Path object pointing to the merged.jsonl file
+        Path object pointing to the merged.jsonl file (with date suffix if applicable)
     """
+    import os
+    
+    # Try to get date suffix from environment if not provided
+    if date_suffix is None:
+        date_suffix = os.getenv("DATE_SUFFIX")
+    
     base_dir = Path(__file__).resolve().parents[1]
+    
     if market == "cn":
-        return base_dir / "data" / "A_stock" / "merged.jsonl"
+        base_path = base_dir / "data" / "A_stock"
+        # Check for EFS mount
+        efs_path = Path("/mnt/efs/ai-trader/data/A_stock")
+        if efs_path.exists():
+            base_path = efs_path
+        
+        if date_suffix:
+            filename = f"merged_{date_suffix}.jsonl"
+        else:
+            filename = "merged.jsonl"
+        return base_path / filename
     elif market == "crypto":
-        return base_dir / "data" / "crypto" / "crypto_merged.jsonl"
+        base_path = base_dir / "data" / "crypto"
+        efs_path = Path("/mnt/efs/ai-trader/data/crypto")
+        if efs_path.exists():
+            base_path = efs_path
+        
+        if date_suffix:
+            filename = f"crypto_merged_{date_suffix}.jsonl"
+        else:
+            filename = "crypto_merged.jsonl"
+        return base_path / filename
     else:
-        return base_dir / "data" / "merged.jsonl"
+        base_path = base_dir / "data"
+        efs_path = Path("/mnt/efs/ai-trader/data")
+        if efs_path.exists():
+            base_path = efs_path
+        
+        if date_suffix:
+            filename = f"merged_{date_suffix}.jsonl"
+        else:
+            filename = "merged.jsonl"
+        return base_path / filename
 
 
 def is_trading_day(date: str, market: str = "us") -> bool:
@@ -424,9 +517,7 @@ def get_yesterday_date(today_date: str, merged_path: Optional[str] = None, marke
     if ' ' in today_date:
         input_dt = datetime.strptime(today_date, "%Y-%m-%d %H:%M:%S")
         date_only = False
-        #base_name = str(merged_file)[:-6]
-        #merged_file = Path(base_name + '_hourly.jsonl')
-        merged_file = merged_file.with_name(merged_file.stem + '_hourly.jsonl')
+        merged_file = _to_hourly_merged_path(merged_file)
     else:
         input_dt = datetime.strptime(today_date, "%Y-%m-%d")
         date_only = True
@@ -544,7 +635,7 @@ def get_open_prices(
         merged_file = Path(merged_path)
 
     if ' ' in today_date:
-        merged_file = merged_file.with_name(merged_file.stem + '_hourly.jsonl')
+        merged_file = _to_hourly_merged_path(merged_file)
 
     if not merged_file.exists():
         return results
@@ -606,7 +697,7 @@ def get_yesterday_open_and_close_price(
         merged_file = Path(merged_path)
     
     if ' ' in today_date:
-        merged_file = merged_file.with_name(merged_file.stem + '_hourly.jsonl')
+        merged_file = _to_hourly_merged_path(merged_file)
 
     if not merged_file.exists():
         return buy_results, sell_results
@@ -714,7 +805,7 @@ def get_yesterday_diff(
         merged_file = Path(merged_path)
     
     if ' ' in today_date:
-        merged_file = merged_file.with_name(merged_file.stem + '_hourly.jsonl')
+        merged_file = _to_hourly_merged_path(merged_file)
 
     input_dt = get_yesterday_date(today_date, merged_path=merged_path, market=market)
     #print(f"today:{today_date} yes:{yesterday_date}")
@@ -1045,8 +1136,8 @@ def add_no_trade_record(today_date: str, signature: str):
         if webhook_path not in sys.path:
             sys.path.append(webhook_path)
             
-        from dingtalk_webhook import send_no_trade_notification
-        send_no_trade_notification(signature, today_date, current_position)
+        # from dingtalk_webhook import send_no_trade_notification  # 已禁用：降低钉钉推送打扰
+        # send_no_trade_notification(signature, today_date, current_position)  # 已禁用：降低钉钉推送打扰
     except Exception as e:
         print(f"⚠️ 发送无交易自动推送失败: {e}")
         

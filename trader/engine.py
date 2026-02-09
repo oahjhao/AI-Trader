@@ -216,6 +216,21 @@ async def run_single_model(
                 agent = AgentClass(**agent_params)
 
             print(f"✅ {agent_type} instance created successfully: {agent}")
+            
+            # 发送 Agent 启动通知
+            try:
+                from webhook.dingtalk_webhook import send_agent_start_notification
+                stock_count = len(stock_symbols) if stock_symbols is not None else 0
+                send_agent_start_notification(
+                    signature=signature,
+                    market=market,
+                    init_date=init_date,
+                    end_date=end_date,
+                    stock_count=stock_count,
+                    basemodel=basemodel
+                )
+            except Exception as e:
+                print(f"⚠️ 发送启动通知失败: {e}")
 
             await agent.initialize()
             print("✅ Initialization successful")

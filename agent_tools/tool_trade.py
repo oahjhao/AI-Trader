@@ -232,7 +232,7 @@ def buy(symbol: str, amount: int) -> Dict[str, Any]:
             "this_action": {"action": "buy", "symbol": symbol, "amount": amount, "price": this_symbol_price},
             "positions": new_position,
         }
-        _send_trade_notification(signature, "buy", symbol, amount, position_record)
+        # _send_trade_notification(signature, "buy", symbol, amount, position_record)  # 已禁用：降低钉钉推送打扰
         
         # Step 8: Return updated position
         write_config_value("IF_TRADE", True)
@@ -353,9 +353,10 @@ def no_trade(reason: str = "维持当前仓位") -> Dict[str, Any]:
     print(f"📊 Agent decided no trade: {reason}")
     
     # 发送推送
-    _send_no_trade_notification(signature, today_date)
+    # _send_no_trade_notification(signature, today_date)  # 已禁用：降低钉钉推送打扰
     
-    # 标记已进行操作（虽然是no trade，但作为显式操作记录）
+    # 标记 no_trade 被显式调用，与实际买卖交易区分
+    write_config_value("NO_TRADE_CALLED", True)
     write_config_value("IF_TRADE", True)
     
     return {"status": "success", "message": f"No-trade notification sent: {reason}"}
@@ -571,7 +572,7 @@ def sell(symbol: str, amount: int) -> Dict[str, Any]:
         "this_action": {"action": "sell", "symbol": symbol, "amount": amount, "price": this_symbol_price},
         "positions": new_position,
     }
-    _send_trade_notification(signature, "sell", symbol, amount, position_record)
+    # _send_trade_notification(signature, "sell", symbol, amount, position_record)  # 已禁用：降低钉钉推送打扰
     
     # Step 8: Return updated position
     write_config_value("IF_TRADE", True)

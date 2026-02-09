@@ -119,9 +119,49 @@ def convert_a_stock_to_jsonl(
 
 
 if __name__ == "__main__":
+    import argparse
+    
+    # 解析命令行参数
+    parser = argparse.ArgumentParser(description='A-Share小时线数据转JSONL格式')
+    parser.add_argument('--date-suffix', type=str, default='', help='日期后缀 (YYYYMMDD)')
+    parser.add_argument('--csv-path', type=str, default='A_stock_hourly.csv', help='CSV文件路径')
+    parser.add_argument('--output-path', type=str, default='merged_hourly.jsonl', help='输出JSONL文件路径')
+    parser.add_argument('--stock-list', type=str, default='sse_pick.csv', help='股票列表CSV')
+    
+    args = parser.parse_args()
+    
+    # 根据日期后缀构建文件名
+    csv_path = args.csv_path
+    output_path = args.output_path
+    stock_list = args.stock_list
+    
+    if args.date_suffix:
+        # 如果文件名不包含后缀，添加后缀
+        if args.date_suffix not in args.csv_path:
+            base = args.csv_path.rsplit('.', 1)[0]
+            ext = args.csv_path.rsplit('.', 1)[1] if '.' in args.csv_path else 'csv'
+            csv_path = f"{base}_{args.date_suffix}.{ext}"
+        
+        if args.date_suffix not in args.output_path:
+            base = args.output_path.rsplit('.', 1)[0]
+            ext = args.output_path.rsplit('.', 1)[1] if '.' in args.output_path else 'jsonl'
+            output_path = f"{base}_{args.date_suffix}.{ext}"
+        
+        if args.date_suffix not in args.stock_list:
+            base = args.stock_list.rsplit('.', 1)[0]
+            ext = args.stock_list.rsplit('.', 1)[1] if '.' in args.stock_list else 'csv'
+            stock_list = f"{base}_{args.date_suffix}.{ext}"
+        
+        print(f"📁 使用日期后缀: {args.date_suffix}")
+        print(f"📁 CSV: {csv_path}, 输出: {output_path}, 股票列表: {stock_list}")
+    
     # Convert A-share data to JSONL format
-    print("=" * 60)
+    print("="*60)
     print("A-Share Data Converter")
-    print("=" * 60)
-    convert_a_stock_to_jsonl()
-    print("=" * 60)
+    print("="*60)
+    convert_a_stock_to_jsonl(
+        csv_path=csv_path,
+        output_path=output_path,
+        stock_name_csv=stock_list
+    )
+    print("="*60)

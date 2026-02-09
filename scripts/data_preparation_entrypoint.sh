@@ -15,6 +15,48 @@ CONFIG_FILE="$1"
 INIT_DATE_ARG="$2"
 END_DATE_ARG="$3"
 
+# 路径自适配：检测 EFS 挂载
+if [ -d "/mnt/efs/ai-trader/data" ]; then
+    BASE_DIR="/mnt/efs/ai-trader"
+    echo "📂 检测到 EFS 挂载，使用: $BASE_DIR"
+else
+    BASE_DIR="/home/ec2-user/AI-Trader"
+    echo "📂 未检测到 EFS，使用本地: $BASE_DIR"
+fi
+
+# 提取日期后缀（从 CONFIG_FILE 的 init_date 提取）
+DATE_SUFFIX=""
+if [ -n "$CONFIG_FILE" ]; then
+    # 构建完整配置文件路径
+    if [[ "$CONFIG_FILE" = /* ]]; then
+        # 绝对路径
+        CONFIG_FULL_PATH="$CONFIG_FILE"
+    else
+        # 相对路径，从 BASE_DIR 开始
+        CONFIG_FULL_PATH="$BASE_DIR/$CONFIG_FILE"
+    fi
+    
+    # 使用 Python 提取 init_date 并转换为 8 位数字后缀
+    DATE_SUFFIX=$(python3 -c "
+import json, sys
+from pathlib import Path
+config_path = Path('$CONFIG_FULL_PATH')
+if config_path.exists():
+    data = json.loads(config_path.read_text(encoding='utf-8'))
+    init_date = data.get('date_range', {}).get('init_date', '')
+    # 支持 '2025-01-19' 或 '2025-01-19 09:30:01' 格式
+    date_only = init_date.split()[0] if ' ' in init_date else init_date
+    suffix = date_only.replace('-', '').replace(':', '')[:8]
+    print(suffix)
+" 2>/dev/null || echo "")
+    
+    if [ -n "$DATE_SUFFIX" ]; then
+        echo "📅 提取日期后缀: $DATE_SUFFIX (从配置文件 $CONFIG_FULL_PATH)"
+    else
+        echo "⚠️ 未能提取日期后缀，配置文件: $CONFIG_FULL_PATH"
+    fi
+fi
+
 # Determine mode and target dates
 if [ -n "$INIT_DATE_ARG" ] && [ -n "$END_DATE_ARG" ]; then
     MODE="MANUAL"
@@ -30,41 +72,74 @@ else
     echo "🌐 Mode: Live trading (Automatic history from current time)"
 fi
 
-cd data/A_stock
+cd "$BASE_DIR/data/A_stock"
+
+# 构建参数
+if [ -n "$DATE_SUFFIX" ]; then
+    echo "💾 将使用日期后缀: $DATE_SUFFIX 生成隔离数据文件"
+fi
 
 # 1. Fetch Daily Stocks & Index (Tushare)
 if [ "$MODE" == "MANUAL" ]; then
-    python get_daily_price_tushare.py "$FETCH_INIT" "$FETCH_END" || echo "⚠️ Tushare fetch failed"
+    if [ -n "$DATE_SUFFIX" ]; then
+        python get_daily_price_tushare.py "$FETCH_INIT" "$FETCH_END" --date-suffix "$DATE_SUFFIX" || echo "⚠️ Tushare fetch failed"
+    else
+        python get_daily_price_tushare.py "$FETCH_INIT" "$FETCH_END" || echo "⚠️ Tushare fetch failed"
+    fi
 else
-    python get_daily_price_tushare.py || echo "⚠️ Tushare fetch failed"
+    if [ -n "$DATE_SUFFIX" ]; then
+        python get_daily_price_tushare.py --date-suffix "$DATE_SUFFIX" || echo "⚠️ Tushare fetch failed"
+    else
+        python get_daily_price_tushare.py || echo "⚠️ Tushare fetch failed"
+    fi
 fi
 sleep 2
 
 # 2. Fetch Daily Stocks (EF)
 if [ "$MODE" == "MANUAL" ]; then
-    python get_daily_price_ef.py "$FETCH_INIT" "$FETCH_END" || echo "⚠️ EF daily fetch failed"
+    if [ -n "$DATE_SUFFIX" ]; then
+        python get_daily_price_ef.py "$FETCH_INIT" "$FETCH_END" --date-suffix "$DATE_SUFFIX" || echo "⚠️ EF daily fetch failed"
+    else
+        python get_daily_price_ef.py "$FETCH_INIT" "$FETCH_END" || echo "⚠️ EF daily fetch failed"
+    fi
 else
-    python get_daily_price_ef.py || echo "⚠️ EF daily fetch failed"
+    if [ -n "$DATE_SUFFIX" ]; then
+        python get_daily_price_ef.py --date-suffix "$DATE_SUFFIX" || echo "⚠️ EF daily fetch failed"
+    else
+        python get_daily_price_ef.py || echo "⚠️ EF daily fetch failed"
+    fi
 fi
 sleep 2
 
 # 3. Fetch Hourly Stocks (EF) - Only in LIVE mode
 if [ "$MODE" == "LIVE" ]; then
-    python get_hourly_price_ef.py || echo "⚠️ EF hourly fetch failed"
+    if [ -n "$DATE_SUFFIX" ]; then
+        python get_hourly_price_ef.py --date-suffix "$DATE_SUFFIX" || echo "⚠️ EF hourly fetch failed"
+    else
+        python get_hourly_price_ef.py || echo "⚠️ EF hourly fetch failed"
+    fi
     sleep 2
 else
     echo "⏭ Skipping Hourly data for Backtest/Manual Sync"
 fi
 
 echo "🔀 Merging price data..."
-python merge_jsonl_daily_ef.py || echo "⚠️ Daily merge failed"
+if [ -n "$DATE_SUFFIX" ]; then
+    python merge_jsonl_daily_ef.py --date-suffix "$DATE_SUFFIX" || echo "⚠️ Daily merge failed"
+else
+    python merge_jsonl_daily_ef.py || echo "⚠️ Daily merge failed"
+fi
 sleep 2
 if [ "$MODE" == "LIVE" ]; then
-    python merge_jsonl_hourly_ef.py || echo "⚠️ Hourly merge failed"
+    if [ -n "$DATE_SUFFIX" ]; then
+        python merge_jsonl_hourly_ef.py --date-suffix "$DATE_SUFFIX" || echo "⚠️ Hourly merge failed"
+    else
+        python merge_jsonl_hourly_ef.py || echo "⚠️ Hourly merge failed"
+    fi
     sleep 2
 fi
 
-cd ../..
+cd "$BASE_DIR"
 
 # Optionally update config file's date_range
 if [ -n "$CONFIG_FILE" ]; then

@@ -405,35 +405,56 @@ def main():
     - 首次运行：从default_start_date开始获取所有数据
     - 后续运行：自动从上次最后日期的下一天开始获取
     - 回测模式：接收命令行参数指定时间范围
+    - 支持 --date-suffix 参数用于数据文件隔离
     """
     import sys
+    import argparse
     
     def parse_date_only(d_str):
         # Handle both YYYY-MM-DD and YYYY-MM-DD HH:MM:SS
         return datetime.strptime(d_str.split(' ')[0], "%Y-%m-%d")
 
     # 解析命令行参数
-    if len(sys.argv) >= 3:
+    parser = argparse.ArgumentParser(description='获取A股日线数据')
+    parser.add_argument('init_date', nargs='?', help='开始日期 (YYYY-MM-DD)')
+    parser.add_argument('end_date', nargs='?', help='结束日期 (YYYY-MM-DD)')
+    parser.add_argument('--date-suffix', type=str, default='', help='日期后缀用于文件隔离 (YYYYMMDD)')
+    parser.add_argument('--stock-list', type=str, default='sse_pick.csv', help='股票列表文件名')
+    
+    args = parser.parse_args()
+    
+    # 构建文件名（带日期后缀）
+    stock_list_file = args.stock_list
+    if args.date_suffix:
+        # 如果stock_list已包含日期后缀，不再添加
+        if args.date_suffix not in args.stock_list:
+            base_name = args.stock_list.rsplit('.', 1)[0]
+            ext = args.stock_list.rsplit('.', 1)[1] if '.' in args.stock_list else 'csv'
+            stock_list_file = f"{base_name}_{args.date_suffix}.{ext}"
+        output_file = f"A_stock_daily_{args.date_suffix}.csv"
+        logger.info(f"📁 使用日期后缀: {args.date_suffix}")
+        logger.info(f"📁 股票列表: {stock_list_file}, 输出文件: {output_file}")
+    else:
+        output_file = "A_stock_daily.csv"
+    
+    if args.init_date and args.end_date:
         # Range provided (Backtest or Manual Sync)
-        init_date_input = sys.argv[1]
-        end_date_input = sys.argv[2]
-        
-        anchor_dt = parse_date_only(init_date_input)
-        end_dt = parse_date_only(end_date_input)
+        anchor_dt = parse_date_only(args.init_date)
+        end_dt = parse_date_only(args.end_date)
         
         # Range: anchor_dt - 365 days to end_dt
         begin_date = (anchor_dt - timedelta(days=365)).strftime("%Y%m%d")
         end_date = end_dt.strftime("%Y%m%d")
         
         logger.info(f"📊 Manual/Backtest mode")
-        logger.info(f"Input init_date: {init_date_input}, end_date: {end_date_input}")
+        logger.info(f"Input init_date: {args.init_date}, end_date: {args.end_date}")
         logger.info(f"Actual fetching range: {begin_date} 到 {end_date} (365 days history)")
         
         # 创建数据获取器实例
         fetcher = AStockIntradayDataFetcher(
             frequency=101,
-            stock_list_file="sse_pick.csv",
-            output_file="A_stock_daily.csv"
+            stock_list_file=stock_list_file,
+            output_file=output_file
         )
         
         # 执行数据获取（使用指定的时间范围）
@@ -455,8 +476,8 @@ def main():
         # 创建数据获取器实例
         fetcher = AStockIntradayDataFetcher(
             frequency=101,
-            stock_list_file="sse_pick.csv",
-            output_file="A_stock_daily.csv"
+            stock_list_file=stock_list_file,
+            output_file=output_file
         )
         
         # 执行数据获取（自动检测日期范围）
