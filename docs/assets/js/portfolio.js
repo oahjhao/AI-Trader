@@ -1,42 +1,51 @@
 // Portfolio Analysis Page
-// Detailed view of individual agent portfolios
+// Detailed view of individual agent portfolio - integrated with DatasetSelector
 
 const dataLoader = new DataLoader();
+window.dataLoader = dataLoader;
 let allAgentsData = {};
 let currentAgent = null;
+let currentDate = null;
 let allocationChart = null;
 
-// Load data and refresh UI
+// Load data and refresh UI for the selected dataset
 async function loadDataAndRefresh() {
+    const selectedFolder = window.datasetSelector.getSelectedFolder();
+    if (!selectedFolder) {
+        console.log('No dataset selected');
+        return;
+    }
+
     showLoading();
 
     try {
-        // Load all agents data
-        console.log('Loading all agents data...');
-        allAgentsData = await dataLoader.loadAllAgentsData();
-        console.log('Data loaded:', allAgentsData);
+        await dataLoader.initialize();
+        allAgentsData = await dataLoader.loadSelectedAgentData(selectedFolder);
+        console.log('Data loaded:', Object.keys(allAgentsData));
 
-        // Populate agent selector
+        // Populate agent selector (only non-benchmark agents)
         populateAgentSelector();
 
-        // Date selector
-        dateSelector();
+        // Use the selected folder as the current agent
+        const agentName = selectedFolder;
+        if (allAgentsData[agentName]) {
+            currentAgent = agentName;
 
-        // Load first agent by default
-        const firstAgent = Object.keys(allAgentsData)[0];
-        const assert = allAgentsData[Object.keys(allAgentsData)[0]].positions;
-        // const lastDate = assert[assert.length - 1].date.split(' ')[0];
-        const lastDate = assert[assert.length - 1].date;
-        if (firstAgent && lastDate) {
-            currentAgent = firstAgent;
-            currentDate = lastDate.split(' ')[0];
-            document.getElementById('dateSelect').value=lastDate.split(' ')[0]
-            await loadAgentPortfolio(firstAgent, lastDate);
+            // Populate date selector
+            dateSelector();
+
+            // Load last date by default
+            const positions = allAgentsData[agentName].positions;
+            if (positions.length > 0) {
+                const lastDate = positions[positions.length - 1].date;
+                currentDate = lastDate.split(' ')[0];
+                document.getElementById('dateSelect').value = currentDate;
+                await loadAgentPortfolio(agentName, lastDate);
+            }
         }
 
     } catch (error) {
         console.error('Error loading data:', error);
-        alert('Failed to load portfolio data. Please check console for details.');
     } finally {
         hideLoading();
     }
@@ -44,11 +53,16 @@ async function loadDataAndRefresh() {
 
 // Initialize the page
 async function init() {
-    // Set up event listeners first
     setupEventListeners();
 
-    // Load initial data
-    await loadDataAndRefresh();
+    // Initialize the dataset selector
+    await window.datasetSelector.init('#datasetSelectorContainer');
+
+    // Listen for dataset changes
+    window.addEventListener('dataset-changed', async (e) => {
+        console.log('Dataset changed:', e.detail.folder);
+        await loadDataAndRefresh();
+    });
 }
 
 // Populate agent selector dropdown
@@ -57,16 +71,17 @@ function populateAgentSelector() {
     select.innerHTML = '';
 
     Object.keys(allAgentsData).forEach(agentName => {
+        // Skip benchmark entries
+        if (agentName.includes('SSE') || agentName.includes('QQQ')) return;
+
         const option = document.createElement('option');
         option.value = agentName;
-        // Use text only for dropdown options (HTML select doesn't support images well)
         option.textContent = dataLoader.getAgentDisplayName(agentName);
         select.appendChild(option);
     });
 }
 
 function addUniqueOption(selectElement, value, text) {
-    // 检查是否已存在相同值的选项
     const existingOption = Array.from(selectElement.options).find(opt => opt.value === value);
     if (!existingOption) {
         const option = document.createElement('option');
@@ -80,15 +95,13 @@ function addUniqueOption(selectElement, value, text) {
 function dateSelector() {
     const select = document.getElementById('dateSelect');
     select.innerHTML = '';
-    
-    const positions = allAgentsData[Object.keys(allAgentsData)[0]].positions;
+
+    if (!currentAgent || !allAgentsData[currentAgent]) return;
+
+    const positions = allAgentsData[currentAgent].positions;
     Object.keys(positions).forEach(key => {
-        const option = document.createElement('option');
-        option.value = positions[key].date.split(' ')[0];
-        // Use text only for dropdown options (HTML select doesn't support images well)
-        option.textContent = positions[key].date.split(' ')[0];
-        // select.appendChild(option);
-        addUniqueOption(select,option.value, option.textContent);
+        const dateValue = positions[key].date.split(' ')[0];
+        addUniqueOption(select, dateValue, dateValue);
     });
 }
 
@@ -99,20 +112,16 @@ async function loadAgentPortfolio(agentName, date) {
     try {
         currentAgent = agentName;
         const data = allAgentsData[agentName];
+        if (!data) {
+            console.warn(`No data for ${agentName}`);
+            hideLoading();
+            return;
+        }
 
-        // Update performance metrics
         await updateMetrics(data, date);
-
-        // Update holdings table
+        await updateActionHistory(data, date.split(' ')[0]);
         await updateHoldingsTable(agentName, date.split(' ')[0]);
-
-        // Update action history 
-	    await updateActionHistory(data, date.split(' ')[0])
-
-        // Update allocation chart
         await updateAllocationChart(agentName, date.split(' ')[0]);
-
-        // Update trade history
         await updateTransactions(agentName, date.split(' ')[0]);
 
     } catch (error) {
@@ -124,23 +133,23 @@ async function loadAgentPortfolio(agentName, date) {
 
 // Update performance metrics
 async function updateMetrics(data, date) {
-    // const totalAsset = data.currentValue;
     let id = data.assetHistory.length - 1;
-
-    for(; id > 0; id--){
-        // console.log('id:', id);
-        // console.log('date:', date, data.assetHistory[id]?.date);
-        if(date.split(' ')[0] === data.assetHistory[id]?.date){
-            break;
-        }
+    for (; id > 0; id--) {
+        if (date.split(' ')[0] === data.assetHistory[id]?.date) break;
     }
-    
+
     const totalAsset = data.assetHistory[id]?.value;
     const initialValue = data.positions[0]?.positions.CASH;
-    const totalReturn = data.assetHistory.length >= 0 ? (data.assetHistory[id]?.value - initialValue)/data.assetHistory[0]?.value * 100 : 0;
-    const latestPosition = data.positions && data.positions.length > 0 ? data.positions[data.assetHistory[id]?.id] : null;
+    const totalReturn = data.assetHistory.length >= 0
+        ? (data.assetHistory[id]?.value - initialValue) / data.assetHistory[0]?.value * 100
+        : 0;
+    const latestPosition = data.positions && data.positions.length > 0
+        ? data.positions[data.assetHistory[id]?.id]
+        : null;
     const cashPosition = latestPosition && latestPosition.positions ? latestPosition.positions.CASH || 0 : 0;
-    const totalTrades = data.positions ? data.positions.filter(p => p.this_action && p.this_action.action !== 'no_trade' && p.date <= date).length : 0;
+    const totalTrades = data.positions
+        ? data.positions.filter(p => p.this_action && p.this_action.action !== 'no_trade' && p.date <= date).length
+        : 0;
 
     document.getElementById('totalAsset').textContent = dataLoader.formatCurrency(totalAsset);
     document.getElementById('totalReturn').textContent = dataLoader.formatPercent(totalReturn);
@@ -149,13 +158,14 @@ async function updateMetrics(data, date) {
     document.getElementById('totalTrades').textContent = totalTrades;
 }
 
-// Update performance metrics
+// Update action history table
 async function updateActionHistory(data, date) {
     const tableBody = document.getElementById('actionTableBody');
     tableBody.innerHTML = '';
-    const actionsHistory = data.positions ? data.positions.filter(p => p.this_action && p.this_action.action !== 'no_trade' && p.date.split(' ')[0] <= date).reverse() : null;
+    const actionsHistory = data.positions
+        ? data.positions.filter(p => p.this_action && p.this_action.action !== 'no_trade' && p.date.split(' ')[0] <= date).reverse()
+        : [];
 
-    // Create table rows
     actionsHistory.forEach(p => {
         const row = document.createElement('tr');
         row.innerHTML = `
@@ -166,33 +176,21 @@ async function updateActionHistory(data, date) {
         `;
         tableBody.appendChild(row);
     });
-    
 }
+
 // Update holdings table
 async function updateHoldingsTable(agentName, date) {
     const holdings = dataLoader.getCurrentHoldings(agentName, date);
     const tableBody = document.getElementById('holdingsTableBody');
     tableBody.innerHTML = '';
 
-    if (!holdings) {
-        return;
-    }
-
-    // const data = allAgentsData[agentName];
-    // if (!data || !data.assetHistory || data.assetHistory.length === 0) {
-    //     return;
-    // }
-
-    // const latestDate = data.assetHistory[data.assetHistory.length - 1].date;
-    // const totalValue = data.currentValue;
+    if (!holdings) return;
 
     let totalValue = holdings.CASH;
 
-    // Get all stocks with non-zero holdings
     const stocks = Object.entries(holdings)
         .filter(([symbol, shares]) => symbol !== 'CASH' && shares > 0);
 
-    // Sort by market value (descending)
     const holdingsData = await Promise.all(
         stocks.map(async ([symbol, shares]) => {
             const price = await dataLoader.getClosingPrice(symbol, date);
@@ -200,15 +198,13 @@ async function updateHoldingsTable(agentName, date) {
             const name = await dataLoader.getSymbolName(symbol);
             const marketValue = price ? shares * price : shares * priceRecent;
             totalValue += marketValue;
-            const priceReturn = price ? price : priceRecent
-            // console.log('return:', symbol, name, price, priceReturn);
+            const priceReturn = price ? price : priceRecent;
             return { symbol, name, shares, priceReturn, marketValue };
         })
     );
 
     holdingsData.sort((a, b) => b.marketValue - a.marketValue);
 
-    // Create table rows
     holdingsData.forEach(holding => {
         const weight = (holding.marketValue / totalValue * 100).toFixed(2);
         const row = document.createElement('tr');
@@ -223,7 +219,6 @@ async function updateHoldingsTable(agentName, date) {
         tableBody.appendChild(row);
     });
 
-    // Add cash row
     if (holdings.CASH > 0) {
         const cashWeight = (holdings.CASH / totalValue * 100).toFixed(2);
         const cashRow = document.createElement('tr');
@@ -238,11 +233,10 @@ async function updateHoldingsTable(agentName, date) {
         tableBody.appendChild(cashRow);
     }
 
-    // If no holdings data, show a message
     if (holdingsData.length === 0 && (!holdings.CASH || holdings.CASH === 0)) {
         const noDataRow = document.createElement('tr');
         noDataRow.innerHTML = `
-            <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+            <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">
                 No holdings data available
             </td>
         `;
@@ -255,45 +249,31 @@ async function updateAllocationChart(agentName, date) {
     const holdings = dataLoader.getCurrentHoldings(agentName, date);
     if (!holdings) return;
 
-    // const data = allAgentsData[agentName];
-    // const latestDate = data.assetHistory[data.assetHistory.length - 1].date;
-
-    // Calculate market values
     const allocations = [];
 
     for (const [symbol, shares] of Object.entries(holdings)) {
         if (symbol === 'CASH') {
-            if (shares > 0) {
-                allocations.push({ label: 'CASH', value: shares });
-            }
+            if (shares > 0) allocations.push({ label: 'CASH', value: shares });
         } else if (shares > 0) {
             const price = await dataLoader.getClosingPrice(symbol, date);
             const priceRecent = await dataLoader.getRecentPrice(symbol, date);
             const name = await dataLoader.getSymbolName(symbol);
             if (price) {
                 allocations.push({ label: name, value: shares * price });
-            }else{
+            } else {
                 allocations.push({ label: name, value: shares * priceRecent });
             }
         }
     }
 
-    // Sort by value and take top 10, combine rest as "Others"
     allocations.sort((a, b) => b.value - a.value);
 
     const topAllocations = allocations.slice(0, 10);
     const othersValue = allocations.slice(10).reduce((sum, a) => sum + a.value, 0);
+    if (othersValue > 0) topAllocations.push({ label: 'Others', value: othersValue });
 
-    if (othersValue > 0) {
-        topAllocations.push({ label: 'Others', value: othersValue });
-    }
+    if (allocationChart) allocationChart.destroy();
 
-    // Destroy existing chart
-    if (allocationChart) {
-        allocationChart.destroy();
-    }
-
-    // Create new chart
     const ctx = document.getElementById('allocationChart').getContext('2d');
     const colors = [
         '#00d4ff', '#00ffcc', '#ff006e', '#ffbe0b', '#8338ec',
@@ -317,13 +297,7 @@ async function updateAllocationChart(agentName, date) {
             plugins: {
                 legend: {
                     position: 'bottom',
-                    labels: {
-                        color: '#a0aec0',
-                        padding: 15,
-                        font: {
-                            size: 12
-                        }
-                    }
+                    labels: { color: '#a0aec0', padding: 15, font: { size: 12 } }
                 },
                 tooltip: {
                     backgroundColor: 'rgba(26, 34, 56, 0.95)',
@@ -347,53 +321,6 @@ async function updateAllocationChart(agentName, date) {
     });
 }
 
-// Update trade history timeline
-function updateTradeHistory(agentName, date) {
-    const trades = dataLoader.getTradeHistory(agentName, date);
-    const timeline = document.getElementById('tradeTimeline');
-    timeline.innerHTML = '';
-
-    if (trades.length === 0) {
-        timeline.innerHTML = '<p style="color: var(--text-muted);">No trade history available.</p>';
-        return;
-    }
-
-    // Show latest 20 trades
-    const recentTrades = trades.slice(0, 20);
-
-    recentTrades.forEach(trade => {
-        const tradeItem = document.createElement('div');
-        tradeItem.className = 'trade-item';
-
-        const icon = trade.action === 'buy' ? '📈' : '📉';
-        const iconClass = trade.action === 'buy' ? 'buy' : 'sell';
-        const actionText = trade.action === 'buy' ? 'Bought' : 'Sold';
-
-        // Format the timestamp for hourly data
-        let formattedDate = trade.date;
-        if (trade.date.includes(':')) {
-            const date = new Date(trade.date);
-            formattedDate = date.toLocaleString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-        }
-
-        tradeItem.innerHTML = `
-            <div class="trade-icon ${iconClass}">${icon}</div>
-            <div class="trade-details">
-                <div class="trade-action">${actionText} ${trade.amount} shares of ${trade.symbol}</div>
-                <div class="trade-meta">${formattedDate}</div>
-            </div>
-        `;
-
-        timeline.appendChild(tradeItem);
-    });
-}
-
 function extractWithFollowingText(text) {
     const lines = text.split('\n');
     const results = [];
@@ -402,57 +329,43 @@ function extractWithFollowingText(text) {
 
     for (const line of lines) {
         const match = line.match(/^\[([^:\]]+):\s*([^\]]+)\]\s*$/);
-        
         if (match) {
-            // 遇到新标记，保存上一个
             if (currentTag) {
-                results.push({
-                    str1: currentTag.str1,
-                    str2: currentTag.str2,
-                    str3: buffer.trim()
-                });
+                results.push({ str1: currentTag.str1, str2: currentTag.str2, str3: buffer.trim() });
                 buffer = '';
             }
-            currentTag = {
-                str1: match[1].trim(),
-                str2: match[2].trim()
-            };
+            currentTag = { str1: match[1].trim(), str2: match[2].trim() };
         } else if (currentTag) {
-            // 累积后续文本
             buffer += line + '\n';
         }
     }
 
-    // 保存最后一个
     if (currentTag) {
-        results.push({
-            str1: currentTag.str1,
-            str2: currentTag.str2,
-            str3: buffer.trim()
-        });
+        results.push({ str1: currentTag.str1, str2: currentTag.str2, str3: buffer.trim() });
     }
 
     return results;
 }
 
-// Update Transactions
+// Update Transactions (Daily Trade Activity)
 async function updateTransactions(agentName, date) {
     const timeline = document.getElementById('tradeTimeline');
     timeline.innerHTML = '';
 
-    // Load agent's thinking
     const thinking = await window.transactionLoader.loadAgentThinking(agentName, date, dataLoader.getMarket());
-    const displayName = window.configLoader.getDisplayName(agentName, dataLoader.getMarket());
-    const icon = window.configLoader.getIcon(agentName, dataLoader.getMarket());
+    if (!thinking) {
+        timeline.innerHTML = '<p style="color: var(--text-muted);">No trade activity data available for this date.</p>';
+        return;
+    }
 
+    const displayName = agentName;
+    const icon = dataLoader.getAgentIcon(agentName);
     const lines = extractWithFollowingText(thinking);
 
     for (const line of lines) {
         const cardEl = document.createElement('div');
         cardEl.className = 'trans-card';
-        // console.log('line:', line);
 
-        // Build card HTML - only include reasoning section if thinking is available
         let cardHTML = `
             <div class="action-header">
                 <div class="action-agent-icon">
@@ -476,55 +389,43 @@ async function updateTransactions(agentName, date) {
             </div>
         `;
         cardEl.innerHTML = cardHTML;
-        timeline.appendChild(cardEl);   
+        timeline.appendChild(cardEl);
     }
 }
 
 // Set up event listeners
 function setupEventListeners() {
+    // Agent selector change
     document.getElementById('agentSelect').addEventListener('change', (e) => {
-        const date = document.getElementById('dateSelect').value
+        const date = document.getElementById('dateSelect').value;
         loadAgentPortfolio(e.target.value, date);
     });
+
+    // Date selector change
     document.getElementById('dateSelect').addEventListener('change', (e) => {
-        const agentName = document.getElementById('agentSelect').value
+        const agentName = document.getElementById('agentSelect').value;
         loadAgentPortfolio(agentName, e.target.value);
     });
 
-    // Market switching
-    const usMarketBtn = document.getElementById('usMarketBtn');
-    const cnMarketBtn = document.getElementById('cnMarketBtn');
-
-    if (usMarketBtn && cnMarketBtn) {
-        usMarketBtn.addEventListener('click', async () => {
-            if (dataLoader.getMarket() !== 'us') {
-                dataLoader.setMarket('us');
-                usMarketBtn.classList.add('active');
-                cnMarketBtn.classList.remove('active');
-                await loadDataAndRefresh();
+    // Excel download button
+    const excelBtn = document.getElementById('downloadExcelBtn');
+    if (excelBtn) {
+        excelBtn.addEventListener('click', () => {
+            if (!currentAgent || !allAgentsData[currentAgent]) {
+                alert('Please select a dataset first.');
+                return;
             }
-        });
-
-        cnMarketBtn.addEventListener('click', async () => {
-            if (dataLoader.getMarket() !== 'cn') {
-                dataLoader.setMarket('cn');
-                cnMarketBtn.classList.add('active');
-                usMarketBtn.classList.remove('active');
-                await loadDataAndRefresh();
-            }
+            const data = allAgentsData[currentAgent];
+            window.excelExporter.exportAgentData(currentAgent, data.positions);
         });
     }
 
-    // Scroll to top button
+    // Scroll to top
     const scrollBtn = document.getElementById('scrollToTop');
     window.addEventListener('scroll', () => {
-        if (window.pageYOffset > 300) {
-            scrollBtn.classList.add('visible');
-        } else {
-            scrollBtn.classList.remove('visible');
-        }
+        if (window.pageYOffset > 300) scrollBtn.classList.add('visible');
+        else scrollBtn.classList.remove('visible');
     });
-
     scrollBtn.addEventListener('click', () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     });

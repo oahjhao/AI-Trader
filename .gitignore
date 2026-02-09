@@ -56,6 +56,7 @@ venv/
 ENV/
 env/
 .venv
+venv_trader/
 
 # IDE
 arms_cache/
@@ -87,12 +88,13 @@ configs/day_config.json
 configs/hour_config.json
 configs/test_config.json
 configs/test_day_config.json
-configs/astock.json
+configs/astock*.json
 configs/test_*.json
 
 # Data directories (optional - uncomment if needed)
 data/agent_data/test*/
 data/agent_data/*test*/
+data/A_stock/*.csv
 data/merged_daily.jsonl
 data/merged_hour.jsonl
 
