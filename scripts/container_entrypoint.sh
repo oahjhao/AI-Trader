@@ -5,15 +5,26 @@
 set -e
 
 # Load environment variables from .env file if it exists
-if [ -f ".env" ]; then
-    echo "📦 Loading environment variables from .env file..."
-    # Export variables from .env, ignoring comments and empty lines
-    set -a
-    source .env
-    set +a
-    echo "✅ Environment variables loaded from .env file"
-else
-    echo "⚠️  .env file not found, using existing environment variables"
+# Check multiple possible locations for .env file
+ENV_PATHS=("/.env" "./.env" "/home/ec2-user/AI-Trader/.env")
+ENV_LOADED=false
+
+for env_path in "${ENV_PATHS[@]}"; do
+    if [ -f "$env_path" ]; then
+        echo "📦 Loading environment variables from $env_path..."
+        # Export variables from .env, ignoring comments and empty lines
+        set -a
+        source "$env_path"
+        set +a
+        echo "✅ Environment variables loaded from $env_path"
+        ENV_LOADED=true
+        break
+    fi
+done
+
+if [ "$ENV_LOADED" = false ]; then
+    echo "⚠️  .env file not found in any of the checked paths, using existing environment variables"
+    echo "   Checked paths: ${ENV_PATHS[*]}"
 fi
 
 # Extract signature from command line arguments
