@@ -5,8 +5,8 @@
 set -e
 
 # Load environment variables from .env file
-# Priority: configs/.env (EFS mount at runtime) > local .env (dev only)
-ENV_PATHS=("configs/.env" "./.env")
+# Priority: ./.env (EFS mount at runtime) > configs/.env (backward compatibility)
+ENV_PATHS=("./.env" "configs/.env")
 ENV_LOADED=false
 
 for env_path in "${ENV_PATHS[@]}"; do

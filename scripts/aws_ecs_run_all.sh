@@ -64,7 +64,7 @@ fi
 # 加载 .env 环境变量
 # ============================================
 load_env_file() {
-  local env_files=("/.env" "./.env" "/home/ec2-user/AI-Trader/.env")
+  local env_files=("/.env" "./.env" "/home/ec2-user/AI-Trader/.env" "/mnt/efs/ai-trader/.env")
   
   for env_file in "${env_files[@]}"; do
     if [ -f "$env_file" ]; then
