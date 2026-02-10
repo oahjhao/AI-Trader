@@ -172,10 +172,8 @@ async def run_single_model(
         # 选股逻辑：保持与原来 main.py 一致
         if agent_type == "BaseAgentCrypto":
             stock_symbols = None
-        elif agent_type == "BaseAgentAStock":
-            stock_symbols = load_stock_list()
         elif market == "cn":
-            stock_symbols = load_stock_list()
+            stock_symbols = load_stock_list(init_date=init_date)
         else:
             stock_symbols = all_nasdaq_100_symbols
 

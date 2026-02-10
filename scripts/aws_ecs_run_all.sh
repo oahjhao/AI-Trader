@@ -120,6 +120,13 @@ fi
 INIT_DATE=${ARGS[1]:-""}
 END_DATE=${ARGS[2]:-""}
 
+# 从配置文件名中提取日期后缀（用于数据隔离）
+DATE_SUFFIX=""
+if [[ $CONFIG_FILE =~ _([0-9]{8})\.json$ ]]; then
+  DATE_SUFFIX="${BASH_REMATCH[1]}"
+  echo "[INFO] 📅 全局日期后缀: DATE_SUFFIX=$DATE_SUFFIX"
+fi
+
 # 自动检测 backtest 模式：如果未提供日期参数，从配置文件读取
 # 当配置文件的 end_date 在过去时，自动使用配置中的日期（BACKTEST 模式）
 # 注意：LIVE 模式下跳过此检测，由 LIVE 逻辑负责更新日期
@@ -366,11 +373,11 @@ run_data_preparation() {
   if [ -n "$INIT_DATE" ] && [ -n "$END_DATE" ]; then
     echo_info "运行模式: MANUAL (回测/手动同步)"
     echo_info "日期范围: $INIT_DATE 到 $END_DATE"
-    ENV_OVERRIDES="[{\"name\":\"CONFIG_FILE\",\"value\":\"$DATA_PREP_CONFIG_FILE\"},{\"name\":\"START_DATE\",\"value\":\"$INIT_DATE\"},{\"name\":\"END_DATE\",\"value\":\"$END_DATE\"}]"
+    ENV_OVERRIDES="[{\"name\":\"CONFIG_FILE\",\"value\":\"$DATA_PREP_CONFIG_FILE\"},{\"name\":\"START_DATE\",\"value\":\"$INIT_DATE\"},{\"name\":\"END_DATE\",\"value\":\"$END_DATE\"},{\"name\":\"DATE_SUFFIX\",\"value\":\"$DATE_SUFFIX\"}]"
   else
     echo_info "运行模式: LIVE (实时交易)"
     echo_info "将自动获取历史数据"
-    ENV_OVERRIDES="[{\"name\":\"CONFIG_FILE\",\"value\":\"$DATA_PREP_CONFIG_FILE\"}]"
+    ENV_OVERRIDES="[{\"name\":\"CONFIG_FILE\",\"value\":\"$DATA_PREP_CONFIG_FILE\"},{\"name\":\"DATE_SUFFIX\",\"value\":\"$DATE_SUFFIX\"}]"
   fi
   
   # 运行任务
@@ -448,7 +455,7 @@ run_agent_tasks() {
       --launch-type FARGATE \
       --region "$REGION" \
       --network-configuration "awsvpcConfiguration={subnets=[$SUBNET],securityGroups=[$SECURITY_GROUP],assignPublicIp=ENABLED}" \
-      --overrides "{\"containerOverrides\":[{\"name\":\"$AGENT_CONTAINER_NAME\",\"command\":[\"$AGENT_CONFIG_FILE\",\"--signature\",\"$SIGNATURE\"]}]}" \
+      --overrides "{\"containerOverrides\":[{\"name\":\"$AGENT_CONTAINER_NAME\",\"command\":[\"$AGENT_CONFIG_FILE\",\"--signature\",\"$SIGNATURE\"],\"environment\":[{\"name\":\"DATE_SUFFIX\",\"value\":\"$DATE_SUFFIX\"}]}]}" \
       --query 'tasks[0].taskArn' \
       --output text)
     
