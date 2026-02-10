@@ -510,6 +510,7 @@ def send_agent_start_notification(signature: str, market: str, init_date: str, e
 def send_session_position_report(signature: str, today_date: str, market: str = "cn"):
     """
     发送 trading session 结束时的仓位报告（daily/hourly 统一格式）
+    包含当前时间点的所有买入/卖出操作明细
     
     Args:
         signature: 模型签名
@@ -545,16 +546,25 @@ def send_session_position_report(signature: str, today_date: str, market: str = 
             print(f"⚠️ 持仓文件不存在: {position_file}")
             return
         
-        # 读取最新持仓
+        # 读取所有记录：收集当前时间点的操作 + 最新持仓
         latest_position = None
+        current_session_actions = []  # 当前时间点的所有买卖操作
+        
         try:
             with open(position_file, "r", encoding="utf-8") as f:
                 for line in f:
-                    if line.strip():
-                        try:
-                            latest_position = json.loads(line)
-                        except json.JSONDecodeError:
-                            continue
+                    if not line.strip():
+                        continue
+                    try:
+                        record = json.loads(line)
+                        latest_position = record
+                        # 收集当前 session 的所有操作
+                        if record.get("date") == today_date:
+                            action_info = record.get("this_action", {})
+                            if action_info and action_info.get("action") in ("buy", "sell"):
+                                current_session_actions.append(action_info)
+                    except json.JSONDecodeError:
+                        continue
         except Exception as e:
             print(f"❌ 读取持仓文件失败: {e}")
             return
@@ -565,8 +575,6 @@ def send_session_position_report(signature: str, today_date: str, market: str = 
         
         positions = latest_position.get("positions", {})
         cash_balance = positions.get("CASH", 0)
-        last_action = latest_position.get("this_action", {})
-        action_type = last_action.get("action", "init")
         
         # 市场名称和货币符号
         market_names = {"cn": "A股", "us": "美股", "crypto": "加密货币"}
@@ -574,29 +582,62 @@ def send_session_position_report(signature: str, today_date: str, market: str = 
         market_display = market_names.get(market, market)
         currency = currency_symbols.get(market, "$")
         
-        # 操作标记
-        action_icons = {"buy": "🟢买入", "sell": "🔴卖出", "no_trade": "⚪持仓", "init": "🟡初始"}
-        action_display = action_icons.get(action_type, "❓" + action_type)
+        # 初始化股票名称查找器
+        reporter = None
+        if market == "cn":
+            try:
+                reporter = PositionReporter()
+            except Exception:
+                pass
         
-        # 构建统一消息
+        def _display_name(symbol):
+            if reporter and market == "cn":
+                return reporter._get_stock_display_name(symbol)
+            return symbol
+        
+        # 分类操作
+        buy_actions = [a for a in current_session_actions if a["action"] == "buy"]
+        sell_actions = [a for a in current_session_actions if a["action"] == "sell"]
+        
+        # 操作摘要
+        if buy_actions or sell_actions:
+            parts = []
+            if buy_actions:
+                parts.append(f"🟢买入{len(buy_actions)}笔")
+            if sell_actions:
+                parts.append(f"🔴卖出{len(sell_actions)}笔")
+            action_summary = " ".join(parts)
+        else:
+            action_summary = "⚪持仓不变"
+        
+        # 构建消息
         message_lines = [
             f"📊 **{signature} 仓位报告**  \n\n",
             f"📅 时间: {today_date}  \n\n",
-            f"🌍 市场: {market_display}  \n\n",
-            f"🎯 操作: {action_display}  \n\n",
+            f"🎯 操作: {action_summary}  \n\n",
         ]
         
-        # 如果有买卖操作，显示详情
-        if action_type in ("buy", "sell") and last_action.get("symbol"):
-            symbol = last_action["symbol"]
-            amount = last_action.get("amount", 0)
-            # 尝试获取中文名
-            try:
-                reporter = PositionReporter()
-                display_name = reporter._get_stock_display_name(symbol) if market == "cn" else symbol
-            except:
-                display_name = symbol
-            message_lines.append(f"📌 {action_type.upper()}: {display_name} x {amount:,}  \n\n")
+        # 卖出明细
+        if sell_actions:
+            message_lines.append("**🔴 卖出:**  \n\n")
+            for a in sell_actions:
+                sym = a.get("symbol", "?")
+                amt = a.get("amount", 0)
+                name = _display_name(sym)
+                message_lines.append(f"  • {name} {amt:,}股  \n\n")
+        
+        # 买入明细
+        if buy_actions:
+            message_lines.append("**🟢 买入:**  \n\n")
+            for a in buy_actions:
+                sym = a.get("symbol", "?")
+                amt = a.get("amount", 0)
+                price = a.get("price")
+                name = _display_name(sym)
+                if price:
+                    message_lines.append(f"  • {name} {amt:,}股 @{currency}{price}  \n\n")
+                else:
+                    message_lines.append(f"  • {name} {amt:,}股  \n\n")
         
         message_lines.append(f"💰 现金: {currency}{cash_balance:,.2f}  \n\n")
         
@@ -604,15 +645,8 @@ def send_session_position_report(signature: str, today_date: str, market: str = 
         holdings = {k: v for k, v in positions.items() if k != "CASH" and v > 0}
         if holdings:
             message_lines.append("📦 持仓:  \n\n")
-            try:
-                reporter = PositionReporter()
-            except:
-                reporter = None
             for symbol, amount in sorted(holdings.items()):
-                if market == "cn" and reporter:
-                    display_name = reporter._get_stock_display_name(symbol)
-                else:
-                    display_name = symbol
+                display_name = _display_name(symbol)
                 message_lines.append(f"  • {display_name}: {amount:,}  \n\n")
         else:
             message_lines.append("📦 当前无持仓  \n\n")

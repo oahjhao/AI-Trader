@@ -144,7 +144,7 @@ if [ -z "$INIT_DATE" ] && [ -z "$END_DATE" ] && [ "$LIVE_MODE" = false ]; then
     if [ -n "$_cfg_init" ] && [ -n "$_cfg_end" ]; then
       # 提取日期部分（去掉可能的时间后缀）用于比较
       _end_date_only=$(echo "$_cfg_end" | cut -d' ' -f1)
-      _today=$(date +%Y-%m-%d)
+      _today=$(TZ='Asia/Shanghai' date +%Y-%m-%d)
       
       if [[ "$_end_date_only" < "$_today" ]]; then
         INIT_DATE="$_cfg_init"
@@ -173,9 +173,10 @@ if [ "$LIVE_MODE" = true ]; then
     exit 1
   fi
   
-  # 获取当前时间（格式：YYYY-MM-DD HH:MM:SS）
-  CURRENT_TIME=$(date '+%Y-%m-%d %H:%M:%S')
-  echo "[INFO] 📅 当前时间: $CURRENT_TIME"
+  # 获取当前北京时间（格式：YYYY-MM-DD HH:MM:SS）
+  # A股交易时间戳使用北京时间，end_date 必须也用北京时间，否则时区差导致过滤错误
+  CURRENT_TIME=$(TZ='Asia/Shanghai' date '+%Y-%m-%d %H:%M:%S')
+  echo "[INFO] 📅 当前北京时间: $CURRENT_TIME"
   
   # 备份原始配置文件（可选，用于恢复）
   CONFIG_BACKUP="${CONFIG_PATH}.backup.$(date +%s)"
