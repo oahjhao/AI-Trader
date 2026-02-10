@@ -25,19 +25,24 @@
             "environmentFiles": [],
             "mountPoints": [
                 {
+                    "sourceVolume": "efs-docs",
+                    "containerPath": "/usr/share/nginx/html",
+                    "readOnly": true
+                },
+                {
                     "sourceVolume": "efs-data",
                     "containerPath": "/usr/share/nginx/html/data",
-                    "readOnly": false
+                    "readOnly": true
                 },
                 {
                     "sourceVolume": "efs-configs",
                     "containerPath": "/mnt/efs/configs",
-                    "readOnly": false
+                    "readOnly": true
                 },
                 {
                     "sourceVolume": "efs-logs",
                     "containerPath": "/mnt/efs/logs",
-                    "readOnly": false
+                    "readOnly": true
                 }
             ],
             "volumesFrom": [],
@@ -59,6 +64,13 @@
     "executionRoleArn": "arn:aws:iam::648104168728:role/ecsTaskExecutionRole",
     "networkMode": "bridge",
     "volumes": [
+        {
+            "name": "efs-docs",
+            "efsVolumeConfiguration": {
+                "fileSystemId": "fs-0b84c5c74e468c34b",
+                "rootDirectory": "/ai-trader/docs"
+            }
+        },
         {
             "name": "efs-data",
             "efsVolumeConfiguration": {

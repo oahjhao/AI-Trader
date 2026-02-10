@@ -55,14 +55,14 @@ async function loadDataAndRefresh() {
 async function init() {
     setupEventListeners();
 
-    // Initialize the dataset selector
-    await window.datasetSelector.init('#datasetSelectorContainer');
-
-    // Listen for dataset changes
+    // Listen for dataset changes BEFORE init (init fires initial event)
     window.addEventListener('dataset-changed', async (e) => {
         console.log('Dataset changed:', e.detail.folder);
         await loadDataAndRefresh();
     });
+
+    // Initialize the dataset selector (will fire initial dataset-changed event)
+    await window.datasetSelector.init('#datasetSelectorContainer');
 }
 
 // Populate agent selector dropdown
