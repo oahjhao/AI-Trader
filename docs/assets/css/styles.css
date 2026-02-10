@@ -254,6 +254,170 @@ body {
     grid-column: 3;
 }
 
+/* ---- v2: Date Group + Agent Picker ---- */
+.dataset-selector-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.date-group-select {
+    padding: 0.45rem 2rem 0.45rem 0.75rem;
+    border: 1px solid rgba(0, 212, 255, 0.3);
+    border-radius: 8px;
+    background: rgba(10, 14, 27, 0.8);
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    font-weight: 500;
+    font-family: var(--font-mono);
+    cursor: pointer;
+    min-width: 180px;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M6 8L1 3h10z' fill='%2300d4ff'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    transition: all 0.2s ease;
+}
+
+.date-group-select:hover {
+    border-color: rgba(0, 212, 255, 0.5);
+    box-shadow: 0 0 12px rgba(0, 212, 255, 0.2);
+}
+
+.date-group-select:focus {
+    outline: none;
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.15);
+}
+
+.date-group-select option {
+    background: #1a2238;
+    color: var(--text-primary);
+    padding: 0.5rem;
+}
+
+/* Agent Picker dropdown */
+.agent-picker {
+    position: relative;
+}
+
+.agent-picker-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.45rem 0.75rem;
+    border: 1px solid rgba(0, 255, 204, 0.3);
+    border-radius: 8px;
+    background: rgba(10, 14, 27, 0.8);
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    font-weight: 500;
+    font-family: var(--font-mono);
+    cursor: pointer;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s ease;
+}
+
+.agent-picker-toggle:hover {
+    border-color: rgba(0, 255, 204, 0.5);
+    box-shadow: 0 0 12px rgba(0, 255, 204, 0.2);
+}
+
+.agent-picker-icon {
+    font-size: 0.9rem;
+}
+
+.agent-count {
+    color: var(--accent-green);
+    font-weight: 700;
+}
+
+.agent-picker-caret {
+    font-size: 0.7rem;
+    color: var(--accent-green);
+}
+
+.agent-picker-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    min-width: 180px;
+    background: rgba(15, 20, 40, 0.97);
+    border: 1px solid rgba(0, 255, 204, 0.25);
+    border-radius: 10px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+    z-index: 1000;
+    backdrop-filter: blur(12px);
+    overflow: hidden;
+}
+
+.agent-picker-dropdown.hidden {
+    display: none;
+}
+
+.agent-picker-controls {
+    display: flex;
+    gap: 0.25rem;
+    padding: 0.5rem 0.6rem;
+    border-bottom: 1px solid rgba(45, 55, 72, 0.5);
+}
+
+.agent-picker-btn {
+    flex: 1;
+    padding: 0.3rem 0.5rem;
+    border: 1px solid rgba(0, 212, 255, 0.25);
+    border-radius: 6px;
+    background: rgba(0, 212, 255, 0.08);
+    color: var(--accent-blue);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.agent-picker-btn:hover {
+    background: rgba(0, 212, 255, 0.2);
+    border-color: rgba(0, 212, 255, 0.5);
+}
+
+.agent-picker-list {
+    padding: 0.4rem 0.5rem;
+    max-height: 260px;
+    overflow-y: auto;
+}
+
+.agent-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.agent-checkbox-label:hover {
+    background: rgba(0, 255, 204, 0.08);
+}
+
+.agent-checkbox {
+    accent-color: var(--accent-green);
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+.agent-checkbox-name {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+}
+
+/* Legacy single select (kept for backward compat) */
 .dataset-select {
     padding: 0.5rem 2rem 0.5rem 0.75rem;
     border: 1px solid rgba(0, 212, 255, 0.3);
@@ -1506,6 +1670,11 @@ body {
         margin-right: 1rem;
     }
 
+    .date-group-select {
+        min-width: 160px;
+        font-size: 0.78rem;
+    }
+
     .dataset-select {
         min-width: 220px;
         font-size: 0.8rem;
@@ -1569,6 +1738,16 @@ body {
         grid-row: 2;
         justify-self: center;
         margin: 0;
+    }
+
+    .dataset-selector-wrapper {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .date-group-select {
+        min-width: 160px;
+        font-size: 0.78rem;
     }
 
     .dataset-select {

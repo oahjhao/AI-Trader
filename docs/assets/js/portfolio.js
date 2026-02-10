@@ -10,9 +10,9 @@ let allocationChart = null;
 
 // Load data and refresh UI for the selected dataset
 async function loadDataAndRefresh() {
-    const selectedFolder = window.datasetSelector.getSelectedFolder();
-    if (!selectedFolder) {
-        console.log('No dataset selected');
+    const agents = window.datasetSelector.getSelectedAgents();
+    if (!agents || agents.length === 0) {
+        console.log('No agents selected');
         return;
     }
 
@@ -20,16 +20,17 @@ async function loadDataAndRefresh() {
 
     try {
         await dataLoader.initialize();
-        allAgentsData = await dataLoader.loadSelectedAgentData(selectedFolder);
+        allAgentsData = await dataLoader.loadMultipleAgentsData(agents);
         console.log('Data loaded:', Object.keys(allAgentsData));
 
         // Populate agent selector (only non-benchmark agents)
         populateAgentSelector();
 
-        // Use the selected folder as the current agent
-        const agentName = selectedFolder;
+        // Use first agent as default
+        const agentName = agents[0];
         if (allAgentsData[agentName]) {
             currentAgent = agentName;
+            document.getElementById('agentSelect').value = agentName;
 
             // Populate date selector
             dateSelector();
@@ -166,10 +167,20 @@ async function updateActionHistory(data, date) {
         ? data.positions.filter(p => p.this_action && p.this_action.action !== 'no_trade' && p.date.split(' ')[0] <= date).reverse()
         : [];
 
+    // Pre-load stock names for all symbols
+    const symbols = [...new Set(actionsHistory.map(p => p.this_action.symbol).filter(Boolean))];
+    await Promise.all(symbols.map(s => dataLoader.getSymbolName(s)));
+    for (const p of actionsHistory) {
+        if (p.this_action.symbol) {
+            p._stockName = await dataLoader.getSymbolName(p.this_action.symbol);
+        }
+    }
+
     actionsHistory.forEach(p => {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td class="symbol">${p.this_action.symbol}</td>
+            <td class="symbol">${p._stockName || ''}</td>
             <td class="symbol">${p.this_action.action}</td>
             <td>${p.this_action.amount}</td>
             <td>${p.date}</td>

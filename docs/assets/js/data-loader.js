@@ -14,6 +14,11 @@ class DataLoader {
         this.currentMarket = 'cn';
         this._mergedFilePath = null;  // dynamic merged file path
         this._hourlyFilePath = null;  // dynamic hourly merged file path
+        this._priceLoadPromise = null;   // concurrent-safe price loading
+        this._hourlyLoadPromise = null;  // concurrent-safe hourly loading
+        this._sessionCacheKey = null;    // sessionStorage cache key
+        this._symbolNameCache = {};      // symbol -> Chinese name
+        this._symbolNamePromise = null;  // concurrent-safe name loading
     }
 
     // Switch market between US stocks and A-shares
@@ -26,6 +31,9 @@ class DataLoader {
         this.recentIndexMap = {};
         this._mergedFilePath = null;
         this._hourlyFilePath = null;
+        this._priceLoadPromise = null;
+        this._hourlyLoadPromise = null;
+        this._sessionCacheKey = null;
     }
 
     // Get current market
@@ -49,17 +57,20 @@ class DataLoader {
     // Set the merged file path for the current dataset
     setMergedFilePath(path) {
         this._mergedFilePath = path;
+        this._sessionCacheKey = path ? `aitrader_prices_${path}` : null;
         // Clear price caches since merged file changed
         this.priceCache = {};
         this.priceRecentCache = {};
         this.priceIndexMap = {};
         this.recentIndexMap = {};
+        this._priceLoadPromise = null;
     }
 
     setHourlyFilePath(path) {
         this._hourlyFilePath = path;
         this.priceRecentCache = {};
         this.recentIndexMap = {};
+        this._hourlyLoadPromise = null;
     }
 
     // Load position data for a specific agent folder
@@ -88,25 +99,60 @@ class DataLoader {
         }
     }
 
-    // Load all A-share stock names from sse_pick.csv
+    // Load all stock names from sse_pick.csv + sse_pick_2025.csv (concurrent-safe, cached)
     async getSymbolName(symbol) {
+        if (Object.keys(this._symbolNameCache).length === 0) {
+            if (!this._symbolNamePromise) {
+                this._symbolNamePromise = this._doLoadAllSymbolNames();
+            }
+            await this._symbolNamePromise;
+        }
+        return this._symbolNameCache[symbol] || symbol;
+    }
+
+    async _doLoadAllSymbolNames() {
         try {
-            const response = await fetch(`${this.baseDataPath}/A_stock/sse_pick.csv`);
-            if (!response.ok) throw new Error('Failed to load A-share names');
+            // Discover all sse_pick*.csv files via nginx directory listing
+            const dirResp = await fetch(`${this.baseDataPath}/A_stock/`);
+            if (!dirResp.ok) throw new Error('Cannot list A_stock directory');
+            const listing = await dirResp.json();
+            const csvFiles = listing
+                .filter(f => f.type === 'file' && f.name.startsWith('sse_pick') && f.name.endsWith('.csv'))
+                .map(f => f.name);
 
-            const text = await response.text();
-            const lines = text.trim().split('\n');
+            console.log(`[SymbolNames] Found ${csvFiles.length} name CSV files`);
 
-            for (const line of lines) {
-                if (!line.trim()) continue;
-                const [sym, value] = line.split(',');
-                if (symbol === sym) {
-                    return value;
+            // Load all CSVs in parallel
+            const responses = await Promise.all(
+                csvFiles.map(name =>
+                    fetch(`${this.baseDataPath}/A_stock/${name}`)
+                        .then(r => r.ok ? r.text() : '')
+                        .catch(() => '')
+                )
+            );
+
+            for (let i = 0; i < csvFiles.length; i++) {
+                const text = responses[i];
+                if (!text) continue;
+                for (const line of text.trim().split('\n')) {
+                    if (!line.trim() || line.startsWith('con_code') || line.startsWith('date')) continue;
+                    const parts = line.split(',');
+                    // Format: con_code,stock_name  OR  date,con_code,stock_name
+                    let sym, name;
+                    if (parts.length === 2) {
+                        sym = parts[0].trim();
+                        name = parts[1].trim();
+                    } else if (parts.length >= 3) {
+                        sym = parts[1].trim();
+                        name = parts[2].trim();
+                    }
+                    if (sym && name) this._symbolNameCache[sym] = name;
                 }
             }
+
+            console.log(`[SymbolNames] Loaded ${Object.keys(this._symbolNameCache).length} stock names`);
         } catch (error) {
-            console.error('Error getSymbolName:', error);
-            return {};
+            console.error('Error loading symbol names:', error);
         }
     }
 
@@ -121,12 +167,20 @@ class DataLoader {
         }
     }
 
-    // Load A-share hourly prices
+    // Load A-share hourly prices (concurrent-safe)
     async loadAStockPricesRecent(symbolName) {
         if (Object.keys(this.priceRecentCache).length > 0) {
             return this.priceRecentCache[symbolName];
         }
+        // Concurrent-safe: reuse in-flight promise
+        if (!this._hourlyLoadPromise) {
+            this._hourlyLoadPromise = this._doLoadHourlyPrices();
+        }
+        await this._hourlyLoadPromise;
+        return this.priceRecentCache[symbolName];
+    }
 
+    async _doLoadHourlyPrices() {
         try {
             const filePath = this._hourlyFilePath || `${this.baseDataPath}/A_stock/merged_hourly.jsonl`;
             const response = await fetch(filePath);
@@ -144,20 +198,39 @@ class DataLoader {
 
             this._buildPriceIndex(this.priceRecentCache, this.recentIndexMap);
             console.log(`Loaded hourly prices for ${Object.keys(this.priceRecentCache).length} stocks`);
-            return this.priceRecentCache[symbolName];
         } catch (error) {
             console.error('Error loading A-share hourly prices:', error);
-            return {};
         }
     }
 
-    // Load all A-share stock prices from merged.jsonl (or date-suffixed variant)
+    // Load all A-share stock prices (concurrent-safe + sessionStorage cache)
     async loadAStockPrices() {
         if (Object.keys(this.priceCache).length > 0) {
             return this.priceCache;
         }
+        // Concurrent-safe: reuse in-flight promise
+        if (!this._priceLoadPromise) {
+            this._priceLoadPromise = this._doLoadAStockPrices();
+        }
+        await this._priceLoadPromise;
+        return this.priceCache;
+    }
 
+    async _doLoadAStockPrices() {
         try {
+            // Try sessionStorage cache first (survives page navigation)
+            if (this._sessionCacheKey) {
+                try {
+                    const cached = sessionStorage.getItem(this._sessionCacheKey);
+                    if (cached) {
+                        this.priceCache = JSON.parse(cached);
+                        this._buildPriceIndex(this.priceCache, this.priceIndexMap);
+                        console.log(`[loadAStockPrices] Restored ${Object.keys(this.priceCache).length} stocks from sessionStorage`);
+                        return;
+                    }
+                } catch (e) { /* cache miss or parse error */ }
+            }
+
             const filePath = this._mergedFilePath || `${this.baseDataPath}/A_stock/merged.jsonl`;
             console.log(`[loadAStockPrices] Loading from: ${filePath}`);
             const response = await fetch(filePath);
@@ -176,10 +249,18 @@ class DataLoader {
             // Build fast index
             this._buildPriceIndex(this.priceCache, this.priceIndexMap);
             console.log(`Loaded prices for ${Object.keys(this.priceCache).length} A-share stocks`);
-            return this.priceCache;
+
+            // Cache in sessionStorage for cross-page reuse
+            if (this._sessionCacheKey) {
+                try {
+                    sessionStorage.setItem(this._sessionCacheKey, JSON.stringify(this.priceCache));
+                    console.log('[loadAStockPrices] Cached prices in sessionStorage');
+                } catch (e) {
+                    console.warn('[loadAStockPrices] sessionStorage full, skipping cache');
+                }
+            }
         } catch (error) {
             console.error('Error loading A-share prices:', error);
-            return {};
         }
     }
 
@@ -420,30 +501,46 @@ class DataLoader {
 
     // Load data for a single selected agent folder + benchmark
     async loadSelectedAgentData(folderName) {
-        console.log(`[loadSelectedAgentData] Loading: ${folderName}`);
+        return this.loadMultipleAgentsData([folderName]);
+    }
 
-        // Detect and set merged file
-        const mergedPath = await window.datasetSelector.detectMergedFile(folderName);
-        const hourlyPath = await window.datasetSelector.detectHourlyMergedFile(folderName);
+    // Load data for multiple agent folders + benchmark (parallel loading)
+    async loadMultipleAgentsData(folderNames) {
+        if (!folderNames || folderNames.length === 0) {
+            console.warn('[loadMultipleAgentsData] No agents to load');
+            return {};
+        }
+
+        console.log(`[loadMultipleAgentsData] Loading ${folderNames.length} agents: ${folderNames.join(', ')}`);
+
+        // Detect and set merged file path from first agent (all share same date group)
+        const mergedPath = await window.datasetSelector.detectMergedFile(folderNames[0]);
+        const hourlyPath = await window.datasetSelector.detectHourlyMergedFile(folderNames[0]);
         this.setMergedFilePath(mergedPath);
         this.setHourlyFilePath(hourlyPath);
 
         // Clear previous agent data
         this.agentData = {};
 
-        // Load the selected agent
-        const data = await this.loadAgentData(folderName);
-        if (data) {
-            this.agentData[folderName] = data;
-            console.log(`Successfully loaded ${folderName}`);
-        }
+        // Pre-load prices once before parallel agent loading
+        await this.loadAStockPrices();
 
-        // Load benchmark
-        const benchmarkData = await this.loadBenchmarkData();
-        if (benchmarkData) {
-            this.agentData[benchmarkData.name] = benchmarkData;
-            console.log(`Successfully loaded benchmark: ${benchmarkData.name}`);
-        }
+        // Load all agents in parallel
+        const agentPromises = folderNames.map(async (folder) => {
+            const data = await this.loadAgentData(folder);
+            if (data) {
+                this.agentData[folder] = data;
+            }
+        });
+        await Promise.all(agentPromises);
+
+        console.log(`Loaded ${Object.keys(this.agentData).length} agents successfully`);
+
+        // Benchmark disabled - SSE50 data source unreliable
+        // const benchmarkData = await this.loadBenchmarkData();
+        // if (benchmarkData) {
+        //     this.agentData[benchmarkData.name] = benchmarkData;
+        // }
 
         return this.agentData;
     }
@@ -626,8 +723,9 @@ class DataLoader {
         return './figs/deepseek.svg';
     }
 
-    // Get brand color for agent
+    // Get brand color for agent (by type prefix)
     getAgentBrandColor(agentName) {
+        // Check config first (exact folder match)
         const color = window.configLoader.getColor(agentName, this.currentMarket);
         if (color) return color;
 
@@ -635,7 +733,34 @@ class DataLoader {
         if (agentName.includes('SSE')) return '#e74c3c';
         if (agentName.includes('QQQ')) return '#ff6b00';
 
-        // Default for agents
+        // Agent-type color mapping (consistent across date groups)
+        const typeColors = {
+            'balanced': '#00ffcc',
+            'monk':     '#f15b6c',
+            'nuts':     '#8338ec',
+            'tech':     '#A8FF24',
+            'normal':   '#3a86ff',
+            'hitup':    '#ffbe0b',
+            'foucs':    '#fb5607',
+            'news':     '#10a37f',
+            'enhance':  '#ff006e',
+        };
+
+        // Extract short name: DS_pick_balanced_260202 → balanced
+        const shortName = agentName
+            .replace(/_\d{6}$/, '')
+            .replace(/^DS_pick_/, '')
+            .replace(/^DS_/, '')
+            .replace(/^Test_/, '')
+            .toLowerCase();
+
+        if (typeColors[shortName]) return typeColors[shortName];
+
+        // Partial match for compound names like "enhance_v3"
+        for (const [type, c] of Object.entries(typeColors)) {
+            if (shortName.includes(type)) return c;
+        }
+
         return '#00d4ff';
     }
 

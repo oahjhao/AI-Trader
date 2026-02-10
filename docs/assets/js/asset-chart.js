@@ -29,11 +29,11 @@ function loadIconImage(iconPath) {
     });
 }
 
-// Load data and refresh UI for a selected dataset
+// Load data and refresh UI for selected agents
 async function loadDataAndRefresh() {
-    const selectedFolder = window.datasetSelector.getSelectedFolder();
-    if (!selectedFolder) {
-        console.log('No dataset selected, waiting...');
+    const agents = window.datasetSelector.getSelectedAgents();
+    if (!agents || agents.length === 0) {
+        console.log('No agents selected, waiting...');
         return;
     }
 
@@ -42,8 +42,8 @@ async function loadDataAndRefresh() {
     try {
         await dataLoader.initialize();
 
-        console.log(`Loading data for selected dataset: ${selectedFolder}`);
-        allAgentsData = await dataLoader.loadSelectedAgentData(selectedFolder);
+        console.log(`Loading data for ${agents.length} agents: ${agents.join(', ')}`);
+        allAgentsData = await dataLoader.loadMultipleAgentsData(agents);
         console.log('Data loaded:', Object.keys(allAgentsData));
 
         if (Object.keys(allAgentsData).length === 0) {
@@ -160,9 +160,12 @@ function createChart() {
             borderDash = [];
         }
 
+        // Build date -> value Map for O(1) lookup
+        const historyMap = new Map();
+        data.assetHistory.forEach(h => historyMap.set(h.date, h.value));
+
         const chartData = sortedDates.map(date => {
-            const historyEntry = data.assetHistory.find(h => h.date === date);
-            return { x: date, y: historyEntry ? historyEntry.value : null };
+            return { x: date, y: historyMap.get(date) ?? null };
         });
 
         return {

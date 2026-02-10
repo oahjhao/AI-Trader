@@ -1,11 +1,12 @@
 #!/bin/bash
 # AWS ECS Run All - 按照 docker-compose 逻辑顺序执行 ECS 任务
-# 用法: ./aws_ecs_run_all.sh [CONFIG_FILE] [INIT_DATE] [END_DATE] [--local] [--agent SIGNATURE] [--skip-data-prep]
+# 用法: ./aws_ecs_run_all.sh [CONFIG_FILE] [INIT_DATE] [END_DATE] [--local] [--agent SIGNATURE] [--skip-data-prep] [--live]
 # 示例: 
 #   ECS 模式: ./aws_ecs_run_all.sh configs/astock_config_hourly.json 2025-01-01 2025-01-21
 #   本地测试: ./aws_ecs_run_all.sh configs/astock_config_daily_20250815.json 2025-08-15 2025-08-22 --local
 #   只运行某个 Agent: ./aws_ecs_run_all.sh configs/astock_config_hourly_260202.json --local --agent DS_pick_monk_260202
 #   跳过数据准备: ./aws_ecs_run_all.sh configs/astock_config_hourly_260202.json --local --agent DS_pick_monk_260202 --skip-data-prep
+#   LIVE 模式: ./aws_ecs_run_all.sh configs/astock_config_hourly_260202.json --live --agent DS_pick_tech_260202
 
 set -e
 
@@ -15,8 +16,9 @@ set -e
 RUN_MODE="ecs"  # 默认 ECS 模式
 AGENT_FILTER=""  # 指定运行的 Agent（为空则运行全部）
 SKIP_DATA_PREP=false  # 是否跳过数据准备
+LIVE_MODE=false  # 是否使用live模式
 
-# 解析 --local、--agent、--skip-data-prep 选项
+# 解析 --local、--agent、--skip-data-prep、--live 选项
 ARGS=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -30,6 +32,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --skip-data-prep)
       SKIP_DATA_PREP=true
+      shift
+      ;;
+    --live)
+      LIVE_MODE=true
       shift
       ;;
     *)
@@ -49,6 +55,9 @@ if [ -n "$AGENT_FILTER" ]; then
 fi
 if [ "$SKIP_DATA_PREP" = true ]; then
   echo "[INFO] ⏭️  跳过数据准备"
+fi
+if [ "$LIVE_MODE" = true ]; then
+  echo "[INFO] 🚀 运行模式: LIVE (实时交易)"
 fi
 
 # ============================================
@@ -79,7 +88,7 @@ load_env_file
 # ============================================
 CLUSTER="${ECS_CLUSTER:-trader-cluster}"
 SUBNET="${ECS_SUBNET:-subnet-0307b527137ee17d9}"
-SECURITY_GROUP="${ECS_SECURITY_GROUP:-sg-097cc7fbe296ee446}"
+SECURITY_GROUP="${ECS_SECURITY_GROUP:-sg-0e9ea03fd1beaaad9}"
 REGION="${AWS_REGION:-us-west-2}"
 
 # 任务定义名称（支持环境变量覆盖）
@@ -113,7 +122,8 @@ END_DATE=${ARGS[2]:-""}
 
 # 自动检测 backtest 模式：如果未提供日期参数，从配置文件读取
 # 当配置文件的 end_date 在过去时，自动使用配置中的日期（BACKTEST 模式）
-if [ -z "$INIT_DATE" ] && [ -z "$END_DATE" ]; then
+# 注意：LIVE 模式下跳过此检测，由 LIVE 逻辑负责更新日期
+if [ -z "$INIT_DATE" ] && [ -z "$END_DATE" ] && [ "$LIVE_MODE" = false ]; then
   # 尝试多个路径读取配置文件
   _cfg_path="$CONFIG_FILE"
   if [ ! -f "$_cfg_path" ]; then
@@ -136,6 +146,58 @@ if [ -z "$INIT_DATE" ] && [ -z "$END_DATE" ]; then
         echo "[INFO] 📅 使用配置文件日期: $INIT_DATE ~ $END_DATE"
       fi
     fi
+  fi
+fi
+
+# ============================================
+# LIVE 模式处理：修改配置文件的 end_date 为当前时间
+# ============================================
+if [ "$LIVE_MODE" = true ]; then
+  echo "[INFO] 🔧 LIVE模式：将修改配置文件的 end_date 为当前时间"
+  
+  # 查找配置文件的实际路径
+  CONFIG_PATH="$CONFIG_FILE"
+  if [ ! -f "$CONFIG_PATH" ]; then
+    CONFIG_PATH="/mnt/efs/ai-trader/$CONFIG_FILE"
+  fi
+  
+  if [ ! -f "$CONFIG_PATH" ]; then
+    echo "[ERROR] 找不到配置文件: $CONFIG_FILE"
+    exit 1
+  fi
+  
+  # 获取当前时间（格式：YYYY-MM-DD HH:MM:SS）
+  CURRENT_TIME=$(date '+%Y-%m-%d %H:%M:%S')
+  echo "[INFO] 📅 当前时间: $CURRENT_TIME"
+  
+  # 备份原始配置文件（可选，用于恢复）
+  CONFIG_BACKUP="${CONFIG_PATH}.backup.$(date +%s)"
+  cp "$CONFIG_PATH" "$CONFIG_BACKUP"
+  echo "[INFO] 📂 已创建配置文件备份: $CONFIG_BACKUP"
+  
+  # 直接修改源配置文件
+  if command -v jq &> /dev/null; then
+    # 创建临时文件用于修改
+    TEMP_FILE="${CONFIG_PATH}.tmp.$$"
+    jq --arg current_time "$CURRENT_TIME" '.date_range.end_date = $current_time' "$CONFIG_PATH" > "$TEMP_FILE"
+    
+    if [ $? -eq 0 ] && [ -s "$TEMP_FILE" ]; then
+      # 用修改后的内容替换原文件
+      mv "$TEMP_FILE" "$CONFIG_PATH"
+      echo "[INFO] ✅ 已直接修改源配置文件: $CONFIG_PATH"
+      echo "[INFO] 📋 修改后的日期范围:"
+      echo "[INFO]   init_date: $(jq -r '.date_range.init_date' "$CONFIG_PATH")"
+      echo "[INFO]   end_date: $(jq -r '.date_range.end_date' "$CONFIG_PATH")"
+    else
+      echo "[ERROR] 无法修改配置文件"
+      # 恢复备份
+      mv "$CONFIG_BACKUP" "$CONFIG_PATH"
+      rm -f "$TEMP_FILE"
+      exit 1
+    fi
+  else
+    echo "[ERROR] 需要 jq 命令来修改 JSON 配置文件"
+    exit 1
   fi
 fi
 
@@ -759,6 +821,17 @@ main() {
     exit 1
   fi
 }
+
+# 清理备份文件函数
+cleanup_backup_files() {
+  if [ -n "$CONFIG_BACKUP" ] && [ -f "$CONFIG_BACKUP" ]; then
+    echo "[INFO] 🧹 清理配置文件备份: $CONFIG_BACKUP"
+    rm -f "$CONFIG_BACKUP"
+  fi
+}
+
+# 设置退出时清理
+trap cleanup_backup_files EXIT
 
 # 执行主函数
 main "$@"

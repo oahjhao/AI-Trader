@@ -1,22 +1,25 @@
-// Dataset Selector Module
-// Dynamically lists available agent data folders from nginx autoindex JSON API
-// and provides a grouped <select> dropdown for choosing one agent to load.
+// Dataset Selector Module v2
+// Two-level selection: Date Group + Agent Multi-select
+// 1) Date group dropdown (e.g., 2026-02-02)
+// 2) Agent checkbox picker (e.g., balanced, monk, nuts, tech)
 
 class DatasetSelector {
     constructor() {
         this.folders = [];
-        this.grouped = {};       // { dateSuffix: [folderName, ...] }
-        this.currentFolder = null;
+        this.dateGroups = {};        // { dateSuffix: [folderName, ...] }
+        this.currentDateGroup = null;
+        this.selectedAgents = new Set();
         this.baseDataPath = './data';
         this.dataDir = 'agent_data_astock';
-        this.storageKey = 'aitrader_selected_dataset';
-        this._selectEl = null;
+        this.storageKey = 'aitrader_v2';
+        this._dateSelectEl = null;
+        this._agentPickerEl = null;
+        this._dropdownEl = null;
         this._ready = false;
     }
 
     // ---- Public API ----
 
-    // Initialize: fetch folder list, render selector, restore last choice
     async init(containerSelector) {
         const container = document.querySelector(containerSelector);
         if (!container) {
@@ -24,63 +27,115 @@ class DatasetSelector {
             return;
         }
 
-        // Create the <select> element
-        this._selectEl = document.createElement('select');
-        this._selectEl.id = 'datasetSelect';
-        this._selectEl.className = 'dataset-select';
+        // Create wrapper
+        const wrapper = document.createElement('div');
+        wrapper.className = 'dataset-selector-wrapper';
 
-        // Placeholder
-        const placeholder = document.createElement('option');
-        placeholder.value = '';
-        placeholder.textContent = '⏳ Loading datasets...';
-        placeholder.disabled = true;
-        placeholder.selected = true;
-        this._selectEl.appendChild(placeholder);
-        container.appendChild(this._selectEl);
+        // 1. Date group select
+        this._dateSelectEl = document.createElement('select');
+        this._dateSelectEl.id = 'dateGroupSelect';
+        this._dateSelectEl.className = 'date-group-select';
+        const ph = document.createElement('option');
+        ph.value = '';
+        ph.textContent = '⏳ Loading...';
+        ph.disabled = true;
+        ph.selected = true;
+        this._dateSelectEl.appendChild(ph);
+        wrapper.appendChild(this._dateSelectEl);
 
-        // Fetch folders
+        // 2. Agent picker button + dropdown
+        this._agentPickerEl = document.createElement('div');
+        this._agentPickerEl.className = 'agent-picker';
+        this._agentPickerEl.innerHTML = `
+            <button type="button" class="agent-picker-toggle" id="agentPickerToggle">
+                <span class="agent-picker-icon">👥</span>
+                <span class="agent-count" id="agentCountLabel">0/0</span>
+                <span class="agent-picker-caret">▾</span>
+            </button>
+            <div class="agent-picker-dropdown hidden" id="agentPickerDropdown">
+                <div class="agent-picker-controls">
+                    <button type="button" class="agent-picker-btn" id="selectAllAgents">All</button>
+                    <button type="button" class="agent-picker-btn" id="selectNoneAgents">None</button>
+                </div>
+                <div class="agent-picker-list" id="agentPickerList"></div>
+            </div>
+        `;
+        wrapper.appendChild(this._agentPickerEl);
+
+        container.appendChild(wrapper);
+        this._dropdownEl = document.getElementById('agentPickerDropdown');
+
+        // Fetch folders and build UI
         try {
             await this._fetchFolders();
-            this._buildGrouped();
-            this._renderOptions();
+            this._buildDateGroups();
+            this._renderDateGroupOptions();
+            this._setupEventListeners();
             this._ready = true;
 
-            // Restore last selection
-            const saved = localStorage.getItem(this.storageKey);
-            if (saved && this.folders.includes(saved)) {
-                this._selectEl.value = saved;
-                this.currentFolder = saved;
-            } else if (this.folders.length > 0) {
-                // Default to first folder
-                this._selectEl.value = this.folders[0];
-                this.currentFolder = this.folders[0];
+            // Restore saved state or default to newest group
+            const saved = this._loadSavedState();
+            const sortedGroups = Object.keys(this.dateGroups)
+                .filter(s => s !== 'other')
+                .sort((a, b) => b.localeCompare(a));
+            if (this.dateGroups['other']) sortedGroups.push('other');
+
+            if (saved && this.dateGroups[saved.dateGroup]) {
+                this.currentDateGroup = saved.dateGroup;
+                this._dateSelectEl.value = saved.dateGroup;
+                this._renderAgentPicker();
+                // Restore agent selection by prefix
+                const groupFolders = this.dateGroups[saved.dateGroup];
+                if (saved.agentPrefixes && saved.agentPrefixes.length > 0) {
+                    for (const folder of groupFolders) {
+                        const prefix = this._extractAgentPrefix(folder);
+                        if (saved.agentPrefixes.includes(prefix)) {
+                            this.selectedAgents.add(folder);
+                        }
+                    }
+                }
+                // If nothing restored, select all
+                if (this.selectedAgents.size === 0) {
+                    groupFolders.forEach(f => this.selectedAgents.add(f));
+                }
+            } else if (sortedGroups.length > 0) {
+                this.currentDateGroup = sortedGroups[0];
+                this._dateSelectEl.value = sortedGroups[0];
+                this._renderAgentPicker();
+                this.dateGroups[sortedGroups[0]].forEach(f => this.selectedAgents.add(f));
             }
 
-            // Listen for changes
-            this._selectEl.addEventListener('change', (e) => {
-                this._onSelect(e.target.value);
-            });
-
-            // Fire initial event
-            if (this.currentFolder) {
-                this._onSelect(this.currentFolder);
-            }
+            this._syncCheckboxes();
+            this._updateToggleLabel();
+            this._fireEvent();
         } catch (err) {
             console.error('[DatasetSelector] init failed:', err);
-            placeholder.textContent = '❌ Failed to load datasets';
+            ph.textContent = '❌ Failed to load';
         }
     }
 
-    // Get currently selected folder name
-    getSelectedFolder() {
-        return this.currentFolder;
+    // Get all currently selected agent folder names
+    getSelectedAgents() {
+        return Array.from(this.selectedAgents);
     }
 
-    // Detect the correct merged price file for a given folder
-    // e.g. "Test_nuts_250815" -> tries "merged_20250815.jsonl", falls back to "merged.jsonl"
-    async detectMergedFile(folderName) {
-        const suffix = this._extractDateSuffix(folderName);
-        if (suffix) {
+    // Legacy compat: return first selected agent
+    getSelectedFolder() {
+        const agents = this.getSelectedAgents();
+        return agents.length > 0 ? agents[0] : null;
+    }
+
+    getCurrentDateGroup() {
+        return this.currentDateGroup;
+    }
+
+    // Detect the correct merged price file for a date group or folder
+    async detectMergedFile(folderNameOrDateGroup) {
+        let suffix = folderNameOrDateGroup;
+        if (folderNameOrDateGroup && folderNameOrDateGroup.length > 6) {
+            suffix = this._extractDateSuffix(folderNameOrDateGroup);
+        }
+        if (suffix && suffix !== 'other') {
             const fullSuffix = this._expandDateSuffix(suffix);
             const candidatePath = `${this.baseDataPath}/A_stock/merged_${fullSuffix}.jsonl`;
             try {
@@ -89,128 +144,235 @@ class DatasetSelector {
                     console.log(`[DatasetSelector] Using merged file: merged_${fullSuffix}.jsonl`);
                     return candidatePath;
                 }
-            } catch (e) {
-                // Fall through
-            }
+            } catch (e) { /* fall through */ }
         }
         console.log('[DatasetSelector] Using default merged file: merged.jsonl');
         return `${this.baseDataPath}/A_stock/merged.jsonl`;
     }
 
-    // Detect hourly merged file
-    async detectHourlyMergedFile(folderName) {
-        const suffix = this._extractDateSuffix(folderName);
-        if (suffix) {
+    async detectHourlyMergedFile(folderNameOrDateGroup) {
+        let suffix = folderNameOrDateGroup;
+        if (folderNameOrDateGroup && folderNameOrDateGroup.length > 6) {
+            suffix = this._extractDateSuffix(folderNameOrDateGroup);
+        }
+        if (suffix && suffix !== 'other') {
             const fullSuffix = this._expandDateSuffix(suffix);
             const candidatePath = `${this.baseDataPath}/A_stock/merged_hourly_${fullSuffix}.jsonl`;
             try {
                 const resp = await fetch(candidatePath, { method: 'HEAD' });
-                if (resp.ok) {
-                    return candidatePath;
-                }
+                if (resp.ok) return candidatePath;
             } catch (e) { /* fall through */ }
         }
         return `${this.baseDataPath}/A_stock/merged_hourly.jsonl`;
     }
 
-    // ---- Private ----
+    // ---- Private: Data ----
 
     async _fetchFolders() {
-        // nginx autoindex_format json returns an array of objects:
-        // [{"name":"folder_name","type":"directory","mtime":"..."}, ...]
         const url = `${this.baseDataPath}/${this.dataDir}/`;
         console.log('[DatasetSelector] Fetching directory listing:', url);
-
         const resp = await fetch(url);
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-
         const listing = await resp.json();
         this.folders = listing
             .filter(item => item.type === 'directory')
-            .map(item => item.name.replace(/\/$/, ''))  // strip trailing slash
-            .filter(name => name !== 'backup')           // exclude backup folder
-            .sort((a, b) => {
-                // Sort by date suffix descending (newest first), then by name
-                const sa = this._extractDateSuffix(a) || '000000';
-                const sb = this._extractDateSuffix(b) || '000000';
-                if (sb !== sa) return sb.localeCompare(sa);
-                return a.localeCompare(b);
-            });
-
+            .map(item => item.name.replace(/\/$/, ''))
+            .filter(name => name !== 'backup')
+            .sort();
         console.log(`[DatasetSelector] Found ${this.folders.length} agent folders`);
     }
 
-    _buildGrouped() {
-        this.grouped = {};
+    _buildDateGroups() {
+        this.dateGroups = {};
         for (const folder of this.folders) {
             const suffix = this._extractDateSuffix(folder) || 'other';
-            if (!this.grouped[suffix]) this.grouped[suffix] = [];
-            this.grouped[suffix].push(folder);
+            if (!this.dateGroups[suffix]) this.dateGroups[suffix] = [];
+            this.dateGroups[suffix].push(folder);
         }
+        console.log(`[DatasetSelector] ${Object.keys(this.dateGroups).length} date groups`);
     }
 
-    _renderOptions() {
-        this._selectEl.innerHTML = '';
+    // ---- Private: Rendering ----
 
-        // Placeholder
-        const placeholder = document.createElement('option');
-        placeholder.value = '';
-        placeholder.textContent = `📂 Select Agent Dataset (${this.folders.length} available)`;
-        placeholder.disabled = true;
-        this._selectEl.appendChild(placeholder);
+    _renderDateGroupOptions() {
+        this._dateSelectEl.innerHTML = '';
+        const ph = document.createElement('option');
+        ph.value = '';
+        ph.textContent = '📅 Select Date Group';
+        ph.disabled = true;
+        this._dateSelectEl.appendChild(ph);
 
-        // Render each date group as an optgroup
-        const suffixes = Object.keys(this.grouped).sort((a, b) => {
-            if (a === 'other') return 1;
-            if (b === 'other') return -1;
-            return b.localeCompare(a); // newest first
-        });
+        const suffixes = Object.keys(this.dateGroups)
+            .filter(s => s !== 'other')
+            .sort((a, b) => b.localeCompare(a));
+        if (this.dateGroups['other']) suffixes.push('other');
 
         for (const suffix of suffixes) {
-            const group = document.createElement('optgroup');
-            group.label = suffix === 'other' ? 'Other' : this._formatGroupLabel(suffix);
-
-            for (const folder of this.grouped[suffix]) {
-                const opt = document.createElement('option');
-                opt.value = folder;
-                opt.textContent = folder;
-                group.appendChild(opt);
-            }
-
-            this._selectEl.appendChild(group);
+            const opt = document.createElement('option');
+            opt.value = suffix;
+            const count = this.dateGroups[suffix].length;
+            opt.textContent = suffix === 'other'
+                ? `Other (${count})`
+                : `${this._formatDateLabel(suffix)}  (${count})`;
+            this._dateSelectEl.appendChild(opt);
         }
     }
 
-    _onSelect(folderName) {
-        this.currentFolder = folderName;
-        localStorage.setItem(this.storageKey, folderName);
-        console.log(`[DatasetSelector] Selected: ${folderName}`);
+    _renderAgentPicker() {
+        const list = document.getElementById('agentPickerList');
+        if (!list) return;
+        list.innerHTML = '';
+        this.selectedAgents.clear();
 
-        // Dispatch custom event
+        if (!this.currentDateGroup || !this.dateGroups[this.currentDateGroup]) return;
+
+        const folders = this.dateGroups[this.currentDateGroup];
+        for (const folder of folders) {
+            const shortName = this._getShortName(folder);
+            const label = document.createElement('label');
+            label.className = 'agent-checkbox-label';
+            label.innerHTML = `
+                <input type="checkbox" value="${folder}" class="agent-checkbox" checked>
+                <span class="agent-checkbox-name">${shortName}</span>
+            `;
+            list.appendChild(label);
+        }
+    }
+
+    _syncCheckboxes() {
+        const checkboxes = document.querySelectorAll('.agent-checkbox');
+        checkboxes.forEach(cb => {
+            cb.checked = this.selectedAgents.has(cb.value);
+        });
+    }
+
+    _updateToggleLabel() {
+        const total = this.dateGroups[this.currentDateGroup]?.length || 0;
+        const selected = this.selectedAgents.size;
+        const label = document.getElementById('agentCountLabel');
+        if (label) label.textContent = `${selected}/${total}`;
+    }
+
+    // ---- Private: Events ----
+
+    _setupEventListeners() {
+        // Date group change
+        this._dateSelectEl.addEventListener('change', (e) => {
+            this.currentDateGroup = e.target.value;
+            this._renderAgentPicker();
+            // Select all agents in new group
+            const folders = this.dateGroups[this.currentDateGroup] || [];
+            folders.forEach(f => this.selectedAgents.add(f));
+            this._syncCheckboxes();
+            this._updateToggleLabel();
+            this._saveState();
+            this._fireEvent();
+        });
+
+        // Agent picker toggle
+        document.getElementById('agentPickerToggle').addEventListener('click', (e) => {
+            e.stopPropagation();
+            this._dropdownEl.classList.toggle('hidden');
+        });
+
+        // Select all
+        document.getElementById('selectAllAgents').addEventListener('click', () => {
+            const folders = this.dateGroups[this.currentDateGroup] || [];
+            folders.forEach(f => this.selectedAgents.add(f));
+            this._syncCheckboxes();
+            this._updateToggleLabel();
+            this._saveState();
+            this._fireEvent();
+        });
+
+        // Select none
+        document.getElementById('selectNoneAgents').addEventListener('click', () => {
+            this.selectedAgents.clear();
+            this._syncCheckboxes();
+            this._updateToggleLabel();
+            this._saveState();
+            this._fireEvent();
+        });
+
+        // Individual checkbox changes (delegated)
+        document.getElementById('agentPickerList').addEventListener('change', (e) => {
+            if (e.target.classList.contains('agent-checkbox')) {
+                if (e.target.checked) {
+                    this.selectedAgents.add(e.target.value);
+                } else {
+                    this.selectedAgents.delete(e.target.value);
+                }
+                this._updateToggleLabel();
+                this._saveState();
+                this._fireEvent();
+            }
+        });
+
+        // Close dropdown on outside click
+        document.addEventListener('click', (e) => {
+            if (!this._agentPickerEl.contains(e.target)) {
+                this._dropdownEl.classList.add('hidden');
+            }
+        });
+    }
+
+    _fireEvent() {
+        const agents = this.getSelectedAgents();
+        console.log(`[DatasetSelector] Fire event: group=${this.currentDateGroup}, agents=[${agents.join(', ')}]`);
         window.dispatchEvent(new CustomEvent('dataset-changed', {
-            detail: { folder: folderName }
+            detail: {
+                dateGroup: this.currentDateGroup,
+                agents: agents,
+                primaryAgent: agents[0] || null
+            }
         }));
     }
 
-    // Extract 6-digit date suffix from folder name
-    // "Test_nuts_250815" -> "250815"
-    // "DS_pick_monk_260119" -> "260119"
+    // ---- Private: Persistence ----
+
+    _saveState() {
+        const state = {
+            dateGroup: this.currentDateGroup,
+            agentPrefixes: this.getSelectedAgents().map(f => this._extractAgentPrefix(f))
+        };
+        try { localStorage.setItem(this.storageKey, JSON.stringify(state)); } catch (e) {}
+    }
+
+    _loadSavedState() {
+        try {
+            const raw = localStorage.getItem(this.storageKey);
+            return raw ? JSON.parse(raw) : null;
+        } catch { return null; }
+    }
+
+    // ---- Private: Name Helpers ----
+
     _extractDateSuffix(folderName) {
         const match = folderName.match(/(\d{6})$/);
         return match ? match[1] : null;
     }
 
-    // Expand 6-digit suffix to 8-digit: "250815" -> "20250815"
+    _extractAgentPrefix(folderName) {
+        return folderName.replace(/_\d{6}$/, '');
+    }
+
+    _getShortName(folderName) {
+        const prefix = this._extractAgentPrefix(folderName);
+        return prefix
+            .replace(/^DS_pick_/, '')
+            .replace(/^DS_/, '')
+            .replace(/^Test_/, '') || prefix;
+    }
+
     _expandDateSuffix(suffix) {
         if (!suffix || suffix.length !== 6) return suffix;
         const yearPrefix = parseInt(suffix.substring(0, 2)) >= 50 ? '19' : '20';
         return yearPrefix + suffix;
     }
 
-    // Format group label: "260119" -> "2026-01-19"
-    _formatGroupLabel(suffix) {
+    _formatDateLabel(suffix) {
         const full = this._expandDateSuffix(suffix);
-        if (full.length === 8) {
+        if (full && full.length === 8) {
             return `${full.substring(0, 4)}-${full.substring(4, 6)}-${full.substring(6, 8)}`;
         }
         return suffix;
