@@ -1,12 +1,26 @@
 #!/bin/bash
-# AWS ECS Run All - 按照 docker-compose 逻辑顺序执行 ECS 任务
-# 用法: ./aws_ecs_run_all.sh [CONFIG_FILE] [INIT_DATE] [END_DATE] [--local] [--agent SIGNATURE] [--skip-data-prep] [--live]
-# 示例: 
-#   ECS 模式: ./aws_ecs_run_all.sh configs/astock_config_hourly.json 2025-01-01 2025-01-21
-#   本地测试: ./aws_ecs_run_all.sh configs/astock_config_daily_20250815.json 2025-08-15 2025-08-22 --local
-#   只运行某个 Agent: ./aws_ecs_run_all.sh configs/astock_config_hourly_260202.json --local --agent DS_pick_monk_260202
-#   跳过数据准备: ./aws_ecs_run_all.sh configs/astock_config_hourly_260202.json --local --agent DS_pick_monk_260202 --skip-data-prep
-#   LIVE 模式: ./aws_ecs_run_all.sh configs/astock_config_hourly_260202.json --live --agent DS_pick_tech_260202
+# ============================================
+# AWS ECS Run All - AI-Trader 统一执行入口
+# ============================================
+# 
+# 详细使用说明请参考: .qoder/skills/run-ai-trader.md
+#
+# 快速示例:
+#   LIVE 模式:     ./aws_ecs_run_all.sh configs/astock_config_hourly_260202.json --live
+#   BACKTEST 模式: ./aws_ecs_run_all.sh configs/astock_config_hourly_260202.json 2026-02-02 2026-02-09
+#   本地测试:      ./aws_ecs_run_all.sh configs/astock_config_hourly_260202.json --local --agent DS_pick_tech_260202
+#   跳过数据准备:  ./aws_ecs_run_all.sh configs/xxx.json --local --skip-data-prep
+#
+# 环境变量约束 (entrypoint 脚本只从环境变量获取参数):
+#   必需: CONFIG_FILE, DATE_SUFFIX (由本脚本自动从配置文件名提取)
+#   可选: START_DATE, END_DATE (回测模式)
+#
+# 命令行选项:
+#   --local          本地 Docker 容器测试模式
+#   --live           LIVE 实时交易模式
+#   --agent SIG      只运行指定的 Agent
+#   --skip-data-prep 跳过数据准备步骤
+#   -h, --help       显示帮助信息
 
 set -e
 
@@ -650,6 +664,7 @@ run_local_docker_test() {
       
     # 挂载 EFS，但保留镜像中的脚本
     # EFS 的 configs、data、logs、docs 会覆盖镜像中的对应目录
+    # 通过环境变量传递参数（与 ECS 模式一致）
     sudo docker run --rm \
       --name trader-data-prep-local \
       -v /mnt/efs/ai-trader/configs:/home/ec2-user/AI-Trader/configs \
@@ -657,10 +672,12 @@ run_local_docker_test() {
       -v /mnt/efs/ai-trader/logs:/home/ec2-user/AI-Trader/logs \
       -v /mnt/efs/ai-trader/docs:/home/ec2-user/AI-Trader/docs \
       -w /home/ec2-user/AI-Trader \
+      -e CONFIG_FILE="configs/${CONFIG_FILE##*/}" \
       -e DATE_SUFFIX="$DATE_SUFFIX" \
+      -e START_DATE="$INIT_DATE" \
+      -e END_DATE="$END_DATE" \
       ai-trader:latest \
-      bash scripts/data_preparation_entrypoint.sh \
-        "configs/${CONFIG_FILE##*/}" "$INIT_DATE" "$END_DATE"
+      bash scripts/data_preparation_entrypoint.sh
       
     if [ $? -ne 0 ]; then
       echo_error "数据准备失败"

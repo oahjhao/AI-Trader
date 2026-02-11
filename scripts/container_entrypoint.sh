@@ -1,8 +1,42 @@
 #!/bin/bash
 # AI-Trader Container Entrypoint Script
 # This script starts the MCP services in the background and then runs the trader runner.
+#
+# ============================================
+# 参数来源
+# ============================================
+# 命令行参数（由 ECS command 覆盖传入）：
+#   - $1: 配置文件路径 (e.g. configs/astock_config_hourly.json)
+#   - --signature: Agent 签名
+#
+# 必需环境变量：
+#   - DATE_SUFFIX: 日期后缀，用于数据隔离 (e.g. 20250119)
+#
+# 由 aws_ecs_run_all.sh 通过 ECS 任务传入
 
 set -e
+
+echo "🤖 Starting AI-Trader Agent Container..."
+echo "============================================"
+
+# ============================================
+# 严格校验必需环境变量
+# ============================================
+if [ -z "$DATE_SUFFIX" ]; then
+    echo "❌ ERROR: Missing required environment variable: DATE_SUFFIX"
+    echo ""
+    echo "Required environment variables:"
+    echo "  DATE_SUFFIX  - Date suffix for data isolation (e.g. 20250119)"
+    echo ""
+    echo "Example ECS task override:"
+    echo '  --overrides {"containerOverrides":[{"name":"trader-agent","command":["configs/xxx.json","--signature","XXX"],"environment":[{"name":"DATE_SUFFIX","value":"20250119"}]}]}'
+    exit 1
+fi
+
+echo "📊 Environment Variables:"
+echo "   DATE_SUFFIX: $DATE_SUFFIX"
+echo "   Arguments:   $@"
+echo "============================================"
 
 # Load environment variables from .env file
 # Priority: ./.env (EFS mount at runtime) > configs/.env (backward compatibility)
@@ -53,31 +87,44 @@ cleanup() {
 # Set trap for cleanup
 trap cleanup EXIT
 
+echo ""
+echo "============================================"
+echo "📦 Step 1/3: Start MCP Services"
+echo "============================================"
 # 1. Start MCP services in background
-echo "🚀 Starting MCP services in background..."
+echo "🔧 Running: python agent_tools/start_mcp_services.py &"
 python agent_tools/start_mcp_services.py &
 
 # 2. Wait for MCP services to be ready
 # We check if the ports are listening
-echo "⏳ Waiting for MCP services to initialize..."
+echo "⏳ Waiting for MCP services to initialize (port 8000)..."
 MAX_RETRIES=60
 RETRY_COUNT=0
 # Default math port 8000 as a health check
 while ! (exec 3<>/dev/tcp/localhost/8000) 2>/dev/null; do
     RETRY_COUNT=$((RETRY_COUNT + 1))
     if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
-        echo "❌ MCP services failed to start within timeout"
+        echo "❌ MCP services failed to start within timeout (${MAX_RETRIES}x2s)"
         echo "📋 Checking if MCP service processes are running..."
         ps aux | grep -E "tool_(math|search|trade|get_price)" | grep -v grep || echo "No MCP processes found"
         exit 1
     fi
     sleep 2
 done
-echo "✅ MCP services are up and running"
+echo "✅ MCP services are up and running (retry count: $RETRY_COUNT)"
 sleep 10
 
+echo ""
+echo "============================================"
+echo "📦 Step 2/3: Execute Trader Runner"
+echo "============================================"
 # 3. Execute the requested command (usually the runner)
-echo "🤖 Executing trader runner with arguments: $@"
+echo "🔧 Running: python -m trader.runner $@"
+echo "   DATE_SUFFIX=$DATE_SUFFIX"
 python -m trader.runner "$@"
 
+echo ""
+echo "============================================"
+echo "📦 Step 3/3: Cleanup"
+echo "============================================"
 echo "🎉 Agent execution finished"
