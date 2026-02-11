@@ -75,6 +75,72 @@ if [ "$LIVE_MODE" = true ]; then
 fi
 
 # ============================================
+# 纯 bash JSON 解析函数（无需 jq）
+# ============================================
+parse_json_value() {
+  local json_file="$1"
+  local key_path="$2"
+  
+  if [ ! -f "$json_file" ]; then
+    return 1
+  fi
+  
+  # 使用 grep + sed 提取 JSON 值
+  case "$key_path" in
+    "date_range.init_date")
+      grep -o '"init_date"[[:space:]]*:[[:space:]]*"[^"]*"' "$json_file" | sed 's/.*"\([^"]*\)"$/\1/' | head -1
+      ;;
+    "date_range.end_date")
+      grep -o '"end_date"[[:space:]]*:[[:space:]]*"[^"]*"' "$json_file" | sed 's/.*"\([^"]*\)"$/\1/' | head -1
+      ;;
+    "models[].signature")
+      # 提取所有 enabled=true 的 signature
+      local in_model=false
+      local is_enabled=false
+      local signature=""
+      
+      while IFS= read -r line; do
+        if echo "$line" | grep -q '"name"[[:space:]]*:'; then
+          in_model=true
+          is_enabled=false
+          signature=""
+        fi
+        
+        if [ "$in_model" = true ]; then
+          if echo "$line" | grep -q '"signature"[[:space:]]*:'; then
+            signature=$(echo "$line" | sed 's/.*"signature"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
+          fi
+          
+          if echo "$line" | grep -q '"enabled"[[:space:]]*:[[:space:]]*true'; then
+            is_enabled=true
+          fi
+          
+          if echo "$line" | grep -q '}'; then
+            if [ "$is_enabled" = true ] && [ -n "$signature" ]; then
+              echo "$signature"
+            fi
+            in_model=false
+          fi
+        fi
+      done < "$json_file"
+      ;;
+  esac
+}
+
+modify_json_end_date() {
+  local json_file="$1"
+  local new_end_date="$2"
+  
+  if [ ! -f "$json_file" ]; then
+    return 1
+  fi
+  
+  # 使用 sed 修改 end_date 值
+  sed -i.bak "s/\(\"end_date\"[[:space:]]*:[[:space:]]*\)\"[^\"]*\"/\1\"$new_end_date\"/" "$json_file"
+  return $?
+}
+
+# ============================================
 # 加载 .env 环境变量
 # ============================================
 load_env_file() {
@@ -151,9 +217,9 @@ if [ -z "$INIT_DATE" ] && [ -z "$END_DATE" ] && [ "$LIVE_MODE" = false ]; then
     _cfg_path="/mnt/efs/ai-trader/$CONFIG_FILE"
   fi
   
-  if [ -f "$_cfg_path" ] && command -v jq &> /dev/null; then
-    _cfg_init=$(jq -r '.date_range.init_date // empty' "$_cfg_path" 2>/dev/null)
-    _cfg_end=$(jq -r '.date_range.end_date // empty' "$_cfg_path" 2>/dev/null)
+  if [ -f "$_cfg_path" ]; then
+    _cfg_init=$(parse_json_value "$_cfg_path" "date_range.init_date")
+    _cfg_end=$(parse_json_value "$_cfg_path" "date_range.end_date")
     
     if [ -n "$_cfg_init" ] && [ -n "$_cfg_end" ]; then
       # 提取日期部分（去掉可能的时间后缀）用于比较
@@ -197,28 +263,18 @@ if [ "$LIVE_MODE" = true ]; then
   cp "$CONFIG_PATH" "$CONFIG_BACKUP"
   echo "[INFO] 📂 已创建配置文件备份: $CONFIG_BACKUP"
   
-  # 直接修改源配置文件
-  if command -v jq &> /dev/null; then
-    # 创建临时文件用于修改
-    TEMP_FILE="${CONFIG_PATH}.tmp.$$"
-    jq --arg current_time "$CURRENT_TIME" '.date_range.end_date = $current_time' "$CONFIG_PATH" > "$TEMP_FILE"
-    
-    if [ $? -eq 0 ] && [ -s "$TEMP_FILE" ]; then
-      # 用修改后的内容替换原文件
-      mv "$TEMP_FILE" "$CONFIG_PATH"
-      echo "[INFO] ✅ 已直接修改源配置文件: $CONFIG_PATH"
-      echo "[INFO] 📋 修改后的日期范围:"
-      echo "[INFO]   init_date: $(jq -r '.date_range.init_date' "$CONFIG_PATH")"
-      echo "[INFO]   end_date: $(jq -r '.date_range.end_date' "$CONFIG_PATH")"
-    else
-      echo "[ERROR] 无法修改配置文件"
-      # 恢复备份
-      mv "$CONFIG_BACKUP" "$CONFIG_PATH"
-      rm -f "$TEMP_FILE"
-      exit 1
-    fi
+  # 直接修改源配置文件（使用纯 bash）
+  if modify_json_end_date "$CONFIG_PATH" "$CURRENT_TIME"; then
+    echo "[INFO] ✅ 已直接修改源配置文件: $CONFIG_PATH"
+    echo "[INFO] 📋 修改后的日期范围:"
+    echo "[INFO]   init_date: $(parse_json_value "$CONFIG_PATH" "date_range.init_date")"
+    echo "[INFO]   end_date: $(parse_json_value "$CONFIG_PATH" "date_range.end_date")"
   else
-    echo "[ERROR] 需要 jq 命令来修改 JSON 配置文件"
+    echo "[ERROR] 无法修改配置文件"
+    # 恢复备份
+    if [ -f "$CONFIG_BACKUP" ]; then
+      mv "$CONFIG_BACKUP" "$CONFIG_PATH"
+    fi
     exit 1
   fi
 fi
@@ -276,33 +332,29 @@ echo_error() {
 check_prerequisites() {
   echo_info "检查前置条件..."
   
-  # 检查 AWS CLI
-  if ! command -v aws &> /dev/null; then
-    echo_error "AWS CLI 未安装，请先安装 AWS CLI"
-    exit 1
-  fi
-  
-  # 检查 jq（用于解析 JSON 配置）
-  if ! command -v jq &> /dev/null; then
-    echo_error "jq 未安装，请先安装 jq (yum install jq 或 apt-get install jq)"
-    exit 1
+  # 检查 AWS CLI（仅在 ECS 模式下必需）
+  if [ "$RUN_MODE" != "local" ]; then
+    if ! command -v aws &> /dev/null; then
+      echo_error "AWS CLI 未安装，请先安装 AWS CLI"
+      exit 1
+    fi
+    
+    # 检查 AWS 认证
+    if ! aws sts get-caller-identity &> /dev/null; then
+      echo_error "AWS 认证失败，请配置 AWS 凭证"
+      exit 1
+    fi
+    
+    # 检查 ECS 集群是否存在
+    if ! aws ecs describe-clusters --clusters "$CLUSTER" --region "$REGION" &> /dev/null; then
+      echo_error "ECS 集群 '$CLUSTER' 不存在"
+      exit 1
+    fi
   fi
   
   # 检查配置文件是否存在
   if [ ! -f "$CONFIG_FILE" ]; then
     echo_error "配置文件不存在: $CONFIG_FILE"
-    exit 1
-  fi
-  
-  # 检查 AWS 认证
-  if ! aws sts get-caller-identity &> /dev/null; then
-    echo_error "AWS 认证失败，请配置 AWS 凭证"
-    exit 1
-  fi
-  
-  # 检查 ECS 集群是否存在
-  if ! aws ecs describe-clusters --clusters "$CLUSTER" --region "$REGION" &> /dev/null; then
-    echo_error "ECS 集群 '$CLUSTER' 不存在"
     exit 1
   fi
   
@@ -322,8 +374,8 @@ load_agents_from_config() {
     echo_info "  从 EFS 读取配置: $config_path"
   fi
   
-  # 读取配置文件中所有 enabled=true 的 models
-  local agents=$(jq -r '.models[] | select(.enabled == true) | .signature' "$config_path" 2>/dev/null)
+  # 读取配置文件中所有 enabled=true 的 models（使用纯 bash）
+  local agents=$(parse_json_value "$config_path" "models[].signature")
   
   if [ -z "$agents" ]; then
     echo_error "配置文件中未找到启用的 Agent (enabled=true)"
@@ -604,7 +656,7 @@ show_usage() {
 
 注意:
   1. 请确保已配置 AWS 凭证（AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY）
-  2. 需要安装 jq 工具用于解析配置文件（yum install jq）
+  2. 脚本使用纯 bash 解析 JSON，无需安装 jq
   3. 安全组需要允许访问 EFS (端口 2049) 和 Internet
   4. 子网需要有 NAT 网关或公网访问能力
   5. 数据准备任务完成后才会启动 Agent 任务

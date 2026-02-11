@@ -29,6 +29,11 @@ data/agent_data*/
 data/.runtime_env.json
 arms_cache/
 
+# Environment files
+# NOTE: .env IS included in the image (not ignored) for ECS deployment convenience
+# The .env file is commented out below to ensure it's packed into the image:
+# .env
+
 # Docker
 Dockerfile
 docker-compose.yml
