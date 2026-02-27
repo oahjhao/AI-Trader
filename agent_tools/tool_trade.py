@@ -34,7 +34,12 @@ def _position_lock(signature: str):
     """Context manager for file-based lock to serialize position updates per signature."""
     class _Lock:
         def __init__(self, name: str):
-            log_path = get_config_value("LOG_PATH", "./data/agent_data")
+            log_path = get_config_value("LOG_PATH")
+            if not log_path:
+                raise ValueError(
+                    f"❌ LOG_PATH not set in runtime environment. "
+                    f"Cannot create position lock for signature={name}"
+                )
             if os.path.isabs(log_path):
                 base_dir = Path(log_path) / name
             else:
@@ -205,10 +210,25 @@ def buy(symbol: str, amount: int) -> Dict[str, Any]:
         # Build file path: {project_root}/data/{log_path}/{signature}/position/position.jsonl
         # Use append mode ("a") to write new transaction record
         # Each operation ID increments by 1, ensuring uniqueness of operation sequence
-        log_path = get_config_value("LOG_PATH", "./data/agent_data")
+        log_path = get_config_value("LOG_PATH")
+        if not log_path:
+            raise ValueError(
+                f"❌ LOG_PATH not set in runtime environment. "
+                f"Cannot determine position file path for signature={signature}. "
+                f"This is a critical error - position file path must be explicitly configured."
+            )
         if log_path.startswith("./data/"):
             log_path = log_path[7:]  # Remove "./data/" prefix
         position_file_path = os.path.join(project_root, "data", log_path, signature, "position", "position.jsonl")
+        
+        # Verify position file directory exists
+        position_dir = os.path.dirname(position_file_path)
+        if not os.path.exists(position_dir):
+            raise FileNotFoundError(
+                f"❌ Position directory does not exist: {position_dir}. "
+                f"Agent should have created this directory during initialization. "
+                f"LOG_PATH={log_path}, signature={signature}"
+            )
         with open(position_file_path, "a") as f:
             # Write JSON format transaction record, containing date, operation ID, transaction details and updated position
             print(
@@ -374,7 +394,11 @@ def _get_today_buy_amount(symbol: str, today_date: str, signature: str) -> int:
     Returns:
         Total shares bought today
     """
-    log_path = get_config_value("LOG_PATH", "./data/agent_data")
+    log_path = get_config_value("LOG_PATH")
+    if not log_path:
+        # 如果LOG_PATH未设置,无法确定文件路径,返回0(保守处理)
+        print(f"⚠️  LOG_PATH not set, cannot check today's buy amount for {symbol}")
+        return 0
     if log_path.startswith("./data/"):
         log_path = log_path[7:]  # Remove "./data/" prefix
     position_file_path = os.path.join(project_root, "data", log_path, signature, "position", "position.jsonl")
@@ -544,10 +568,25 @@ def sell(symbol: str, amount: int) -> Dict[str, Any]:
     # Build file path: {project_root}/data/{log_path}/{signature}/position/position.jsonl
     # Use append mode ("a") to write new transaction record
     # Each operation ID increments by 1, ensuring uniqueness of operation sequence
-    log_path = get_config_value("LOG_PATH", "./data/agent_data")
+    log_path = get_config_value("LOG_PATH")
+    if not log_path:
+        raise ValueError(
+            f"❌ LOG_PATH not set in runtime environment. "
+            f"Cannot determine position file path for signature={signature}. "
+            f"This is a critical error - position file path must be explicitly configured."
+        )
     if log_path.startswith("./data/"):
         log_path = log_path[7:]  # Remove "./data/" prefix
     position_file_path = os.path.join(project_root, "data", log_path, signature, "position", "position.jsonl")
+    
+    # Verify position file directory exists
+    position_dir = os.path.dirname(position_file_path)
+    if not os.path.exists(position_dir):
+        raise FileNotFoundError(
+            f"❌ Position directory does not exist: {position_dir}. "
+            f"Agent should have created this directory during initialization. "
+            f"LOG_PATH={log_path}, signature={signature}"
+        )
     with open(position_file_path, "a") as f:
         # Write JSON format transaction record, containing date, operation ID and updated position
         print(

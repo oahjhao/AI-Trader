@@ -252,10 +252,12 @@ def load_stock_list(init_date: Optional[str] = None, base_dir: Optional[str] = N
     if date_suffix:
         stock_list_path = base_path / f"sse_pick_{date_suffix}.csv"
         
-        # 如果带后缀的文件不存在，回退到默认文件
+        # 严格使用 date_suffix，不回退
         if not stock_list_path.exists():
-            print(f"⚠️  文件 {stock_list_path} 不存在，回退到默认文件")
-            stock_list_path = base_path / "sse_pick.csv"
+            raise FileNotFoundError(
+                f"带日期后缀的股票列表文件不存在: {stock_list_path}\n"
+                f"请确保已生成对应日期的配置文件。"
+            )
     else:
         stock_list_path = base_path / "sse_pick.csv"
     
@@ -932,8 +934,12 @@ def get_today_init_position(today_date: str, signature: str) -> Dict[str, float]
 
     base_dir = Path(__file__).resolve().parents[1]
 
-    # Get log_path from config, default to "agent_data" for backward compatibility
-    log_path = get_config_value("LOG_PATH", "./data/agent_data")
+    # Get log_path from config, must be explicitly set
+    log_path = get_config_value("LOG_PATH")
+    if not log_path:
+        # LOG_PATH未设置,无法确定position文件路径,返回空字典
+        print(f"⚠️  LOG_PATH not set, cannot load initial position for {signature}")
+        return {}
 
     # Handle different path formats:
     # - If it's an absolute path (like temp directory), use it directly
@@ -1001,8 +1007,12 @@ def get_latest_position(today_date: str, signature: str) -> Tuple[Dict[str, floa
 
     base_dir = Path(__file__).resolve().parents[1]
 
-    # Get log_path from config, default to "agent_data" for backward compatibility
-    log_path = get_config_value("LOG_PATH", "./data/agent_data")
+    # Get log_path from config, must be explicitly set
+    log_path = get_config_value("LOG_PATH")
+    if not log_path:
+        # LOG_PATH未设置,无法确定position文件路径,返回空字典和-1
+        print(f"⚠️  LOG_PATH not set, cannot load latest position for {signature}")
+        return {}, -1
 
     # Handle different path formats:
     # - If it's an absolute path (like temp directory), use it directly
@@ -1110,8 +1120,13 @@ def add_no_trade_record(today_date: str, signature: str):
 
     base_dir = Path(__file__).resolve().parents[1]
 
-    # Get log_path from config, default to "agent_data" for backward compatibility
-    log_path = get_config_value("LOG_PATH", "./data/agent_data")
+    # Get log_path from config, must be explicitly set
+    log_path = get_config_value("LOG_PATH")
+    if not log_path:
+        raise ValueError(
+            f"❌ LOG_PATH not set in runtime environment. "
+            f"Cannot save no_trade record for signature={signature}"
+        )
 
     # Handle different path formats:
     # - If it's an absolute path (like temp directory), use it directly

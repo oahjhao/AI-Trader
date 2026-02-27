@@ -3,7 +3,7 @@ import os
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any
 
 import numpy as np
 import pandas as pd
@@ -13,7 +13,7 @@ project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-from tools.general_tools import get_config_value
+from tools.general_tools import get_config_value, write_config_value
 from tools.price_tools import (all_nasdaq_100_symbols, get_latest_position,
                                get_open_prices, get_today_init_position,
                                get_yesterday_date,
@@ -62,12 +62,16 @@ def get_available_date_range(signature: str) -> Tuple[str, str]:
     Returns:
         Tuple of (earliest date, latest date) in YYYY-MM-DD format
     """
-    from tools.general_tools import get_config_value
+    from tools.general_tools import get_config_value, write_config_value
 
     base_dir = Path(__file__).resolve().parents[1]
 
-    # Get log_path from config, default to "agent_data" for backward compatibility
-    log_path = get_config_value("LOG_PATH", "./data/agent_data")
+    # Get log_path from config, must be explicitly set
+    log_path = get_config_value("LOG_PATH")
+    if not log_path:
+        # LOG_PATH未设置,无法确定position文件路径,返回空字符串
+        print(f"⚠️  LOG_PATH not set, cannot get date range for {signature}")
+        return "", ""
     if log_path.startswith("./data/"):
         log_path = log_path[7:]  # Remove "./data/" prefix
 
@@ -112,7 +116,7 @@ def get_daily_portfolio_values(
     Returns:
         Dictionary of daily portfolio values in format {date: portfolio_value}
     """
-    from tools.general_tools import get_config_value
+    from tools.general_tools import get_config_value, write_config_value
     from tools.price_tools import (all_nasdaq_100_symbols, all_sse_50_symbols,load_stock_list,
                                    get_merged_file_path)
 
@@ -123,15 +127,41 @@ def get_daily_portfolio_values(
     if log_path.startswith("./data/"):
         log_path = log_path[7:]  # Remove "./data/" prefix
 
-    position_file = base_dir / "data" / log_path / signature / "position" / "position.jsonl"
-    merged_file = get_merged_file_path(market)
+    position_file = base_dir / "data" / log_path / modelname / "position" / "position.jsonl"
+    
+    # Extract date suffix from modelname (e.g., Test_balanced_250103 -> 20250103)
+    date_suffix = None
+    parts = modelname.split("_")
+    if len(parts) >= 3:
+        last_part = parts[-1]  # e.g., "250103"
+        if len(last_part) == 6 and last_part.isdigit():
+            # Convert YYMMDD to YYYYMMDD
+            yy = last_part[:2]
+            mmdd = last_part[2:]
+            date_suffix = f"20{yy}{mmdd}"
+    
+    merged_file = get_merged_file_path(market, date_suffix=date_suffix)
 
-    if not position_file.exists() or not merged_file.exists():
+    if not position_file.exists():
         return {}
+    
+    if not merged_file.exists():
+        # Log warning but continue - may be using old data without date suffix
+        print(f"⚠️  Price file not found: {merged_file}")
+        if date_suffix:
+            # Try fallback to file without date suffix
+            fallback_file = get_merged_file_path(market, date_suffix=None)
+            if fallback_file.exists():
+                print(f"   Using fallback: {fallback_file}")
+                merged_file = fallback_file
+            else:
+                return {}
+        else:
+            return {}
 
     # Get available date range if not specified
     if start_date is None or end_date is None:
-        earliest_date, latest_date = get_available_date_range(signature)
+        earliest_date, latest_date = get_available_date_range(modelname)
         if not earliest_date or not latest_date:
             return {}
 
@@ -173,9 +203,6 @@ def get_daily_portfolio_values(
             except Exception:
                 continue
 
-    # Select stock symbols based on market
-    stock_symbols = load_stock_list() if market == "cn" else all_nasdaq_100_symbols
-
     # Calculate daily portfolio values
     daily_values = {}
 
@@ -199,9 +226,11 @@ def get_daily_portfolio_values(
         latest_record = max(records, key=lambda x: x.get("id", 0))
         positions = latest_record.get("positions", {})
 
-        # Get daily prices
+        # Get daily prices for all symbols in positions
         daily_prices = {}
-        for symbol in stock_symbols:
+        for symbol in positions.keys():
+            if symbol == "CASH":
+                continue
             if symbol in price_data:
                 symbol_prices = price_data[symbol]
                 if date in symbol_prices:
@@ -212,9 +241,18 @@ def get_daily_portfolio_values(
                     if sell_price is not None:
                         daily_prices[f"{symbol}_price"] = float(sell_price)
 
-        # Calculate portfolio value
+        # Calculate portfolio value: CASH + stock holdings
         cash = positions.get("CASH", 0.0)
-        portfolio_value = calculate_portfolio_value(positions, daily_prices, cash)
+        portfolio_value = cash
+        
+        for symbol, shares in positions.items():
+            if symbol == "CASH":
+                continue
+            price_key = f"{symbol}_price"
+            price = daily_prices.get(price_key)
+            if price is not None and shares > 0:
+                portfolio_value += shares * price
+        
         daily_values[date] = portfolio_value
 
     return daily_values
@@ -368,8 +406,11 @@ def calculate_annualized_return(portfolio_values: Dict[str, float]) -> float:
         return 0.0
 
     # Calculate investment days
-    start_date = datetime.strptime(sorted_dates[0], "%Y-%m-%d")
-    end_date = datetime.strptime(sorted_dates[-1], "%Y-%m-%d")
+    # Support both "YYYY-MM-DD" and "YYYY-MM-DD HH:MM:SS" formats
+    date_str_start = sorted_dates[0].split()[0] if ' ' in sorted_dates[0] else sorted_dates[0]
+    date_str_end = sorted_dates[-1].split()[0] if ' ' in sorted_dates[-1] else sorted_dates[-1]
+    start_date = datetime.strptime(date_str_start, "%Y-%m-%d")
+    end_date = datetime.strptime(date_str_end, "%Y-%m-%d")
     days = (end_date - start_date).days
 
     if days == 0:
@@ -468,7 +509,7 @@ def calculate_all_metrics(
     """
     # Get available date range if not specified
     if start_date is None or end_date is None:
-        earliest_date, latest_date = get_available_date_range(signature)
+        earliest_date, latest_date = get_available_date_range(modelname)
         if not earliest_date or not latest_date:
             return {
                 "error": "Unable to get available data date range",
@@ -644,7 +685,7 @@ def save_metrics_to_jsonl(metrics: Dict[str, any], signature: str, output_dir: O
     Returns:
         Path to saved file
     """
-    from tools.general_tools import get_config_value
+    from tools.general_tools import get_config_value, write_config_value
 
     base_dir = Path(__file__).resolve().parents[1]
 
@@ -725,7 +766,7 @@ def get_latest_metrics(signature: str, output_dir: Optional[str] = None) -> Opti
     Returns:
         Latest metrics record, or None if no records exist
     """
-    from tools.general_tools import get_config_value
+    from tools.general_tools import get_config_value, write_config_value
 
     base_dir = Path(__file__).resolve().parents[1]
 
@@ -776,7 +817,7 @@ def get_metrics_history(
     Returns:
         List of metrics records, sorted by ID
     """
-    from tools.general_tools import get_config_value
+    from tools.general_tools import get_config_value, write_config_value
 
     base_dir = Path(__file__).resolve().parents[1]
 
@@ -891,7 +932,7 @@ def calculate_and_save_metrics(
     
     # Show date range to be used if not specified
     if start_date is None or end_date is None:
-        earliest_date, latest_date = get_available_date_range(signature)
+        earliest_date, latest_date = get_available_date_range(modelname)
         if earliest_date and latest_date:
             if start_date is None:
                 start_date = earliest_date
@@ -929,6 +970,240 @@ def calculate_and_save_metrics(
         print_performance_report(metrics, market=market)
 
     return metrics
+
+
+def _load_positions_for_agent(data_root: Path, agent_name: str) -> List[Dict[str, Any]]:
+    """Load raw position records for a given agent from position.jsonl.
+
+    Args:
+        data_root: Root directory of the agent data group (e.g. data/agent_data_astock).
+        agent_name: Agent folder name.
+
+    Returns:
+        List of position records (dicts).
+    """
+    position_file = data_root / agent_name / "position" / "position.jsonl"
+    if not position_file.exists():
+        return []
+
+    positions: List[Dict[str, Any]] = []
+    with position_file.open("r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                doc = json.loads(line)
+                positions.append(doc)
+            except Exception:
+                continue
+    return positions
+
+
+def _build_trade_actions_rows(positions: List[Dict[str, Any]]) -> List[List[Any]]:
+    """Build rows for the Trade Actions sheet, mirroring excel-export.js.
+
+    Header: ["Date", "Action", "Symbol", "Amount", "Price", "CASH After"]
+    """
+    rows: List[List[Any]] = [["Date", "Action", "Symbol", "Amount", "Price", "CASH After"]]
+
+    for pos in positions:
+        this_action = pos.get("this_action") or {}
+        action = this_action.get("action")
+        if not this_action or action in ("no_trade", "initial"):
+            continue
+
+        positions_dict = pos.get("positions") or {}
+        rows.append(
+            [
+                pos.get("date"),
+                action,
+                this_action.get("symbol", ""),
+                this_action.get("amount", 0),
+                this_action.get("price", ""),
+                positions_dict.get("CASH", 0),
+            ]
+        )
+
+    return rows
+
+
+def _build_position_history_rows(positions: List[Dict[str, Any]]) -> List[List[Any]]:
+    """Build rows for the Position History sheet, mirroring excel-export.js.
+
+    Header: ["Date", "ID", "Action", "CASH", ...symbols]
+    """
+    if not positions:
+        return []
+
+    all_symbols: set[str] = set()
+    for pos in positions:
+        pos_positions = pos.get("positions") or {}
+        for key in pos_positions.keys():
+            if key != "CASH":
+                all_symbols.add(key)
+
+    symbol_list = sorted(all_symbols)
+    header: List[Any] = ["Date", "ID", "Action", "CASH", *symbol_list]
+    rows: List[List[Any]] = [header]
+
+    for pos in positions:
+        this_action = pos.get("this_action")
+        if this_action:
+            action_str = f"{this_action.get('action', '')} {this_action.get('symbol', '')} x{this_action.get('amount', 0)}"
+        else:
+            action_str = "initial"
+
+        positions_dict = pos.get("positions") or {}
+        row: List[Any] = [
+            pos.get("date"),
+            pos.get("id"),
+            action_str,
+            positions_dict.get("CASH", 0),
+        ]
+
+        for sym in symbol_list:
+            row.append(positions_dict.get(sym, 0))
+
+        rows.append(row)
+
+    return rows
+
+
+def _sanitize_sheet_name(name: str) -> str:
+    """Sanitize and truncate Excel sheet name to a valid length."""
+    invalid_chars = [":", "\\", "/", "?", "*", "[", "]"]
+    for ch in invalid_chars:
+        name = name.replace(ch, "_")
+    name = name[:31]
+    return name or "Sheet"
+
+
+def export_yearly_excel(
+    data_group: str,
+    year: int,
+    market: str = "cn",
+    output_dir: Optional[str] = None,
+) -> Path:
+    """Export a yearly Excel workbook summarizing backtest results for a data group.
+
+    The workbook contains:
+      - Summary sheet: one row per agent with all metrics from calculate_all_metrics
+      - Two sheets per agent: "<agent>_Trades" and "<agent>_Positions"
+
+    Args:
+        data_group: Agent data directory name under data/, e.g. "agent_data_astock".
+        year: Target year, e.g. 2025.
+        market: Market type, "cn" for A-shares, "us" for US stocks, etc.
+        output_dir: Optional output directory; defaults to data/exports.
+
+    Returns:
+        Path to the generated Excel file.
+    """
+    base_dir = Path(__file__).resolve().parents[1]
+    data_root = base_dir / "data" / data_group
+    if not data_root.exists():
+        raise FileNotFoundError(f"Agent data directory not found: {data_root}")
+
+    # Ensure LOG_PATH matches the selected data_group so that metrics helpers
+    # read position data from the correct directory.
+    write_config_value("LOG_PATH", f"./data/{data_group}")
+
+    yy = str(year)[2:]
+    agents: List[str] = []
+    for entry in sorted(data_root.iterdir()):
+        if not entry.is_dir():
+            continue
+        name = entry.name
+        parts = name.split("_")
+        if not name.startswith("Test_") or len(parts) < 3:
+            continue
+        last_part = parts[-1]
+        if last_part.startswith(yy):
+            agents.append(name)
+
+    if not agents:
+        print(f"⚠️ No agents found in {data_group} for year {year}")
+    else:
+        print(f"✅ Found {len(agents)} agents in {data_group} for year {year}: {agents}")
+
+    summary_rows: List[Dict[str, Any]] = []
+    agent_sheets: Dict[str, Dict[str, List[List[Any]]]] = {}
+
+    for agent in agents:
+        metrics = calculate_all_metrics(agent, market=market)
+        portfolio_values = metrics.get("portfolio_values", {})
+        initial_value = None
+        final_value = None
+        if portfolio_values:
+            dates_sorted = sorted(portfolio_values.keys())
+            initial_value = portfolio_values[dates_sorted[0]]
+            final_value = portfolio_values[dates_sorted[-1]]
+
+        value_change = None
+        value_change_pct = None
+        if initial_value is not None and final_value is not None:
+            value_change = final_value - initial_value
+            value_change_pct = (value_change / initial_value) if initial_value > 0 else None
+
+        summary_row: Dict[str, Any] = {
+            "agent": agent,
+            "start_date": metrics.get("start_date", ""),
+            "end_date": metrics.get("end_date", ""),
+            "total_trading_days": metrics.get("total_trading_days", 0),
+            "initial_value": initial_value,
+            "final_value": final_value,
+            "value_change": value_change,
+            "value_change_pct": value_change_pct,
+            "sharpe_ratio": metrics.get("sharpe_ratio", 0.0),
+            "max_drawdown": metrics.get("max_drawdown", 0.0),
+            "max_drawdown_start": metrics.get("max_drawdown_start", ""),
+            "max_drawdown_end": metrics.get("max_drawdown_end", ""),
+            "cumulative_return": metrics.get("cumulative_return", 0.0),
+            "annualized_return": metrics.get("annualized_return", 0.0),
+            "volatility": metrics.get("volatility", 0.0),
+            "win_rate": metrics.get("win_rate", 0.0),
+            "profit_loss_ratio": metrics.get("profit_loss_ratio", 0.0),
+        }
+        summary_rows.append(summary_row)
+
+        positions = _load_positions_for_agent(data_root, agent)
+        trade_rows = _build_trade_actions_rows(positions)
+        position_rows = _build_position_history_rows(positions)
+        agent_sheets[agent] = {
+            "Trades": trade_rows,
+            "Positions": position_rows,
+        }
+
+    if output_dir is None:
+        output_dir = base_dir / "data" / "exports"
+    else:
+        output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    filename = f"backtest_summary_{data_group}_{year}.xlsx"
+    output_path = output_dir / filename
+
+    import pandas as pd  # Local import to avoid issues if module is used without pandas
+
+    with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
+        if summary_rows:
+            summary_df = pd.DataFrame(summary_rows)
+            summary_df.to_excel(writer, sheet_name="Summary", index=False)
+
+        for agent, sheets in agent_sheets.items():
+            for kind, rows in sheets.items():
+                if not rows:
+                    continue
+                sheet_name = _sanitize_sheet_name(f"{agent}_{kind}")
+                if len(rows) > 1:
+                    df = pd.DataFrame(rows[1:], columns=rows[0])
+                else:
+                    df = pd.DataFrame(columns=rows[0])
+                df.to_excel(writer, sheet_name=sheet_name, index=False)
+
+    print(f"📁 Yearly Excel exported to: {output_path}")
+    return output_path
 
 
 if __name__ == "__main__":

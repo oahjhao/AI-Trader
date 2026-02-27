@@ -415,34 +415,49 @@ function toggleScale() {
     createChart();
 }
 
-// Export chart data as CSV
+// Export yearly summary Excel for current dataset
 function exportData() {
-    let csv = 'Date,';
-    const agentNames = Object.keys(allAgentsData);
-    csv += agentNames.map(name => dataLoader.getAgentDisplayName(name)).join(',') + '\n';
+    const dateGroup = window.datasetSelector && window.datasetSelector.getCurrentDateGroup
+        ? window.datasetSelector.getCurrentDateGroup()
+        : null;
 
-    const allDates = new Set();
-    agentNames.forEach(name => {
-        allAgentsData[name].assetHistory.forEach(h => allDates.add(h.date));
-    });
-    const sortedDates = Array.from(allDates).sort();
+    if (!dateGroup || dateGroup === 'other') {
+        alert('无法从当前数据集推断年份，请先选择具体的日期分组。');
+        return;
+    }
 
-    sortedDates.forEach(date => {
-        const row = [date];
-        agentNames.forEach(name => {
-            const entry = allAgentsData[name].assetHistory.find(h => h.date === date);
-            row.push(entry ? entry.value.toFixed(2) : '');
+    const yy = dateGroup.slice(0, 2);
+    const yyNum = parseInt(yy, 10);
+    if (Number.isNaN(yyNum)) {
+        alert('日期分组格式不正确，无法推断年份。');
+        return;
+    }
+
+    const year = 2000 + yyNum;  // 当前数据集均为 20xx 年
+    const dataGroup = 'agent_data_astock';
+    const basePath = dataLoader.baseDataPath || './data';
+    const filename = `backtest_summary_${dataGroup}_${year}.xlsx`;
+    const url = `${basePath}/exports/${filename}`;
+
+    // 先做一次 HEAD 检查文件是否存在，避免下载 404
+    fetch(url, { method: 'HEAD' })
+        .then(resp => {
+            if (!resp.ok) {
+                alert(`未找到 ${year} 年的数据汇总 Excel，请先在后端离线生成。`);
+                return;
+            }
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        })
+        .catch(err => {
+            console.error('Error preparing Excel download:', err);
+            alert('准备下载 Excel 时发生错误，请稍后重试。');
         });
-        csv += row.join(',') + '\n';
-    });
-
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'aitrader_asset_evolution.csv';
-    a.click();
-    window.URL.revokeObjectURL(url);
 }
 
 // Set up event listeners
