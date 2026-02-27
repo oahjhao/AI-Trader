@@ -167,7 +167,7 @@ load_env_file
 # 配置参数 - 请根据实际环境修改
 # ============================================
 CLUSTER="${ECS_CLUSTER:-trader-cluster}"
-SUBNET="${ECS_SUBNET:-subnet-0307b527137ee17d9}"
+SUBNET="${ECS_SUBNET:-subnet-08318476290258cfe}"
 SECURITY_GROUP="${ECS_SECURITY_GROUP:-sg-0e9ea03fd1beaaad9}"
 REGION="${AWS_REGION:-us-west-2}"
 
@@ -648,7 +648,7 @@ show_usage() {
 
 环境变量:
   ECS_CLUSTER            ECS 集群名称（默认: trader-cluster）
-  ECS_SUBNET             子网 ID（默认: subnet-0307b527137ee17d9）
+  ECS_SUBNET             子网 ID（默认: subnet-08318476290258cfe）
   ECS_SECURITY_GROUP     安全组 ID（默认: sg-097cc7fbe296ee446）
   AWS_REGION             AWS 区域（默认: us-west-2）
   DATA_PREP_TASK_DEF     数据准备任务定义（默认: trader-data-prep）
