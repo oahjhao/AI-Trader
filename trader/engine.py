@@ -217,7 +217,7 @@ async def run_single_model(
             
             # 发送 Agent 启动通知
             try:
-                from webhook.dingtalk_webhook import send_agent_start_notification
+                from webhook.notify_client import send_agent_start_notification
                 stock_count = len(stock_symbols) if stock_symbols is not None else 0
                 send_agent_start_notification(
                     signature=signature,

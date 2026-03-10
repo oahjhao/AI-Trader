@@ -74,11 +74,11 @@ else
     MODE="LIVE"
     FETCH_INIT=""
     FETCH_END=""
-    NOW_DATE=$(date +"%Y-%m-%d %H:%M:%S")
+    NOW_DATE=$(date +"%Y-%m-%d")
     echo "🌐 Mode: Live trading (Automatic history from current time)"
 fi
 
-cd "$BASE_DIR/data/A_stock"
+cd "$BASE_DIR/scripts/a_stock"
 
 echo ""
 echo "============================================"

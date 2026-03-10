@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 from datetime import datetime, timedelta
 import logging
+import json
 
 import pandas as pd
 import efinance as ef
@@ -46,18 +47,19 @@ class AStockIntradayDataFetcher:
         """
         self.frequency = frequency
         
-        # 设置数据目录：默认为 A_stock_data 子目录
+        # 设置数据目录：默认为项目根目录下的 data/A_stock
         if data_dir is None:
-            self.data_dir = Path(__file__).parent
+            # 从 scripts/a_stock 向上两级到项目根目录，再进入 data/A_stock
+            self.data_dir = Path(__file__).resolve().parents[2] / "data" / "A_stock"
         else:
             self.data_dir = Path(data_dir)
         
         # 创建数据目录（如果不存在）
         self.data_dir.mkdir(parents=True, exist_ok=True)
         
-        # 股票列表文件在 A_stock_data 目录
+        # 股票列表文件在 data/A_stock 目录
         self.stock_list_file = stock_list_file
-        self.stock_list_path = Path(__file__).parent / stock_list_file
+        self.stock_list_path = self.data_dir / stock_list_file
         
         # 输出文件在数据目录
         self.output_file = output_file
@@ -110,7 +112,7 @@ class AStockIntradayDataFetcher:
             Tuple[str, str]: (begin_date, end_date) 格式为 'YYYYMMDD'
         """
         # 结束日期始终为今天
-        end_date = datetime.now().strftime("%Y%m%d %H:%M:%S")
+        end_date = datetime.now().strftime("%Y%m%d")
         
         # 检查输出文件是否存在
         if self.output_path.exists():
@@ -123,14 +125,14 @@ class AStockIntradayDataFetcher:
                     # trade_date格式: "2025-10-09 10:30"
                     last_date_str = df_existing['trade_date'].max()
                     
-                    # 日期
-                    last_date = datetime.strptime(last_date_str, "%Y-%m-%d %H:%M:%S")
+                    # 提取日期部分（去掉时间）
+                    last_date = datetime.strptime(last_date_str.split()[0], "%Y-%m-%d")
                     
                     # 计算下一天
-                    next_date = last_date + timedelta(minutes=25)
-                    begin_date = next_date.strftime("%Y%m%d %H:%M:%S")
-
-                    logger.info(f"已有数据的最后时间: {last_date.strftime('%Y-%m-%d %H:%M:%S')}")
+                    next_date = last_date + timedelta(days=1)
+                    begin_date = next_date.strftime("%Y%m%d")
+                    
+                    logger.info(f"已有数据的最后日期: {last_date.strftime('%Y-%m-%d')}")
                     logger.info(f"将从 {begin_date} 开始增量更新")
                     
                     # 检查是否已经是最新数据
@@ -184,7 +186,7 @@ class AStockIntradayDataFetcher:
 
     def calc_factor(self, df):
         # 确保日期列是datetime类型
-        df['trade_date'] = pd.to_datetime(df['trade_date'])
+        #df['trade_date'] = pd.to_datetime(df['trade_date'])
 
         # 按名称分组处理
         grouped = df.groupby('stock_code')
@@ -218,23 +220,22 @@ class AStockIntradayDataFetcher:
             atr = talib.ATR(high_prices, low_prices, close_prices, timeperiod=14)
             obv = talib.OBV(close_prices, volumes)
             # 创建结果DataFrame
-            result_df = group.copy()
-            result_df['MA_5'] = np.round(ma_5, 3)
-            result_df['MA_10'] = np.round(ma_10, 3)
-            result_df['MA_20'] = np.round(ma_20, 3)
-            result_df['MA_60'] = np.round(ma_60, 3)
+            group['MA_5'] = np.round(ma_5, 3)
+            group['MA_10'] = np.round(ma_10, 3)
+            group['MA_20'] = np.round(ma_20, 3)
+            group['MA_60'] = np.round(ma_60, 3)
 
-            result_df['EMA_5'] = np.round(ema_5, 3)
-            result_df['EMA_10'] = np.round(ema_10, 3)
-            result_df['EMA_20'] = np.round(ema_20, 3)
-            result_df['EMA_60'] = np.round(ema_60, 3)
+            group['EMA_5'] = np.round(ema_5, 3)
+            group['EMA_10'] = np.round(ema_10, 3)
+            group['EMA_20'] = np.round(ema_20, 3)
+            group['EMA_60'] = np.round(ema_60, 3)
 
-            result_df['RSI'] = np.round(rsi, 3) 
-            result_df['DIF'] = np.round(macd, 3) 
-            result_df['DEA'] = np.round(macdsignal, 3) 
-            result_df['ATR'] = np.round(atr, 3) 
-            result_df['OBV'] = np.round(obv, 3) 
-            results.append(result_df)
+            group['RSI'] = np.round(rsi, 3)
+            group['DIF'] = np.round(macd, 3)
+            group['DEA'] = np.round(macdsignal, 3)
+            group['ATR'] = np.round(atr, 3)
+            group['OBV'] = np.round(obv, 3)
+            results.append(group)
 
         # 合并所有结果
         final_result = pd.concat(results, ignore_index=True)
@@ -274,10 +275,11 @@ class AStockIntradayDataFetcher:
         
         # 统一股票代码格式（添加.SH后缀）
         # df_new["stock_code"] = df_new["stock_code"].apply(lambda x: x + ".SH")
-        #df_new["trade_date"] = df_new["trade_date"].apply(lambda x: x + ":00")
-        df_new["trade_date"] = pd.to_datetime(df_new["trade_date"]).dt.strftime('%Y-%m-%d %H:%M:%S')
-        # df_new["trade_date"] = df_new["trade_date"].dt.strftime('%Y-%m-%d %H:%M:%S')
-        # print(df_calc_factor.head(10)) 
+        df_new["trade_date"] = pd.to_datetime(df_new["trade_date"]).dt.strftime('%Y-%m-%d')
+        # df_new["trade_date"] = df_new["trade_date"].dt.strftime('%Y-%m-%d')
+        # df_calc_factor = self.calc_factor(df_new)
+        # df_calc_factor = df_new 
+        #print(df_calc_factor.head(10)) 
 
         # 如果是增量更新且已有文件存在，则合并数据
         if is_incremental and self.output_path.exists():
@@ -285,10 +287,14 @@ class AStockIntradayDataFetcher:
                 logger.info("增量更新模式：合并新旧数据")
                 df_old = pd.read_csv(self.output_path)
                 df_old['stock_code'] = df_old['stock_code'].astype(str).str.zfill(6)
-                df_old["trade_date"] = pd.to_datetime(df_old["trade_date"]).dt.strftime('%Y-%m-%d %H:%M:%S')
+ 
                 # 合并新旧数据
+                df_old["trade_date"] = pd.to_datetime(df_old["trade_date"]).dt.strftime('%Y-%m-%d')
+                df_new[['MA_5', 'MA_10','MA_20','MA_60','EMA_5','EMA_10','EMA_20','EMA_60','RSI' ,'DIF' ,'DEA' ,'ATR' ,'OBV' ]] = None
                 df_total = pd.concat([df_old, df_new], ignore_index=True)
-                df_total["trade_date"] = pd.to_datetime(df_total["trade_date"]).dt.strftime('%Y-%m-%d %H:%M:%S')
+                df_total["trade_date"] = pd.to_datetime(df_total["trade_date"]).dt.strftime('%Y-%m-%d')
+                df_total = self.calc_factor(df_total)
+                #print(df_total.head(10)) 
                 
                 # 去重（基于stock_code和trade_date，保留最新的数据）
                 df_total = df_total.drop_duplicates(
@@ -300,13 +306,17 @@ class AStockIntradayDataFetcher:
                 df_total = df_total.sort_values(
                     by=['trade_date', 'stock_code']
                 ).reset_index(drop=True)
+                #print(df_total.head(10)) 
                 
-                logger.info(f"合并后总记录数: {len(df_total)} (旧: {len(df_old)}, 新: {len(df_new)})")
+                logger.info(f"合并后总记录数: {len(df_total)} (旧: {len(df_old)}, 新: {len(df_total)})")
             except Exception as e:
                 logger.warning(f"合并数据失败: {e}，将只保存新数据")
-                df_total = df_new 
+                df_total = df_new
         else:
+            df_new[['MA_5', 'MA_10','MA_20','MA_60','EMA_5','EMA_10','EMA_20','EMA_60','RSI' ,'DIF' ,'DEA' ,'ATR' ,'OBV' ]] = None
             df_total = df_new 
+            df_total["trade_date"] = pd.to_datetime(df_total["trade_date"]).dt.strftime('%Y-%m-%d')
+            df_total = self.calc_factor(df_total)
 
             # 去重（基于stock_code和trade_date，保留最新的数据）
             df_total = df_total.drop_duplicates(
@@ -318,11 +328,13 @@ class AStockIntradayDataFetcher:
             df_total = df_total.sort_values(
                 by=['trade_date', 'stock_code']
             ).reset_index(drop=True)
+            #print(df_total.head(10)) 
         
         # 保存到CSV
         df_total.to_csv(self.output_path, index=False, encoding='utf-8')
         logger.info(f"数据已保存到: {self.output_path}")
         logger.info(f"总共 {len(df_total)} 条记录")
+        #print(df_total.head(10)) 
         
         return df_total
     
@@ -340,8 +352,8 @@ class AStockIntradayDataFetcher:
         - 结束日期始终为今天（实盘模式）或指定日期（回测模式）
         
         Args:
-            default_start_date: 默认开始日期，格式 'YYYYMMDD' 或 'YYYYMMDD HH:MM:SS'
-            default_end_date: 默认结束日期，格式 'YYYYMMDD' 或 'YYYYMMDD HH:MM:SS'，如果为None则使用当前日期
+            default_start_date: 默认开始日期，格式 'YYYYMMDD'
+            default_end_date: 默认结束日期，格式 'YYYYMMDD'，如果为None则使用当前日期
             auto_date_range: 是否自动检测日期范围，默认True
             
         Returns:
@@ -404,7 +416,7 @@ def main():
         return datetime.strptime(d_str.split(' ')[0], "%Y-%m-%d")
 
     # 解析命令行参数
-    parser = argparse.ArgumentParser(description='获取A股小时线数据')
+    parser = argparse.ArgumentParser(description='获取A股日线数据')
     parser.add_argument('init_date', nargs='?', help='开始日期 (YYYY-MM-DD)')
     parser.add_argument('end_date', nargs='?', help='结束日期 (YYYY-MM-DD)')
     parser.add_argument('--date-suffix', type=str, default='', help='日期后缀用于文件隔离 (YYYYMMDD)')
@@ -416,32 +428,32 @@ def main():
     stock_list_file = args.stock_list
     if args.date_suffix:
         # 如果stock_list已包含日期后缀，不再添加
-        if not any(args.date_suffix in args.stock_list for suffix in [args.date_suffix]):
+        if args.date_suffix not in args.stock_list:
             base_name = args.stock_list.rsplit('.', 1)[0]
             ext = args.stock_list.rsplit('.', 1)[1] if '.' in args.stock_list else 'csv'
             stock_list_file = f"{base_name}_{args.date_suffix}.{ext}"
-        output_file = f"A_stock_hourly_{args.date_suffix}.csv"
+        output_file = f"A_stock_daily_{args.date_suffix}.csv"
         logger.info(f"📁 使用日期后缀: {args.date_suffix}")
         logger.info(f"📁 股票列表: {stock_list_file}, 输出文件: {output_file}")
     else:
-        output_file = "A_stock_hourly.csv"
+        output_file = "A_stock_daily.csv"
     
     if args.init_date and args.end_date:
-        # Range provided (Manual Sync - Note: Backtest typically skips hourly)
+        # Range provided (Backtest or Manual Sync)
         anchor_dt = parse_date_only(args.init_date)
         end_dt = parse_date_only(args.end_date)
         
-        # Range: anchor_dt - 60 days to end_dt
-        begin_date = (anchor_dt - timedelta(days=60)).strftime("%Y%m%d")
+        # Range: anchor_dt - 365 days to end_dt
+        begin_date = (anchor_dt - timedelta(days=365)).strftime("%Y%m%d")
         end_date = end_dt.strftime("%Y%m%d")
         
-        logger.info(f"📊 Manual Sync mode (Hourly)")
+        logger.info(f"📊 Manual/Backtest mode")
         logger.info(f"Input init_date: {args.init_date}, end_date: {args.end_date}")
-        logger.info(f"Actual fetching range: {begin_date} 到 {end_date} (60 days history)")
+        logger.info(f"Actual fetching range: {begin_date} 到 {end_date} (365 days history)")
         
         # 创建数据获取器实例
         fetcher = AStockIntradayDataFetcher(
-            frequency=60,  # 60分钟K线
+            frequency=101,
             stock_list_file=stock_list_file,
             output_file=output_file
         )
@@ -456,15 +468,15 @@ def main():
     else:
         # Live mode
         end_dt = datetime.now()
-        begin_date = (end_dt - timedelta(days=60)).strftime("%Y%m%d")
+        begin_date = (end_dt - timedelta(days=365)).strftime("%Y%m%d")
         end_date = end_dt.strftime("%Y%m%d")
         
-        logger.info(f"📊 Live mode (Hourly)")
-        logger.info(f"Fetching Hourly data from {begin_date} to {end_date} (60 days history)")
+        logger.info(f"📊 Live mode")
+        logger.info(f"Fetching Daily data from {begin_date} to {end_date} (365 days history)")
         
         # 创建数据获取器实例
         fetcher = AStockIntradayDataFetcher(
-            frequency=60,  # 60分钟K线
+            frequency=101,
             stock_list_file=stock_list_file,
             output_file=output_file
         )

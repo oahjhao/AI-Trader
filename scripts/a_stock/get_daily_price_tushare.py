@@ -279,8 +279,8 @@ def get_daily_price_a_stock(
         df2 = df_calc_factor.sort_values(by=["trade_date", "ts_code"], ascending=True).reset_index(drop=True)
 
         if output_dir is None:
-            # Use absolute path relative to script location (already in A_stock directory)
-            output_dir = Path(__file__).parent
+            # 输出到项目根目录下的 data/A_stock
+            output_dir = Path(__file__).resolve().parents[2] / "data" / "A_stock"
         else:
             output_dir = Path(output_dir)
 
@@ -410,7 +410,8 @@ def get_index_daily_data(
             return None
 
         if output_dir is None:
-            output_dir = Path(__file__).parent
+            # 输出到项目根目录下的 data/A_stock
+            output_dir = Path(__file__).resolve().parents[2] / "data" / "A_stock"
         else:
             output_dir = Path(output_dir)
 
@@ -430,17 +431,23 @@ def get_index_daily_data(
 
 if __name__ == "__main__":
     import sys
+    import argparse
     
     def parse_date_only(d_str):
         # Handle both YYYY-MM-DD and YYYY-MM-DD HH:MM:SS
         return datetime.strptime(d_str.split(' ')[0], "%Y-%m-%d")
+    
+    # 使用 argparse 解析参数，支持 --date-suffix 选项
+    parser = argparse.ArgumentParser(description="Fetch daily price data from Tushare")
+    parser.add_argument("init_date", nargs="?", help="Init date (YYYY-MM-DD)")
+    parser.add_argument("end_date", nargs="?", help="End date (YYYY-MM-DD)")
+    parser.add_argument("--date-suffix", dest="date_suffix", help="Date suffix (ignored)")
+    args = parser.parse_args()
 
-    if len(sys.argv) >= 3:
+    if args.init_date and args.end_date:
         # Range provided (Backtest or Manual Sync)
-        # Use first arg as init_date (the "anchor" for 365-day history)
-        # Use second arg as end_date
-        init_date_input = sys.argv[1]
-        end_date_input = sys.argv[2]
+        init_date_input = args.init_date
+        end_date_input = args.end_date
         
         anchor_dt = parse_date_only(init_date_input)
         end_dt = parse_date_only(end_date_input)
@@ -461,7 +468,11 @@ if __name__ == "__main__":
     
     print(f"Fetching Daily/Index data from {daily_start_date} to {daily_end_date}")
     
+    # fallback 文件仍然在脚本目录
     fallback_path = Path(__file__).parent / "sse_50_weight.csv"
+    
+    # 数据输出目录
+    data_output_dir = Path(__file__).resolve().parents[2] / "data" / "A_stock"
 
     # Get constituent stocks daily prices
     df = get_daily_price_a_stock(

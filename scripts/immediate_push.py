@@ -40,44 +40,30 @@ def get_python_executable():
     return "python3" if os.name != 'nt' else "python"
 
 def send_push_notification(config_path=None, signature=None):
-    """发送即时推送通知"""
+    """发送即时推送通知 - 使用 OpenClaw notify 模块"""
     print(f"[{datetime.now()}] 开始执行即时推送...")
     
     try:
-        # 获取配置
-        webhook_url = os.getenv("DINGTALK_WEBHOOK_URL") or os.getenv("WEBHOOK_URL")
-        if not webhook_url:
-            print("❌ 未配置 Webhook URL，请在 .env 文件中设置 DINGTALK_WEBHOOK_URL 或 WEBHOOK_URL")
+        # 构建推送消息内容
+        message = build_push_message(config_path, signature)
+        
+        # 使用 OpenClaw notify 脚本发送
+        notify_script = "/home/admin/.openclaw/scripts/notify.sh"
+        
+        if not os.path.exists(notify_script):
+            print(f"❌ Notify 脚本不存在: {notify_script}")
             return False
         
-        secret = os.getenv("DINGTALK_SECRET")
-        
-        # 构建命令
-        python_exe = get_python_executable()
-        cmd = [
-            python_exe,
-            str(project_root / "webhook" / "cli.py"),
-            "send",
-            "--webhook-url", webhook_url
-        ]
-        
-        if secret:
-            cmd.extend(["--secret", secret])
-        
-        if config_path:
-            cmd.extend(["--config", config_path])
-            
-        if signature:
-            cmd.extend(["--signature", signature])
-        
         # 执行推送
-        print(f"📤 执行命令: {' '.join(cmd)}")
-        result = subprocess.run(cmd, capture_output=True, text=True, cwd=str(project_root))
+        print(f"📤 使用 OpenClaw notify 发送消息...")
+        result = subprocess.run(
+            ["bash", notify_script, message],
+            capture_output=True,
+            text=True
+        )
         
         if result.returncode == 0:
             print("✅ 即时推送成功")
-            if result.stdout:
-                print(f"输出: {result.stdout}")
             return True
         else:
             print("❌ 即时推送失败")
@@ -89,16 +75,56 @@ def send_push_notification(config_path=None, signature=None):
         return False
 
 
+def build_push_message(config_path=None, signature=None):
+    """构建推送消息内容"""
+    from datetime import datetime
+    
+    msg_parts = ["📊 AI-Trader 交易报告"]
+    msg_parts.append(f"时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    
+    if signature:
+        msg_parts.append(f"Agent: {signature}")
+    
+    if config_path:
+        msg_parts.append(f"配置: {os.path.basename(config_path)}")
+    
+    # 尝试读取持仓信息
+    data_dir = Path("/home/admin/.openclaw/data/ai-trader/data/agent_data_astock")
+    if signature and data_dir.exists():
+        # 查找最新的持仓文件
+        agent_dirs = list(data_dir.glob(f"{signature}*"))
+        if agent_dirs:
+            agent_dir = agent_dirs[0]
+            position_files = list(agent_dir.glob("*/position.json"))
+            if position_files:
+                try:
+                    with open(position_files[-1], 'r') as f:
+                        import json
+                        position = json.load(f)
+                        cash = position.get('cash', 0)
+                        positions = position.get('positions', [])
+                        total_value = position.get('total_value', 0)
+                        
+                        msg_parts.append(f"")
+                        msg_parts.append(f"💰 总资产: ¥{total_value:,.2f}")
+                        msg_parts.append(f"💵 现金: ¥{cash:,.2f}")
+                        msg_parts.append(f"📈 持仓数量: {len(positions)} 只")
+                except Exception as e:
+                    pass
+    
+    return "\n".join(msg_parts)
+
+
 def prepare_push_content():
     """准备推送内容（检查配置）"""
     try:
-        # 检查必要配置是否存在
-        webhook_url = os.getenv("DINGTALK_WEBHOOK_URL") or os.getenv("WEBHOOK_URL")
-        if not webhook_url:
-            print("❌ 未配置 Webhook URL")
+        # 检查 notify 脚本是否存在
+        notify_script = "/home/admin/.openclaw/scripts/notify.sh"
+        if not os.path.exists(notify_script):
+            print(f"❌ Notify 脚本不存在: {notify_script}")
             return False
         
-        print("✅ 推送配置检查通过")
+        print("✅ 推送配置检查通过 (使用 OpenClaw notify)")
         return True
             
     except Exception as e:

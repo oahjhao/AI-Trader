@@ -1,9 +1,38 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-钉钉机器人 Webhook 推送模块
-支持定时推送 A 股小时级仓位信息
+钉钉机器人 Webhook 推送模块 [已废弃]
+
+⚠️ 此模块已废弃，请使用 notify_client 模块
+所有推送现在通过 OpenClaw notify 统一发送
 """
+
+# 从新的推送模块导入所有函数，保持向后兼容
+from webhook.notify_client import (
+    send_agent_start_notification,
+    send_no_trade_notification,
+    send_session_position_report,
+    ImmediatePusher,
+    PositionReporter,
+    send_notification
+)
+
+# 保留旧的类名和函数名以兼容旧代码
+class DingTalkWebhook:
+    """已废弃，保留用于兼容"""
+    def __init__(self, webhook_url: str = None, secret: str = None):
+        pass
+    
+    def send_message(self, content: str, msg_type: str = "text") -> bool:
+        return send_notification(content)
+
+def send_trading_complete_notification(signature: str, today_date: str, had_trade: bool = None, market: str = "cn"):
+    """已废弃，请使用 send_session_position_report"""
+    send_session_position_report(signature=signature, today_date=today_date, market=market)
+
+# ============================================================
+# 以下是原有代码，保留作为参考
+# ============================================================
 
 import os
 import json
@@ -22,6 +51,9 @@ import pandas as pd
 # 获取项目根目录
 PROJECT_ROOT = Path(__file__).parent.parent
 
+
+# 旧的 DingTalkWebhook 类实现（保留作为参考）
+_DingTalkWebhook_Old = DingTalkWebhook
 
 class DingTalkWebhook:
     """钉钉机器人 Webhook 客户端"""

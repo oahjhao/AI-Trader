@@ -87,6 +87,12 @@ cleanup() {
 # Set trap for cleanup
 trap cleanup EXIT
 
+# 启动前清理可能存在的残留进程
+echo "🧹 清理残留的 MCP 进程..."
+pkill -f "python.*tool_.*py" 2>/dev/null || true
+pkill -f "python.*start_mcp_services.py" 2>/dev/null || true
+sleep 1
+
 echo ""
 echo "============================================"
 echo "📦 Step 1/3: Start MCP Services"

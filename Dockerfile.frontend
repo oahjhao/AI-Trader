@@ -3,7 +3,7 @@
 # Dynamic trading data is expected to be mounted at /usr/share/nginx/html/data via EFS.
 # Pure frontend container - no trader scheduling functionality.
 
-FROM nginx:stable-alpine
+FROM docker.io/nginx:stable-alpine
 
 # Install minimal required tools
 RUN apk add --no-cache \
